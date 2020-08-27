@@ -1,10 +1,15 @@
 use crate::{types::Object, util::*};
-use pyo3::{exceptions, prelude::*, types::PyDict, wrap_pyfunction};
+use pyo3::{prelude::*, types::PyDict};
 use serde::{
     de::{self, Deserializer, Error, MapAccess, Visitor},
     Deserialize,
 };
 use std::fmt;
+
+fn restore<T: Error>(e: PyErr) -> T {
+    e.restore(py());
+    Error::custom("Unknown python error on deserialization")
+}
 
 struct ObjectVisitor;
 

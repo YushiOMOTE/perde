@@ -9,9 +9,9 @@ macro_rules! load {
     ($a:tt, $f:tt, $d:tt) => {
         #[cfg(feature = $a)]
         #[pyfunction]
-        pub fn $f(s: &str) -> PyObject {
-            let obj: Object = $d::from_str(s).unwrap_or_else(restore_fin);
-            obj.into()
+        pub fn $f(s: &str) -> PyResult<PyObject> {
+            let obj: Object = $d::from_str(s).map_err(pyerr)?;
+            Ok(obj.into())
         }
     };
 }
@@ -22,9 +22,9 @@ load!("toml", toml_load, serde_toml);
 
 #[cfg(feature = "msgpack")]
 #[pyfunction]
-pub fn msgpack_load(s: &[u8]) -> PyObject {
-    let obj: Object = rmp_serde::from_slice(s).unwrap_or_else(restore_fin);
-    obj.into()
+pub fn msgpack_load(s: &[u8]) -> PyResult<PyObject> {
+    let obj: Object = rmp_serde::from_slice(s).map_err(pyerr)?;
+    Ok(obj.into())
 }
 
 #[pymodule]
