@@ -51,8 +51,8 @@ struct ObjectVisitor;
 impl<'de> Visitor<'de> for ObjectVisitor {
     type Value = Object;
 
-    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-        formatter.write_str("an integer between -2^31 and 2^31")
+    fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Unexpected format")
     }
 
     fn visit_i8<E>(self, value: i8) -> Result<Self::Value, E>
