@@ -23,12 +23,6 @@ impl Object {
     }
 }
 
-impl ToPyObject for Object {
-    fn to_object(&self, _py: Python) -> PyObject {
-        self.inner.clone()
-    }
-}
-
 impl From<Object> for PyObject {
     fn from(obj: Object) -> Self {
         obj.to_pyobj()
