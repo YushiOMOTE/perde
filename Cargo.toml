@@ -1,6 +1,6 @@
 [package]
 authors = ["Yushi Omote <yushiomote@gmail.com>"]
-name = "serde-pyobj"
+name = "perde"
 version = "0.1.0"
 edition = "2018"
 
@@ -14,7 +14,7 @@ serde_toml = { version = "0.5", package = "toml", optional = true }
 rmp-serde = { version = "0.14", optional = true }
 
 [lib]
-name = "serde_pyobj"
+name = "perde"
 crate-type = ["cdylib"]
 
 [features]

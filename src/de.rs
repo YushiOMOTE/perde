@@ -173,9 +173,14 @@ impl<'de> Visitor<'de> for ObjectVisitor {
     {
         let dict = PyDict::new(py());
 
-        while let Some((key, value)) = access.next_entry()? {
+        while let Some(key) = access.next_key()? {
             let key: String = key;
-            let value: Object = value;
+
+            println!("deserialize value");
+            // local = T and the deserializer calls another visit method
+            let value: Object = access.next_value()?;
+            println!("done deserialize value");
+
             dict.set_item(key, value.to_pyobj()).map_err(restore)?;
         }
 
@@ -188,6 +193,7 @@ impl<'de> Deserialize<'de> for Object {
     where
         D: Deserializer<'de>,
     {
+        println!("deserialize");
         deserializer.deserialize_any(ObjectVisitor)
     }
 }

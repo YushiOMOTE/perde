@@ -286,6 +286,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "perde"
+version = "0.1.0"
+dependencies = [
+ "pyo3",
+ "rayon",
+ "rmp-serde",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "toml",
+]
+
+[[package]]
 name = "proc-macro-hack"
 version = "0.5.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -416,19 +429,6 @@ name = "serde"
 version = "1.0.115"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e54c9a88f2da7238af84b5101443f0c0d0a3bbdc455e34a5c9497b1903ed55d5"
-
-[[package]]
-name = "serde-pyobj"
-version = "0.1.0"
-dependencies = [
- "pyo3",
- "rayon",
- "rmp-serde",
- "serde",
- "serde_json",
- "serde_yaml",
- "toml",
-]
 
 [[package]]
 name = "serde_json"

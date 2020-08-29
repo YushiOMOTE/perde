@@ -28,7 +28,7 @@ pub fn msgpack_load(s: &[u8]) -> PyResult<PyObject> {
 }
 
 #[pymodule]
-fn serde_pyobj(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
+fn perde(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
     #[cfg(feature = "json")]
     m.add_wrapped(wrap_pyfunction!(json_load))?;
     #[cfg(feature = "yaml")]
