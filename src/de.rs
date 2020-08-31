@@ -1,11 +1,14 @@
-use crate::{types::Object, util::*};
+use crate::{
+    types::{Object, SchemaStack},
+    util::*,
+};
 use pyo3::{
     prelude::*,
-    types::{PyDict, PyType},
+    types::{PyDict, PyTuple},
 };
-use serde::{
-    de::{self, Deserializer, Error, MapAccess, Visitor},
-    Deserialize,
+use serde_state::{
+    de::{self, Deserializer, Error, MapAccess, Seed, Visitor},
+    DeserializeState,
 };
 use std::fmt;
 
@@ -14,9 +17,18 @@ fn restore<T: Error>(e: PyErr) -> T {
     Error::custom("Unknown python error on deserialization")
 }
 
-struct ObjectVisitor;
+struct ObjectVisitor<'a, 'b>(&'b mut SchemaStack<'a>);
 
-impl<'de> Visitor<'de> for ObjectVisitor {
+impl<'a, 'b> ObjectVisitor<'a, 'b> {
+    fn value<E: de::Error>(&self, args: impl IntoPy<Py<PyTuple>>) -> Result<Object, E> {
+        self.0
+            .current()
+            .and_then(|s| s.call(args, None))
+            .map_err(restore)
+    }
+}
+
+impl<'a, 'b, 'de> Visitor<'de> for ObjectVisitor<'a, 'b> {
     type Value = Object;
 
     fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -27,119 +39,119 @@ impl<'de> Visitor<'de> for ObjectVisitor {
     where
         E: de::Error,
     {
-        Ok(Object::new(value))
+        self.visit_i64(value as i64)
     }
 
     fn visit_i32<E>(self, value: i32) -> Result<Self::Value, E>
     where
         E: de::Error,
     {
-        Ok(Object::new(value))
+        self.visit_i64(value as i64)
     }
 
     fn visit_i64<E>(self, value: i64) -> Result<Self::Value, E>
     where
         E: de::Error,
     {
-        Ok(Object::new(value))
+        self.value((value,))
     }
 
     fn visit_i128<E>(self, value: i128) -> Result<Self::Value, E>
     where
         E: Error,
     {
-        Ok(Object::new(value))
+        self.value((value,))
     }
 
     fn visit_u8<E>(self, value: u8) -> Result<Self::Value, E>
     where
         E: de::Error,
     {
-        Ok(Object::new(value))
+        self.visit_u64(value as u64)
     }
 
     fn visit_u32<E>(self, value: u32) -> Result<Self::Value, E>
     where
         E: de::Error,
     {
-        Ok(Object::new(value))
+        self.visit_u64(value as u64)
     }
 
     fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
     where
         E: de::Error,
     {
-        Ok(Object::new(value))
+        self.value((value,))
     }
 
     fn visit_u128<E>(self, value: u128) -> Result<Self::Value, E>
     where
         E: Error,
     {
-        Ok(Object::new(value))
+        self.value((value,))
     }
 
     fn visit_f32<E>(self, value: f32) -> Result<Self::Value, E>
     where
         E: Error,
     {
-        Ok(Object::new(value))
+        self.value((value,))
     }
 
     fn visit_f64<E>(self, value: f64) -> Result<Self::Value, E>
     where
         E: Error,
     {
-        Ok(Object::new(value))
+        self.value((value,))
     }
 
     fn visit_char<E>(self, value: char) -> Result<Self::Value, E>
     where
         E: Error,
     {
-        Ok(Object::new(value as u32))
+        self.value((value as u32,))
     }
 
     fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
     where
         E: Error,
     {
-        Ok(Object::new(value))
+        self.value((value,))
     }
 
     fn visit_borrowed_str<E>(self, value: &'de str) -> Result<Self::Value, E>
     where
         E: Error,
     {
-        Ok(Object::new(value))
+        self.value((value,))
     }
 
     fn visit_string<E>(self, value: String) -> Result<Self::Value, E>
     where
         E: Error,
     {
-        Ok(Object::new(value))
+        self.value((value,))
     }
 
     fn visit_bytes<E>(self, value: &[u8]) -> Result<Self::Value, E>
     where
         E: Error,
     {
-        Ok(Object::new(value))
+        self.value((value,))
     }
 
     fn visit_borrowed_bytes<E>(self, value: &'de [u8]) -> Result<Self::Value, E>
     where
         E: Error,
     {
-        Ok(Object::new(value))
+        self.value((value,))
     }
 
     fn visit_byte_buf<E>(self, value: Vec<u8>) -> Result<Self::Value, E>
     where
         E: Error,
     {
-        Ok(Object::new(value))
+        self.value((value,))
     }
 
     fn visit_none<E>(self) -> Result<Self::Value, E>
@@ -153,7 +165,7 @@ impl<'de> Visitor<'de> for ObjectVisitor {
     where
         D: Deserializer<'de>,
     {
-        Object::deserialize(deserializer)
+        Object::deserialize_state(self.0, deserializer)
     }
 
     fn visit_unit<E>(self) -> Result<Self::Value, E>
@@ -167,7 +179,7 @@ impl<'de> Visitor<'de> for ObjectVisitor {
     where
         D: Deserializer<'de>,
     {
-        Object::deserialize(deserializer)
+        Object::deserialize_state(self.0, deserializer)
     }
 
     fn visit_map<M>(self, mut access: M) -> Result<Self::Value, M::Error>
@@ -179,24 +191,29 @@ impl<'de> Visitor<'de> for ObjectVisitor {
         while let Some(key) = access.next_key()? {
             let key: String = key;
 
-            println!("deserialize value");
-            // local = T and the deserializer calls another visit method
-            let value: Object = access.next_value()?;
-            println!("done deserialize value");
+            self.0.push_by_name(&key).map_err(restore)?;
+            let value: Object = access.next_value_seed(Seed::new(&mut *self.0))?;
+            self.0.pop();
 
             dict.set_item(key, value.to_pyobj()).map_err(restore)?;
         }
 
-        Ok(Object::new(dict))
+        Ok(self
+            .0
+            .current()
+            .and_then(|s| s.call((), Some(dict)))
+            .map_err(restore)?)
     }
 }
 
-impl<'de> Deserialize<'de> for Object {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+impl<'a, 'de> DeserializeState<'de, SchemaStack<'a>> for Object {
+    fn deserialize_state<'b, D>(
+        seed: &'b mut SchemaStack<'a>,
+        deserializer: D,
+    ) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
     {
-        println!("deserialize");
-        deserializer.deserialize_any(ObjectVisitor)
+        deserializer.deserialize_any(ObjectVisitor(seed))
     }
 }

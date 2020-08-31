@@ -1,7 +1,7 @@
 import perde
 
 from typing_inspect import get_origin, get_args
-from perde import PySchema
+from perde import Schema
 from dataclasses import dataclass, fields, is_dataclass, field
 from typing import Dict, TypeVar, Union, List
 
@@ -15,25 +15,26 @@ def to_field(f: TypeVar):
         return to_generic(f)
     else:
         print("is primitive!!")
-        return PySchema(f, [], {}, [])
+        return Schema(f, [], {}, [])
 
 def to_generic(d: TypeVar):
     args = [to_field(arg) for arg in get_args(d)]
-    return PySchema(dict, args, {}, [])
+    return Schema(dict, args, {}, [])
 
 def to_primitive(d: TypeVar):
-    return PySchema(d, [], {}, [])
+    return Schema(d, [], {}, [])
 
 def to_class(d: TypeVar):
     fs = dict([(f.name, to_field(f.type)) for f in fields(d)])
-    return PySchema(d, [], fs, [])
+    return Schema(d, [], fs, [])
 
 def to_schema(d: TypeVar):
     return to_field(d)
 
 def perde_register(d):
-    print(to_schema(d))
-    perde.register(id(d), to_schema(d))
+    s = to_schema(d)
+    print(s)
+    setattr(d, '__schema__', s)
     return d
 
 @perde_register
@@ -45,7 +46,7 @@ class B:
 @perde_register
 @dataclass
 class A:
-    name: str
+    name: int
     value: B
 
-perde.json_load('{"a": 300}')
+print(perde.json_load(A, '{"name": 3, "value": {"label": "hage", "tag": {}}}'))
