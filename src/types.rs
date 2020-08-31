@@ -1,9 +1,14 @@
 use crate::util::*;
+use lazy_static::lazy_static;
 use pyo3::{
     prelude::*,
     types::{PyDict, PyList, PySet, PyTuple, PyType},
 };
-use std::{cell::RefCell, collections::HashMap, rc::Rc};
+use std::{
+    cell::RefCell,
+    collections::HashMap,
+    sync::{Arc, RwLock},
+};
 
 pub struct Object {
     inner: PyObject,
@@ -74,7 +79,7 @@ impl Float {
 }
 
 pub struct List {
-    value: Rc<Schema>,
+    value: Arc<Schema>,
 }
 
 impl List {
@@ -87,13 +92,13 @@ impl List {
         PyList::new(py(), args).into()
     }
 
-    pub fn value_type(&self) -> &Rc<Schema> {
+    pub fn value_type(&self) -> &Arc<Schema> {
         &self.value
     }
 }
 
 pub struct Tuple {
-    values: Vec<Rc<Schema>>,
+    values: Vec<Arc<Schema>>,
 }
 
 impl Tuple {
@@ -106,13 +111,13 @@ impl Tuple {
         PyTuple::new(py(), args).into()
     }
 
-    pub fn value_types(&self) -> &[Rc<Schema>] {
+    pub fn value_types(&self) -> &[Arc<Schema>] {
         &self.values
     }
 }
 
 struct Set {
-    value: Rc<Schema>,
+    value: Arc<Schema>,
 }
 
 impl Set {
@@ -120,13 +125,13 @@ impl Set {
         Ok(PySet::new(py(), args)?.into())
     }
 
-    pub fn value_type(&self) -> &Rc<Schema> {
+    pub fn value_type(&self) -> &Arc<Schema> {
         &self.value
     }
 }
 
 struct Dict {
-    values: HashMap<String, Rc<Schema>>,
+    values: HashMap<String, Arc<Schema>>,
 }
 
 impl Dict {
@@ -134,14 +139,14 @@ impl Dict {
         Ok(PyDict::from_sequence(py(), args)?.into())
     }
 
-    pub fn value_types(&self) -> &HashMap<String, Rc<Schema>> {
+    pub fn value_types(&self) -> &HashMap<String, Arc<Schema>> {
         &self.values
     }
 }
 
 struct Class {
     pytype: Py<PyType>,
-    values: HashMap<String, Rc<Schema>>,
+    values: HashMap<String, Arc<Schema>>,
 }
 
 impl Class {
@@ -152,12 +157,89 @@ impl Class {
             .map(|p| p.into())
     }
 
-    pub fn value_types(&self) -> &HashMap<String, Rc<Schema>> {
+    pub fn value_types(&self) -> &HashMap<String, Arc<Schema>> {
         &self.values
     }
 }
 
+#[pyclass]
+#[derive(Clone, Debug)]
+pub struct PySchema {
+    cls: Py<PyType>,
+    args: Vec<PySchema>,
+    kwargs: HashMap<String, PySchema>,
+    attr: Vec<String>,
+}
+
+#[pymethods]
+impl PySchema {
+    #[new]
+    fn new(
+        cls: Py<PyType>,
+        args: Vec<PySchema>,
+        kwargs: HashMap<String, PySchema>,
+        attr: Vec<String>,
+    ) -> Self {
+        Self {
+            cls,
+            args,
+            kwargs,
+            attr,
+        }
+    }
+}
+
+struct PySchemaStack<'a> {
+    stack: Vec<&'a PySchema>,
+}
+
+impl<'a> PySchemaStack<'a> {
+    fn new(schema: &'a PySchema) -> Self {
+        Self {
+            stack: vec![schema],
+        }
+    }
+
+    fn current(&self) -> PyResult<&'a PySchema> {
+        self.stack
+            .last()
+            .map(|p| *p)
+            .ok_or_else(|| pyerr("Schema stack is empty"))
+    }
+
+    fn push_by_name(&mut self, name: &str) -> PyResult<()> {
+        let cur = self
+            .stack
+            .last()
+            .ok_or_else(|| pyerr("Schema stack is empty"))?;
+        let next = cur
+            .kwargs
+            .get(name)
+            .ok_or_else(|| pyerr(format!("Couldn't find field with name: {}", name)))?;
+        self.stack.push(next);
+        Ok(())
+    }
+
+    fn push_by_index(&mut self, index: usize) -> PyResult<()> {
+        let cur = self
+            .stack
+            .last()
+            .ok_or_else(|| pyerr("Schema stack is empty"))?;
+        let next = cur
+            .args
+            .get(index)
+            .ok_or_else(|| pyerr(format!("Couldn't find field with index: {}", index)))?;
+        self.stack.push(next);
+        Ok(())
+    }
+
+    fn pop(&mut self) {
+        self.stack.pop();
+    }
+}
+
 pub enum Schema {
+    None,
     Str(Str),
     Bytes(Bytes),
     Bool(Bool),
@@ -171,7 +253,33 @@ pub enum Schema {
 }
 
 thread_local! {
-    pub static SCHEMA: RefCell<Vec<Rc<Schema>>> = RefCell::new(vec![]);
+    pub static SCHEMA: RefCell<Vec<Arc<Schema>>> = RefCell::new(vec![]);
+}
+
+lazy_static! {
+    static ref SCHEMA_REGISTRY: RwLock<HashMap<u64, Arc<Schema>>> = { RwLock::new(HashMap::new()) };
+}
+
+fn to_schema(schema: &PySchema) -> PyResult<Schema> {
+    // TODO
+    println!("pyschema = {:#?}", schema);
+    Ok(Schema::None)
+}
+
+pub fn register_py_schema(key: u64, schema: &PySchema) -> PyResult<()> {
+    println!("register python type: key={}, schema={:?}", key, schema);
+    Ok(register_schema(key, to_schema(schema)?))
+}
+
+pub fn register_schema(key: u64, schema: Schema) {
+    SCHEMA_REGISTRY
+        .write()
+        .unwrap()
+        .insert(key, Arc::new(schema));
+}
+
+pub fn get_schema(key: u64) -> Option<Arc<Schema>> {
+    SCHEMA_REGISTRY.read().unwrap().get(&key).map(|v| v.clone())
 }
 
 // #[derive(Debug, Clone, Copy)]

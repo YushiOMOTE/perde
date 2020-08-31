@@ -289,6 +289,7 @@ dependencies = [
 name = "perde"
 version = "0.1.0"
 dependencies = [
+ "lazy_static",
  "pyo3",
  "rayon",
  "rmp-serde",

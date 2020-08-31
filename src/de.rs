@@ -1,5 +1,8 @@
 use crate::{types::Object, util::*};
-use pyo3::{prelude::*, types::PyDict};
+use pyo3::{
+    prelude::*,
+    types::{PyDict, PyType},
+};
 use serde::{
     de::{self, Deserializer, Error, MapAccess, Visitor},
     Deserialize,
