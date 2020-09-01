@@ -1,7 +1,6 @@
 import perde
 
 from typing_inspect import get_origin, get_args
-from perde import Schema
 from dataclasses import dataclass, fields, is_dataclass, field
 from typing import Dict, TypeVar, Union, List, Tuple
 

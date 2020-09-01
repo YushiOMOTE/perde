@@ -13,3 +13,11 @@ pub fn pyerr<E: ToString>(e: E) -> PyErr {
         PyErr::new::<exceptions::RuntimeError, _>(e.to_string())
     }
 }
+
+pub fn de<E>(e: PyErr) -> E
+where
+    E: serde_state::de::Error,
+{
+    e.restore(py());
+    serde_state::de::Error::custom("Python error")
+}

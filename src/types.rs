@@ -61,12 +61,6 @@ fn type_kind(cls: &PyType) -> PyResult<TypeKind> {
     })
 }
 
-fn is_dict(cls: &PyType) -> PyResult<bool> {
-    let dataclasses = PyModule::import(py(), "typing_inspect")?;
-    let p = dataclasses.call1("get_origin", (cls,))?;
-    Ok(py().is_instance::<PyDict, _>(p)?)
-}
-
 fn is_dataclass(cls: &PyType) -> PyResult<bool> {
     let dataclasses = PyModule::import(py(), "dataclasses")?;
     Ok(dataclasses.call1("is_dataclass", (cls,))?.extract()?)

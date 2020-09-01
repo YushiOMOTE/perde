@@ -12,16 +12,11 @@ use serde_state::{
 };
 use std::fmt;
 
-fn restore<T: Error>(e: PyErr) -> T {
-    e.restore(py());
-    Error::custom("Unknown python error on deserialization")
-}
-
 struct ObjectVisitor<'a, 'b>(&'b mut SchemaStack<'a>);
 
 impl<'a, 'b> ObjectVisitor<'a, 'b> {
     fn value<E: de::Error>(&self, args: impl IntoPy<Py<PyTuple>>) -> Result<Object, E> {
-        self.0.current().call(args, None).map_err(restore)
+        self.0.current().call(args, None).map_err(de)
     }
 }
 
@@ -187,7 +182,7 @@ impl<'a, 'b, 'de> Visitor<'de> for ObjectVisitor<'a, 'b> {
 
         match &self.0.current().kind {
             TypeKind::Dict => loop {
-                self.0.push_by_index(0).map_err(restore)?;
+                self.0.push_by_index(0).map_err(de)?;
                 let key: Object = match access.next_key_seed(Seed::new(&mut *self.0))? {
                     Some(key) => key,
                     None => {
@@ -197,28 +192,28 @@ impl<'a, 'b, 'de> Visitor<'de> for ObjectVisitor<'a, 'b> {
                 };
                 self.0.pop();
 
-                self.0.push_by_index(1).map_err(restore)?;
+                self.0.push_by_index(1).map_err(de)?;
                 let value: Object = access.next_value_seed(Seed::new(&mut *self.0))?;
                 self.0.pop();
 
                 dict.set_item(key.to_pyobj(), value.to_pyobj())
-                    .map_err(restore)?;
+                    .map_err(de)?;
             },
             TypeKind::Class => {
                 while let Some(key) = access.next_key()? {
                     let key: String = key;
 
-                    self.0.push_by_name(&key).map_err(restore)?;
+                    self.0.push_by_name(&key).map_err(de)?;
                     let value: Object = access.next_value_seed(Seed::new(&mut *self.0))?;
                     self.0.pop();
 
-                    dict.set_item(key, value.to_pyobj()).map_err(restore)?;
+                    dict.set_item(key, value.to_pyobj()).map_err(de)?;
                 }
             }
             kind => unreachable!("The type kind must be dict or class; got {:?}", kind),
         }
 
-        Ok(self.0.current().call((), Some(dict)).map_err(restore)?)
+        Ok(self.0.current().call((), Some(dict)).map_err(de)?)
     }
 
     fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
@@ -229,7 +224,7 @@ impl<'a, 'b, 'de> Visitor<'de> for ObjectVisitor<'a, 'b> {
 
         match &self.0.current().kind {
             TypeKind::List => loop {
-                self.0.push_by_index(0).map_err(restore)?;
+                self.0.push_by_index(0).map_err(de)?;
                 let value: Object = match seq.next_element_seed(Seed::new(&mut *self.0))? {
                     Some(value) => value,
                     None => {
@@ -246,7 +241,7 @@ impl<'a, 'b, 'de> Visitor<'de> for ObjectVisitor<'a, 'b> {
                 let len = self.0.current().args.len();
 
                 loop {
-                    self.0.push_by_index(index.min(len - 1)).map_err(restore)?;
+                    self.0.push_by_index(index.min(len - 1)).map_err(de)?;
                     let value: Object = match seq.next_element_seed(Seed::new(&mut *self.0))? {
                         Some(value) => value,
                         None => {
@@ -264,7 +259,7 @@ impl<'a, 'b, 'de> Visitor<'de> for ObjectVisitor<'a, 'b> {
             kind => unreachable!("The type kind must be list or tuple; got {:?}", kind),
         }
 
-        Ok(self.0.current().call((items,), None).map_err(restore)?)
+        Ok(self.0.current().call((items,), None).map_err(de)?)
     }
 }
 
