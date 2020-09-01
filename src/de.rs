@@ -1,5 +1,5 @@
 use crate::{
-    types::{Object, SchemaStack},
+    types::{Object, SchemaStack, TypeKind},
     util::*,
 };
 use pyo3::{
@@ -7,7 +7,7 @@ use pyo3::{
     types::{PyDict, PyTuple},
 };
 use serde_state::{
-    de::{self, Deserializer, Error, MapAccess, Seed, Visitor},
+    de::{self, Deserializer, Error, MapAccess, Seed, SeqAccess, Visitor},
     DeserializeState,
 };
 use std::fmt;
@@ -21,10 +21,7 @@ struct ObjectVisitor<'a, 'b>(&'b mut SchemaStack<'a>);
 
 impl<'a, 'b> ObjectVisitor<'a, 'b> {
     fn value<E: de::Error>(&self, args: impl IntoPy<Py<PyTuple>>) -> Result<Object, E> {
-        self.0
-            .current()
-            .and_then(|s| s.call(args, None))
-            .map_err(restore)
+        self.0.current().call(args, None).map_err(restore)
     }
 }
 
@@ -188,21 +185,86 @@ impl<'a, 'b, 'de> Visitor<'de> for ObjectVisitor<'a, 'b> {
     {
         let dict = PyDict::new(py());
 
-        while let Some(key) = access.next_key()? {
-            let key: String = key;
+        match &self.0.current().kind {
+            TypeKind::Dict => loop {
+                self.0.push_by_index(0).map_err(restore)?;
+                let key: Object = match access.next_key_seed(Seed::new(&mut *self.0))? {
+                    Some(key) => key,
+                    None => {
+                        self.0.pop();
+                        break;
+                    }
+                };
+                self.0.pop();
 
-            self.0.push_by_name(&key).map_err(restore)?;
-            let value: Object = access.next_value_seed(Seed::new(&mut *self.0))?;
-            self.0.pop();
+                self.0.push_by_index(1).map_err(restore)?;
+                let value: Object = access.next_value_seed(Seed::new(&mut *self.0))?;
+                self.0.pop();
 
-            dict.set_item(key, value.to_pyobj()).map_err(restore)?;
+                dict.set_item(key.to_pyobj(), value.to_pyobj())
+                    .map_err(restore)?;
+            },
+            TypeKind::Class => {
+                while let Some(key) = access.next_key()? {
+                    let key: String = key;
+
+                    self.0.push_by_name(&key).map_err(restore)?;
+                    let value: Object = access.next_value_seed(Seed::new(&mut *self.0))?;
+                    self.0.pop();
+
+                    dict.set_item(key, value.to_pyobj()).map_err(restore)?;
+                }
+            }
+            kind => unreachable!("The type kind must be dict or class; got {:?}", kind),
         }
 
-        Ok(self
-            .0
-            .current()
-            .and_then(|s| s.call((), Some(dict)))
-            .map_err(restore)?)
+        Ok(self.0.current().call((), Some(dict)).map_err(restore)?)
+    }
+
+    fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
+    where
+        A: SeqAccess<'de>,
+    {
+        let mut items = Vec::new();
+
+        match &self.0.current().kind {
+            TypeKind::List => loop {
+                self.0.push_by_index(0).map_err(restore)?;
+                let value: Object = match seq.next_element_seed(Seed::new(&mut *self.0))? {
+                    Some(value) => value,
+                    None => {
+                        self.0.pop();
+                        break;
+                    }
+                };
+                self.0.pop();
+
+                items.push(value.to_pyobj());
+            },
+            TypeKind::Tuple => {
+                let mut index = 0;
+                let len = self.0.current().args.len();
+
+                loop {
+                    self.0.push_by_index(index.min(len - 1)).map_err(restore)?;
+                    let value: Object = match seq.next_element_seed(Seed::new(&mut *self.0))? {
+                        Some(value) => value,
+                        None => {
+                            self.0.pop();
+                            break;
+                        }
+                    };
+                    self.0.pop();
+
+                    index += 1;
+
+                    items.push(value.to_pyobj());
+                }
+            }
+            kind => unreachable!("The type kind must be list or tuple; got {:?}", kind),
+        }
+
+        Ok(self.0.current().call((items,), None).map_err(restore)?)
     }
 }
 

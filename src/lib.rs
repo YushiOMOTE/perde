@@ -14,7 +14,7 @@ macro_rules! load {
         #[cfg(feature = $a)]
         #[pyfunction]
         pub fn $f(ty: &PyAny, s: &str) -> PyResult<PyObject> {
-            let schema: Schema = ty.getattr("__schema__")?.extract()?;
+            let schema = Schema::resolve(ty)?;
 
             println!("{:#?}", schema);
 
@@ -27,7 +27,7 @@ macro_rules! load {
     };
 }
 
-load!("json", json_load, serde_json);
+load!("json", load_as, serde_json);
 // load!("yaml", yaml_load, serde_yaml);
 // load!("toml", toml_load, serde_toml);
 
@@ -43,7 +43,7 @@ fn perde(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
     m.add_class::<Schema>()?;
 
     #[cfg(feature = "json")]
-    m.add_wrapped(wrap_pyfunction!(json_load))?;
+    m.add_wrapped(wrap_pyfunction!(load_as))?;
     // #[cfg(feature = "yaml")]
     // m.add_wrapped(wrap_pyfunction!(yaml_load))?;
     // #[cfg(feature = "toml")]
