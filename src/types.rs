@@ -3,6 +3,7 @@ use pyo3::{
     prelude::*,
     types::{PyDict, PyModule, PyTuple, PyType},
 };
+use serde::de;
 use std::collections::HashMap;
 
 pub struct Object {
@@ -39,6 +40,8 @@ pub enum TypeKind {
     Bool,
     /// int -> deserialize_i64
     Int,
+    /// float -> deserialize_f64
+    Float,
     /// str -> deserialize_str
     Str,
     /// bytes, bytearray -> deserialize_bytes
@@ -66,6 +69,7 @@ impl std::str::FromStr for TypeKind {
         match s {
             "bool" => Ok(Self::Bool),
             "int" => Ok(Self::Int),
+            "float" => Ok(Self::Float),
             "str" => Ok(Self::Str),
             "bytes" | "bytearray" => Ok(Self::Bytes),
             "list" => Ok(Self::List),
@@ -123,12 +127,24 @@ impl Schema {
         })
     }
 
-    pub fn call(
-        &self,
-        args: impl IntoPy<Py<PyTuple>>,
-        kwargs: Option<&PyDict>,
-    ) -> PyResult<Object> {
-        Ok(Object::new(self.cls.as_ref(py()).call(args, kwargs)?))
+    pub fn call<E>(&self, args: impl IntoPy<Py<PyTuple>>) -> Result<Object, E>
+    where
+        E: de::Error,
+    {
+        Ok(Object::new(
+            self.cls.as_ref(py()).call(args, None).map_err(de)?,
+        ))
+    }
+
+    pub fn call_kw<E>(&self, kwargs: Vec<(PyObject, PyObject)>) -> Result<Object, E>
+    where
+        E: de::Error,
+    {
+        let dict = PyDict::from_sequence(py(), kwargs.into_py(py())).map_err(de)?;
+
+        Ok(Object::new(
+            self.cls.as_ref(py()).call((), Some(&dict)).map_err(de)?,
+        ))
     }
 
     pub fn resolve(ty: &PyAny) -> PyResult<Self> {
@@ -161,22 +177,30 @@ impl<'a> SchemaStack<'a> {
         *self.stack.last().expect("Empty schema stack")
     }
 
-    pub fn push_by_name(&mut self, name: &str) -> PyResult<()> {
+    pub fn push_by_name<E>(&mut self, name: &str) -> Result<(), E>
+    where
+        E: de::Error,
+    {
         let cur = self.stack.last().expect("Empty schema stack");
         let next = cur
             .kwargs
             .get(name)
-            .ok_or_else(|| pyerr(format!("Couldn't find field with name: {}", name)))?;
+            .ok_or_else(|| pyerr(format!("Couldn't find field with name: {}", name)))
+            .map_err(de)?;
         self.stack.push(next);
         Ok(())
     }
 
-    pub fn push_by_index(&mut self, index: usize) -> PyResult<()> {
+    pub fn push_by_index<E>(&mut self, index: usize) -> Result<(), E>
+    where
+        E: de::Error,
+    {
         let cur = self.stack.last().expect("Empty schema stack");
         let next = cur
             .args
             .get(index)
-            .ok_or_else(|| pyerr(format!("Couldn't find field with index: {}", index)))?;
+            .ok_or_else(|| pyerr(format!("Couldn't find field with index: {}", index)))
+            .map_err(de)?;
         self.stack.push(next);
         Ok(())
     }

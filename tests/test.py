@@ -1,8 +1,13 @@
 import perde
-
+import enum
 from typing_inspect import get_origin, get_args
 from dataclasses import dataclass, fields, is_dataclass, field
 from typing import Dict, TypeVar, Union, List, Tuple
+
+class E(enum.Enum):
+    X = 1
+    Y = "hage"
+    Z = 3
 
 @dataclass
 class C:
@@ -19,5 +24,10 @@ class A:
     name: int
     value: B
 
+@dataclass
+class X:
+    some: Union[int, str]
+
 print(perde.load_as(C, '{"key": 3, "value": "ok"}'))
 print(perde.load_as(A, '{"name": 3, "value": {"label": "hage", "tag": {"10": ["a",{"key": 333, "value": "hey"},5]}}}'))
+# print(perde.load_as(X, '{"some": "3"}'))

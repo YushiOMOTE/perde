@@ -13,7 +13,7 @@ def to_schema(t: TypeVar):
         return to_generic(t)
     if issubclass(t, Enum):
         return to_enum(t)
-    if issubclass(t, (bool, int, str, bytes, bytearray)):
+    if issubclass(t, (bool, int, float, str, bytes, bytearray)):
         return to_simple(t)
     else:
         raise TypeError(f'Unsupported type {t}')
@@ -30,17 +30,20 @@ def is_generic(t: TypeVar):
 
 def to_generic(t: TypeVar):
     args = [to_schema(arg) for arg in get_args(t)]
-    ty = get_origin(t)
     if is_optional_type(t):
+        ty = type(None)
         name = "option"
     elif is_union_type(t):
+        ty = type(None)
         name = "union"
     else:
+        ty = get_origin(t)
         name = ty.__name__
+    print(f'type == {ty}')
     return Schema(ty, name, args, {}, [])
 
 def to_enum(t: TypeVar):
-    fs = [(k, to_schema(type(v))) for k, v in t]
+    fs = dict([(f.name, to_schema(type(f.value))) for f in t])
     return Schema(t, "enum", [], fs, [])
 
 def to_class(t: TypeVar):
