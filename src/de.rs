@@ -264,13 +264,22 @@ impl<'a, 'b, 'de> Visitor<'de> for ObjectVisitor<'a, 'b> {
 }
 
 impl<'a, 'de> DeserializeState<'de, SchemaStack<'a>> for Object {
-    fn deserialize_state<'b, D>(
-        seed: &'b mut SchemaStack<'a>,
-        deserializer: D,
-    ) -> Result<Self, D::Error>
+    fn deserialize_state<'b, D>(stack: &'b mut SchemaStack<'a>, de: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
     {
-        deserializer.deserialize_any(ObjectVisitor(seed))
+        match stack.current().kind {
+            TypeKind::Bool => de.deserialize_bool(ObjectVisitor(stack)),
+            TypeKind::Int => de.deserialize_i64(ObjectVisitor(stack)),
+            TypeKind::Str => de.deserialize_str(ObjectVisitor(stack)),
+            TypeKind::Bytes => de.deserialize_bytes(ObjectVisitor(stack)),
+            TypeKind::List => de.deserialize_seq(ObjectVisitor(stack)),
+            TypeKind::Tuple => de.deserialize_seq(ObjectVisitor(stack)),
+            TypeKind::Dict => de.deserialize_map(ObjectVisitor(stack)),
+            TypeKind::Class => de.deserialize_map(ObjectVisitor(stack)),
+            TypeKind::Enum => unimplemented!(),
+            TypeKind::Option => de.deserialize_option(ObjectVisitor(stack)),
+            TypeKind::Union => unimplemented!(),
+        }
     }
 }
