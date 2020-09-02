@@ -1,7 +1,7 @@
 use crate::util::*;
 use pyo3::{
     prelude::*,
-    types::{PyDict, PyList, PyModule, PyTuple, PyType},
+    types::{PyDict, PyModule, PyTuple, PyType},
 };
 use std::collections::HashMap;
 
@@ -35,45 +35,59 @@ impl From<Object> for PyObject {
 
 #[derive(Clone, Debug)]
 pub enum TypeKind {
-    Primitive,
-    Class,
-    Dict,
+    /// bool -> deserialize_bool
+    Bool,
+    /// int -> deserialize_i64
+    Int,
+    /// str -> deserialize_str
+    Str,
+    /// bytes, bytearray -> deserialize_bytes
+    Bytes,
+    /// list, set, frozenset -> deserialize_seq
     List,
+    /// tuple -> deserialize_tuple
     Tuple,
+    /// dict -> deserialize_map
+    Dict,
+    /// dataclass -> deserialize_map
+    Class,
+    /// enum.Enum -> deserialize_enum
+    Enum,
+    /// typing.Optional -> deserialize_option
+    Option,
+    /// typing.Union -> deserialize_enum
+    Union,
 }
 
-fn type_kind(cls: &PyType) -> PyResult<TypeKind> {
-    Ok(if is_dataclass(cls)? {
-        println!("{} is Class", cls.name());
-        TypeKind::Class
-    } else if cls.is_subclass::<PyDict>()? {
-        println!("{} is Dict", cls.name());
-        TypeKind::Dict
-    } else if cls.is_subclass::<PyTuple>()? {
-        println!("{} is Typle", cls.name());
-        TypeKind::Tuple
-    } else if cls.is_subclass::<PyList>()? {
-        println!("{} is List", cls.name());
-        TypeKind::List
-    } else {
-        println!("{} is Primitive", cls.name());
-        TypeKind::Primitive
-    })
-}
+impl std::str::FromStr for TypeKind {
+    type Err = PyErr;
 
-fn is_dataclass(cls: &PyType) -> PyResult<bool> {
-    let dataclasses = PyModule::import(py(), "dataclasses")?;
-    Ok(dataclasses.call1("is_dataclass", (cls,))?.extract()?)
+    fn from_str(s: &str) -> PyResult<Self> {
+        match s {
+            "bool" => Ok(Self::Bool),
+            "int" => Ok(Self::Int),
+            "str" => Ok(Self::Str),
+            "bytes" | "bytearray" => Ok(Self::Bytes),
+            "list" => Ok(Self::List),
+            "tuple" => Ok(Self::Tuple),
+            "dict" => Ok(Self::Dict),
+            "class" => Ok(Self::Class),
+            "enum" => Ok(Self::Enum),
+            "option" => Ok(Self::Option),
+            "union" => Ok(Self::Union),
+            t => Err(pyerr(format!("Unsupported type: {}", t))),
+        }
+    }
 }
 
 #[pyclass]
 #[derive(Clone, Debug)]
 pub struct Schema {
     pub cls: Py<PyType>,
+    pub kind: TypeKind,
     pub args: Vec<Schema>,
     pub kwargs: HashMap<String, Schema>,
     pub attr: Vec<String>,
-    pub kind: TypeKind,
 }
 
 #[pymethods]
@@ -81,29 +95,31 @@ impl Schema {
     #[new]
     fn new_(
         cls: Py<PyType>,
+        kind: &str,
         args: Vec<Schema>,
         kwargs: HashMap<String, Schema>,
         attr: Vec<String>,
     ) -> PyResult<Self> {
-        Self::new(cls, args, kwargs, attr)
+        Self::new(cls, kind, args, kwargs, attr)
     }
 }
 
 impl Schema {
     fn new(
         cls: Py<PyType>,
+        kind: &str,
         args: Vec<Schema>,
         kwargs: HashMap<String, Schema>,
         attr: Vec<String>,
     ) -> PyResult<Self> {
-        let kind = type_kind(cls.as_ref(py()))?;
+        let kind = kind.parse()?;
 
         Ok(Self {
             cls,
+            kind,
             args,
             kwargs,
             attr,
-            kind,
         })
     }
 
@@ -123,40 +139,7 @@ impl Schema {
     }
 
     fn walk(ty: &PyAny) -> PyResult<Self> {
-        let module = PyModule::from_code(
-            py(),
-            r#"
-from typing_inspect import get_origin, get_args
-from perde import Schema
-from dataclasses import dataclass, fields, is_dataclass, field
-from typing import Dict, TypeVar, Union, List
-
-def to_field(f: TypeVar):
-    print(get_origin(f))
-    if is_dataclass(f):
-        return to_class(f)
-    elif get_origin(f) is not None:
-        return to_generic(f)
-    else:
-        return Schema(f, [], {}, [])
-
-def to_generic(d: TypeVar):
-    args = [to_field(arg) for arg in get_args(d)]
-    return Schema(get_origin(d), args, {}, [])
-
-def to_primitive(d: TypeVar):
-    return Schema(d, [], {}, [])
-
-def to_class(d: TypeVar):
-    fs = dict([(f.name, to_field(f.type)) for f in fields(d)])
-    return Schema(d, [], fs, [])
-
-def to_schema(d: TypeVar):
-    return to_field(d)
-"#,
-            "walk.py",
-            "walk",
-        )?;
+        let module = PyModule::from_code(py(), include_str!("walk.py"), "walk.py", "walk")?;
 
         Ok(module.call1("to_schema", (ty,))?.extract()?)
     }
