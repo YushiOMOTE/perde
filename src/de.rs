@@ -178,42 +178,49 @@ impl<'a, 'b, 'de> Visitor<'de> for ObjectVisitor<'a, 'b> {
     where
         M: MapAccess<'de>,
     {
-        let dict = PyDict::new(py());
+        let mut args = Vec::new();
 
         match &self.0.current().kind {
             TypeKind::Dict => loop {
                 self.0.push_by_index(0).map_err(de)?;
-                let key: Object = match access.next_key_seed(Seed::new(&mut *self.0))? {
+                let key = access.next_key_seed(Seed::new(&mut *self.0))?;
+                self.0.pop();
+
+                let key: Object = match key {
                     Some(key) => key,
                     None => {
-                        self.0.pop();
                         break;
                     }
                 };
-                self.0.pop();
 
                 self.0.push_by_index(1).map_err(de)?;
                 let value: Object = access.next_value_seed(Seed::new(&mut *self.0))?;
                 self.0.pop();
 
-                dict.set_item(key.to_pyobj(), value.to_pyobj())
-                    .map_err(de)?;
+                args.push((key.to_pyobj(), value.to_pyobj()));
             },
             TypeKind::Class => {
                 while let Some(key) = access.next_key()? {
-                    let key: String = key;
+                    let key: &str = key;
 
-                    self.0.push_by_name(&key).map_err(de)?;
+                    self.0.push_by_name(key).map_err(de)?;
                     let value: Object = access.next_value_seed(Seed::new(&mut *self.0))?;
                     self.0.pop();
 
-                    dict.set_item(key, value.to_pyobj()).map_err(de)?;
+                    args.push((key.into_py(py()), value.to_pyobj()));
                 }
             }
             kind => unreachable!("The type kind must be dict or class; got {:?}", kind),
         }
 
-        Ok(self.0.current().call((), Some(dict)).map_err(de)?)
+        Ok(self
+            .0
+            .current()
+            .call(
+                (),
+                Some(PyDict::from_sequence(py(), args.into_py(py())).map_err(de)?),
+            )
+            .map_err(de)?)
     }
 
     fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
@@ -225,14 +232,15 @@ impl<'a, 'b, 'de> Visitor<'de> for ObjectVisitor<'a, 'b> {
         match &self.0.current().kind {
             TypeKind::List => loop {
                 self.0.push_by_index(0).map_err(de)?;
-                let value: Object = match seq.next_element_seed(Seed::new(&mut *self.0))? {
+                let value = seq.next_element_seed(Seed::new(&mut *self.0))?;
+                self.0.pop();
+
+                let value: Object = match value {
                     Some(value) => value,
                     None => {
-                        self.0.pop();
                         break;
                     }
                 };
-                self.0.pop();
 
                 items.push(value.to_pyobj());
             },
@@ -242,14 +250,15 @@ impl<'a, 'b, 'de> Visitor<'de> for ObjectVisitor<'a, 'b> {
 
                 loop {
                     self.0.push_by_index(index.min(len - 1)).map_err(de)?;
-                    let value: Object = match seq.next_element_seed(Seed::new(&mut *self.0))? {
+                    let value = seq.next_element_seed(Seed::new(&mut *self.0))?;
+                    self.0.pop();
+
+                    let value: Object = match value {
                         Some(value) => value,
                         None => {
-                            self.0.pop();
                             break;
                         }
                     };
-                    self.0.pop();
 
                     index += 1;
 
