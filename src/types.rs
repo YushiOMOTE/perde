@@ -84,6 +84,50 @@ impl std::str::FromStr for TypeKind {
     }
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum StrCase {
+    SnakeCase,
+    CamelCase,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Attr {
+    RenameAll(StrCase),
+    Rename(String),
+    Skip,
+    Flatten,
+}
+
+fn parse_attr(s: &[String]) -> PyResult<Vec<Attr>> {
+    let attrs = s
+        .iter()
+        .filter_map(|s| match s.as_ref() {
+            "flatten" => Some(Attr::Flatten),
+            _ => None,
+        })
+        .collect();
+    Ok(attrs)
+}
+
+fn collect_flatten_args(schema: &Schema) -> HashMap<String, Schema> {
+    let mut args = HashMap::new();
+
+    for (name, subschema) in &schema.kwargs {
+        if subschema.is_flatten() {
+            let subargs = collect_flatten_args(subschema);
+            args.extend(subargs);
+        } else {
+            args.insert(name.into(), subschema.clone());
+        }
+    }
+
+    args
+}
+
+pub fn has_flatten(s: &Schema) -> bool {
+    s.kwargs.iter().find(|(_, s)| s.is_flatten()).is_some()
+}
+
 #[pyclass]
 #[derive(Clone, Debug)]
 pub struct Schema {
@@ -91,7 +135,8 @@ pub struct Schema {
     pub kind: TypeKind,
     pub args: Vec<Schema>,
     pub kwargs: HashMap<String, Schema>,
-    pub attr: Vec<String>,
+    pub attr: Vec<Attr>,
+    pub flatten_args: HashMap<String, Schema>,
 }
 
 #[pymethods]
@@ -117,14 +162,29 @@ impl Schema {
         attr: Vec<String>,
     ) -> PyResult<Self> {
         let kind = kind.parse()?;
-
-        Ok(Self {
+        let attr = parse_attr(&attr)?;
+        let mut schema = Self {
             cls,
             kind,
             args,
             kwargs,
             attr,
-        })
+            flatten_args: HashMap::new(),
+        };
+
+        if has_flatten(&schema) {
+            schema.flatten_args = collect_flatten_args(&schema);
+        }
+
+        Ok(schema)
+    }
+
+    pub fn is_flatten(&self) -> bool {
+        self.attr.iter().find(|a| **a == Attr::Flatten).is_some()
+    }
+
+    pub fn has_flatten(&self) -> bool {
+        !self.flatten_args.is_empty()
     }
 
     pub fn call<E>(&self, args: impl IntoPy<Py<PyTuple>>) -> Result<Object, E>
@@ -141,6 +201,37 @@ impl Schema {
         E: de::Error,
     {
         let dict = PyDict::from_sequence(py(), kwargs.into_py(py())).map_err(de)?;
+
+        Ok(Object::new(
+            self.cls.as_ref(py()).call((), Some(&dict)).map_err(de)?,
+        ))
+    }
+
+    pub fn call_flatten<'a, 'b, E>(
+        &self,
+        flatten_args: &'a mut HashMap<&'b str, PyObject>,
+    ) -> Result<Object, E>
+    where
+        E: de::Error,
+    {
+        let kwargs: Result<Vec<_>, _> = self
+            .kwargs
+            .iter()
+            .map(|(k, schema)| {
+                if schema.is_flatten() {
+                    self.call_flatten(flatten_args)
+                        .map(|v| (k.to_object(py()), v.to_pyobj()))
+                } else {
+                    let k: &str = k.as_ref();
+                    match flatten_args.remove(k) {
+                        Some(v) => Ok((k.to_object(py()), v)),
+                        None => Err(de::Error::custom(format!("missing field \"{}\"", k))),
+                    }
+                }
+            })
+            .collect();
+
+        let dict = PyDict::from_sequence(py(), kwargs?.into_py(py())).map_err(de)?;
 
         Ok(Object::new(
             self.cls.as_ref(py()).call((), Some(&dict)).map_err(de)?,
@@ -182,8 +273,12 @@ impl<'a> SchemaStack<'a> {
         E: de::Error,
     {
         let cur = self.stack.last().expect("Empty schema stack");
-        let next = cur
-            .kwargs
+        let map = if cur.has_flatten() {
+            &cur.flatten_args
+        } else {
+            &cur.kwargs
+        };
+        let next = map
             .get(name)
             .ok_or_else(|| pyerr(format!("Couldn't find field with name: {}", name)))
             .map_err(de)?;

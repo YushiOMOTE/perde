@@ -10,7 +10,7 @@ use serde_state::{
     de::{self, Deserializer, EnumAccess, Error, MapAccess, Seed, SeqAccess, Unexpected, Visitor},
     DeserializeState,
 };
-use std::fmt;
+use std::{collections::HashMap, fmt};
 
 struct DictVisitor<'a, 'b>(&'b mut SchemaStack<'a>);
 
@@ -63,7 +63,7 @@ impl<'a, 'b, 'de> Visitor<'de> for ClassVisitor<'a, 'b> {
     where
         M: MapAccess<'de>,
     {
-        let mut args = Vec::new();
+        let mut args = HashMap::new();
 
         while let Some(key) = access.next_key()? {
             let key: &str = key;
@@ -72,10 +72,18 @@ impl<'a, 'b, 'de> Visitor<'de> for ClassVisitor<'a, 'b> {
             let value: Object = access.next_value_seed(Seed::new(&mut *self.0))?;
             self.0.pop();
 
-            args.push((key.into_py(py()), value.to_pyobj()));
+            args.insert(key, value.to_pyobj());
         }
 
-        Ok(self.0.current().call_kw(args)?)
+        if self.0.current().has_flatten() {
+            Ok(self.0.current().call_flatten(&mut args)?)
+        } else {
+            Ok(self.0.current().call_kw(
+                args.into_iter()
+                    .map(|(k, v)| (k.to_object(py()), v))
+                    .collect(),
+            )?)
+        }
     }
 }
 
@@ -629,7 +637,7 @@ impl<'a, 'b> EnumVisitor<'a, 'b> {
         E: Error,
     {
         match self.0.current().kwargs.iter().find(|(name, _)| *name == s) {
-            Some(v) => Ok(self
+            Some(_) => Ok(self
                 .0
                 .current()
                 .cls
