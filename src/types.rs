@@ -98,15 +98,27 @@ pub enum Attr {
     Flatten,
 }
 
-fn parse_attr(attrs: &HashMap<String, PyObject>) -> PyResult<Vec<Attr>> {
-    let attrs = attrs
-        .iter()
-        .filter_map(|(name, val)| match name.as_ref() {
-            "perde_flatten" => Some(Attr::Flatten),
-            _ => None,
-        })
-        .collect();
-    Ok(attrs)
+fn parse_field_attr(attrs: &HashMap<String, PyObject>) -> PyResult<FieldAttr> {
+    let mut attr = FieldAttr::default();
+
+    attrs.iter().for_each(|(name, _val)| match name.as_ref() {
+        "perde_flatten" => {
+            attr.flatten = true;
+        }
+        _ => {}
+    });
+
+    Ok(attr)
+}
+
+fn parse_container_attr(attrs: &HashMap<String, PyObject>) -> PyResult<ContainerAttr> {
+    let mut attr = ContainerAttr::default();
+
+    attrs.iter().for_each(|(name, _val)| match name {
+        _ => {}
+    });
+
+    Ok(attr)
 }
 
 fn collect_flatten_args(schema: &Schema) -> HashMap<String, Schema> {
@@ -125,7 +137,21 @@ fn collect_flatten_args(schema: &Schema) -> HashMap<String, Schema> {
 }
 
 pub fn has_flatten(s: &Schema) -> bool {
-    s.kwargs.iter().find(|(_, s)| s.is_flatten()).is_some()
+    s.kwargs
+        .iter()
+        .find(|(_, s)| s.field_attr.flatten)
+        .is_some()
+}
+
+#[derive(Clone, Debug, Default)]
+pub struct FieldAttr {
+    flatten: bool,
+}
+
+#[derive(Clone, Debug, Default)]
+pub struct ContainerAttr {
+    rename_all: Option<StrCase>,
+    rename: Option<String>,
 }
 
 #[pyclass]
@@ -135,7 +161,8 @@ pub struct Schema {
     pub kind: TypeKind,
     pub args: Vec<Schema>,
     pub kwargs: HashMap<String, Schema>,
-    pub attr: Vec<Attr>,
+    pub field_attr: FieldAttr,
+    pub container_attr: ContainerAttr,
     pub flatten_args: HashMap<String, Schema>,
 }
 
@@ -147,9 +174,9 @@ impl Schema {
         kind: &str,
         args: Vec<Schema>,
         kwargs: HashMap<String, Schema>,
-        attr: HashMap<String, PyObject>,
+        field_attr: HashMap<String, PyObject>,
     ) -> PyResult<Self> {
-        Self::new(cls, kind, args, kwargs, attr)
+        Self::new(cls, kind, args, kwargs, field_attr)
     }
 }
 
@@ -159,16 +186,23 @@ impl Schema {
         kind: &str,
         args: Vec<Schema>,
         kwargs: HashMap<String, Schema>,
-        attr: HashMap<String, PyObject>,
+        field_attr: HashMap<String, PyObject>,
     ) -> PyResult<Self> {
+        let container_attr = match cls.as_ref(py()).getattr("__perde_attr__") {
+            Ok(v) => v.extract()?,
+            Err(_) => HashMap::new(),
+        };
+
         let kind = kind.parse()?;
-        let attr = parse_attr(&attr)?;
+        let field_attr = parse_field_attr(&field_attr)?;
+        let container_attr = parse_container_attr(&container_attr)?;
         let mut schema = Self {
             cls,
             kind,
             args,
             kwargs,
-            attr,
+            field_attr,
+            container_attr,
             flatten_args: HashMap::new(),
         };
 
@@ -180,7 +214,7 @@ impl Schema {
     }
 
     pub fn is_flatten(&self) -> bool {
-        self.attr.iter().find(|a| **a == Attr::Flatten).is_some()
+        self.field_attr.flatten
     }
 
     pub fn has_flatten(&self) -> bool {
@@ -241,7 +275,7 @@ impl Schema {
     }
 
     pub fn resolve(ty: &PyAny) -> PyResult<Self> {
-        Ok(match ty.getattr("__schema__") {
+        Ok(match ty.getattr("__perde_schema__") {
             Ok(attr) => attr.extract()?,
             Err(_) => Schema::walk(ty)?,
         })
