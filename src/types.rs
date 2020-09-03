@@ -98,11 +98,11 @@ pub enum Attr {
     Flatten,
 }
 
-fn parse_attr(s: &[String]) -> PyResult<Vec<Attr>> {
-    let attrs = s
+fn parse_attr(attrs: &HashMap<String, PyObject>) -> PyResult<Vec<Attr>> {
+    let attrs = attrs
         .iter()
-        .filter_map(|s| match s.as_ref() {
-            "flatten" => Some(Attr::Flatten),
+        .filter_map(|(name, val)| match name.as_ref() {
+            "perde_flatten" => Some(Attr::Flatten),
             _ => None,
         })
         .collect();
@@ -147,7 +147,7 @@ impl Schema {
         kind: &str,
         args: Vec<Schema>,
         kwargs: HashMap<String, Schema>,
-        attr: Vec<String>,
+        attr: HashMap<String, PyObject>,
     ) -> PyResult<Self> {
         Self::new(cls, kind, args, kwargs, attr)
     }
@@ -159,7 +159,7 @@ impl Schema {
         kind: &str,
         args: Vec<Schema>,
         kwargs: HashMap<String, Schema>,
-        attr: Vec<String>,
+        attr: HashMap<String, PyObject>,
     ) -> PyResult<Self> {
         let kind = kind.parse()?;
         let attr = parse_attr(&attr)?;
@@ -214,12 +214,14 @@ impl Schema {
     where
         E: de::Error,
     {
+        println!("call_flatten={:?}", flatten_args);
         let kwargs: Result<Vec<_>, _> = self
             .kwargs
             .iter()
             .map(|(k, schema)| {
                 if schema.is_flatten() {
-                    self.call_flatten(flatten_args)
+                    schema
+                        .call_flatten(flatten_args)
                         .map(|v| (k.to_object(py()), v.to_pyobj()))
                 } else {
                     let k: &str = k.as_ref();

@@ -32,7 +32,25 @@ class X:
 class E:
     en: E
 
+@dataclass
+class FFF:
+    p: str
+    q: str
+
+@dataclass
+class FF:
+    a: int
+    b: FFF = field(metadata = {"perde_flatten": True})
+    c: int
+
+@dataclass
+class F:
+    x: int
+    y: int
+    z: FF = field(metadata = {"perde_flatten": True})
+
 print(perde.load_as(C, '{"key": 3, "value": "ok"}'))
 print(perde.load_as(A, '{"name": 3, "value": {"label": "hage", "tag": {"10": ["a",{"key": 333, "value": "hey"},5]}}}'))
 print(perde.load_as(X, '{"some": {"x": 3}}'))
 print(perde.load_as(E, '{"en": "Z"}'))
+print(perde.load_as(F, '{"x":1,"y":2,"a":3,"c":4,"p":"3","q":"4"}'))
