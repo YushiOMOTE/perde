@@ -139,17 +139,24 @@ pub fn has_flatten(s: &Schema) -> bool {
 #[derive(Clone, Debug, Default)]
 pub struct FieldAttr {
     flatten: bool,
+    rename: Option<String>,
 }
 
 fn parse_field_attr(attrs: &HashMap<String, PyObject>) -> PyResult<FieldAttr> {
     let mut attr = FieldAttr::default();
 
-    attrs.iter().for_each(|(name, _val)| match name.as_ref() {
-        "perde_flatten" => {
-            attr.flatten = true;
+    for (name, val) in attrs {
+        match name.as_ref() {
+            "perde_flatten" => {
+                attr.flatten = true;
+            }
+            "perde_rename" => {
+                let rename: &str = val.extract(py())?;
+                attr.rename = Some(rename.into());
+            }
+            _ => {}
         }
-        _ => {}
-    });
+    }
 
     Ok(attr)
 }
@@ -188,6 +195,7 @@ fn parse_container_attr(attrs: &HashMap<String, PyObject>) -> PyResult<Container
 pub struct Schema {
     pub cls: Py<PyType>,
     pub clsname: String,
+    pub argname: String,
     pub kind: TypeKind,
     pub args: Vec<Schema>,
     pub kwargs: HashMap<String, Schema>,
@@ -249,12 +257,25 @@ impl Schema {
             .unwrap_or_else(|| cls.as_ref(py()).name().into());
         let kwargs = kwargs
             .into_iter()
-            .map(|(k, v)| (convert_stringcase(&k, container_attr.rename_all), v))
+            .map(|(k, mut v)| {
+                (
+                    if let Some(rename) = v.field_attr.rename.as_ref() {
+                        rename.into()
+                    } else {
+                        convert_stringcase(&k, container_attr.rename_all)
+                    },
+                    {
+                        v.argname = k;
+                        v
+                    },
+                )
+            })
             .collect();
 
         let mut schema = Self {
             cls,
             clsname,
+            argname: "".into(),
             kind,
             args,
             kwargs,
@@ -309,16 +330,17 @@ impl Schema {
     where
         E: de::Error,
     {
-        let args: Result<Vec<_>, _> = self
+        let kwargs: Result<Vec<_>, _> = self
             .kwargs
             .iter()
             .map(|(k, schema)| {
+                let argname = schema.argname.to_object(py());
                 let k: &str = k.as_ref();
                 match map.remove(k) {
-                    Some(v) => Ok(v),
+                    Some(v) => Ok((argname, v)),
                     None => {
                         if self.container_attr.default {
-                            Ok(schema.call_default()?.to_pyobj())
+                            Ok((argname, schema.call_default()?.to_pyobj()))
                         } else {
                             Err(de::Error::custom(format!("missing field \"{}\"", k)))
                         }
@@ -327,9 +349,9 @@ impl Schema {
             })
             .collect();
 
-        let args = PyTuple::new(py(), args?);
+        let dict = PyDict::from_sequence(py(), kwargs?.into_py(py())).map_err(de)?;
         Ok(Object::new(
-            self.cls.as_ref(py()).call(args, None).map_err(de)?,
+            self.cls.as_ref(py()).call((), Some(&dict)).map_err(de)?,
         ))
     }
 
@@ -345,17 +367,19 @@ impl Schema {
             .kwargs
             .iter()
             .map(|(k, schema)| {
+                let argname = schema.argname.to_object(py());
+
                 if schema.is_flatten() {
                     schema
                         .call_flatten(flatten_args)
-                        .map(|v| (k.to_object(py()), v.to_pyobj()))
+                        .map(|v| (argname, v.to_pyobj()))
                 } else {
                     let k: &str = k.as_ref();
                     match flatten_args.remove(k) {
-                        Some(v) => Ok((k.to_object(py()), v)),
+                        Some(v) => Ok((argname, v)),
                         None => {
                             if self.container_attr.default {
-                                Ok((k.to_object(py()), schema.call_default()?.to_pyobj()))
+                                Ok((argname, schema.call_default()?.to_pyobj()))
                             } else {
                                 Err(de::Error::custom(format!("missing field \"{}\"", k)))
                             }
@@ -366,7 +390,6 @@ impl Schema {
             .collect();
 
         let dict = PyDict::from_sequence(py(), kwargs?.into_py(py())).map_err(de)?;
-
         Ok(Object::new(
             self.cls.as_ref(py()).call((), Some(&dict)).map_err(de)?,
         ))

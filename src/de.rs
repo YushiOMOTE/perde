@@ -77,7 +77,7 @@ impl<'a, 'b, 'de> Visitor<'de> for ClassVisitor<'a, 'b> {
 
                 args.insert(key, value.to_pyobj());
             } else {
-                let value: IgnoredAny = access.next_value()?;
+                let _: IgnoredAny = access.next_value()?;
             }
         }
 
