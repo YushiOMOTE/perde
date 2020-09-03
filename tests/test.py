@@ -92,6 +92,12 @@ class Skip:
     b: int
     c: int
 
+@dataclass
+class SkipDe:
+    a: int
+    b: int
+    c: int = field(metadata = {"perde_skip_deserializing": True})
+
 print(perde.load_as(C, '{"key": 3, "value": "ok"}'))
 print(perde.load_as(C, '{"key": 3, "value": "ok", "aa": 44}'))
 
@@ -111,4 +117,4 @@ print(perde.load_as(Def, '{"a": 3, "c": 1000}'))
 print(perde.load_as(Def2, '{"b": 3, "c": 1000}'))
 print(perde.load_as(RenameF, '{"a": 3, "kami": 100000, "c": 1000}'))
 print(perde.load_as(Skip, '{"a": 300, "b": 3, "c": 1000}'))
-
+print(perde.load_as(SkipDe, '{"a": 300, "b": 3, "c": 1000}'))

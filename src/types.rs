@@ -142,6 +142,7 @@ pub struct FieldAttr {
     rename: Option<String>,
     default: bool,
     skip: bool,
+    skip_deserializing: bool,
 }
 
 fn parse_field_attr(attrs: &HashMap<String, PyObject>) -> PyResult<FieldAttr> {
@@ -161,6 +162,9 @@ fn parse_field_attr(attrs: &HashMap<String, PyObject>) -> PyResult<FieldAttr> {
             }
             "perde_skip" => {
                 attr.skip = true;
+            }
+            "perde_skip_deserializing" => {
+                attr.skip_deserializing = true;
             }
             _ => {}
         }
@@ -350,6 +354,7 @@ impl Schema {
                         if self.container_attr.default
                             || schema.field_attr.default
                             || schema.field_attr.skip
+                            || schema.field_attr.skip_deserializing
                         {
                             Ok((argname, schema.call_default()?.to_pyobj()))
                         } else {
@@ -392,6 +397,7 @@ impl Schema {
                             if self.container_attr.default
                                 || schema.field_attr.default
                                 || schema.field_attr.skip
+                                || schema.field_attr.skip_deserializing
                             {
                                 Ok((argname, schema.call_default()?.to_pyobj()))
                             } else {
@@ -452,7 +458,7 @@ impl<'a> SchemaStack<'a> {
 
         let next = match map.get(name) {
             Some(next) => {
-                if next.field_attr.skip {
+                if next.field_attr.skip || next.field_attr.skip_deserializing {
                     return Ok(false);
                 }
                 next
