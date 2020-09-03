@@ -86,6 +86,12 @@ class RenameF:
     b: int = field(metadata = {"perde_rename": "kami"})
     c: int
 
+@dataclass
+class Skip:
+    a: int = field(metadata = {"perde_skip": True})
+    b: int
+    c: int
+
 print(perde.load_as(C, '{"key": 3, "value": "ok"}'))
 print(perde.load_as(C, '{"key": 3, "value": "ok", "aa": 44}'))
 
@@ -104,3 +110,5 @@ print(perde.load_as(R, '{"thisIsIt": 3, "overNight": "haa"}'))
 print(perde.load_as(Def, '{"a": 3, "c": 1000}'))
 print(perde.load_as(Def2, '{"b": 3, "c": 1000}'))
 print(perde.load_as(RenameF, '{"a": 3, "kami": 100000, "c": 1000}'))
+print(perde.load_as(Skip, '{"a": 300, "b": 3, "c": 1000}'))
+

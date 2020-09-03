@@ -141,6 +141,7 @@ pub struct FieldAttr {
     flatten: bool,
     rename: Option<String>,
     default: bool,
+    skip: bool,
 }
 
 fn parse_field_attr(attrs: &HashMap<String, PyObject>) -> PyResult<FieldAttr> {
@@ -157,6 +158,9 @@ fn parse_field_attr(attrs: &HashMap<String, PyObject>) -> PyResult<FieldAttr> {
             }
             "perde_default" => {
                 attr.default = true;
+            }
+            "perde_skip" => {
+                attr.skip = true;
             }
             _ => {}
         }
@@ -343,7 +347,10 @@ impl Schema {
                 match map.remove(k) {
                     Some(v) => Ok((argname, v)),
                     None => {
-                        if self.container_attr.default || schema.field_attr.default {
+                        if self.container_attr.default
+                            || schema.field_attr.default
+                            || schema.field_attr.skip
+                        {
                             Ok((argname, schema.call_default()?.to_pyobj()))
                         } else {
                             Err(de::Error::custom(format!("missing field \"{}\"", k)))
@@ -382,7 +389,10 @@ impl Schema {
                     match flatten_args.remove(k) {
                         Some(v) => Ok((argname, v)),
                         None => {
-                            if self.container_attr.default {
+                            if self.container_attr.default
+                                || schema.field_attr.default
+                                || schema.field_attr.skip
+                            {
                                 Ok((argname, schema.call_default()?.to_pyobj()))
                             } else {
                                 Err(de::Error::custom(format!("missing field \"{}\"", k)))
@@ -441,7 +451,12 @@ impl<'a> SchemaStack<'a> {
         };
 
         let next = match map.get(name) {
-            Some(next) => next,
+            Some(next) => {
+                if next.field_attr.skip {
+                    return Ok(false);
+                }
+                next
+            }
             None => {
                 if cur.container_attr.deny_unknown_fields {
                     return Err(de::Error::custom(format!("unknown field \"{}\"", name)));
