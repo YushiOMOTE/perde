@@ -118,3 +118,22 @@ print(perde.load_as(Def2, '{"b": 3, "c": 1000}'))
 print(perde.load_as(RenameF, '{"a": 3, "kami": 100000, "c": 1000}'))
 print(perde.load_as(Skip, '{"a": 300, "b": 3, "c": 1000}'))
 print(perde.load_as(SkipDe, '{"a": 300, "b": 3, "c": 1000}'))
+
+import timeit
+
+print(timeit.repeat('perde.load_as(C, \'{"key": 300, "value": "hoge"}\')', setup = '''
+import perde
+from dataclasses import dataclass
+
+print("setup")
+
+@dataclass
+class C:
+    key: int
+    value: str
+perde.load_as(C, \'{"key": 300, "value": "hoge"}\')
+''', number = 100000))
+
+import json
+
+print(timeit.repeat('json.loads(\'{"key": 300, "value": "hoge"}\')', setup = "import json", number = 100000))

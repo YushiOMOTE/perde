@@ -5,8 +5,6 @@ from typing import Dict, TypeVar, Union, List, Optional, Union
 from enum import Enum
 
 def to_schema(t: TypeVar, attr = {}):
-    print(f'type is {t}')
-    print(f'origin is {get_origin(t)}')
     if is_dataclass(t):
         return to_class(t, attr)
     if is_generic(t):
@@ -39,7 +37,6 @@ def to_generic(t: TypeVar, attr = {}):
     else:
         ty = get_origin(t)
         name = ty.__name__
-    print(f'type == {ty}')
     return Schema(ty, name, args, {}, attr)
 
 def to_enum(t: TypeVar, attr = {}):

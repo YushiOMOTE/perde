@@ -378,7 +378,6 @@ impl Schema {
     where
         E: de::Error,
     {
-        println!("call_flatten={:?}", flatten_args);
         let kwargs: Result<Vec<_>, _> = self
             .kwargs
             .iter()
@@ -418,7 +417,11 @@ impl Schema {
     pub fn resolve(ty: &PyAny) -> PyResult<Self> {
         Ok(match ty.getattr("__perde_schema__") {
             Ok(attr) => attr.extract()?,
-            Err(_) => Schema::walk(ty)?,
+            Err(_) => {
+                let schema = Schema::walk(ty)?;
+                ty.setattr("__perde_schema__", PyCell::new(py(), schema.clone())?)?;
+                schema
+            }
         })
     }
 

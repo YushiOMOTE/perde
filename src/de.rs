@@ -698,7 +698,6 @@ impl<'a, 'de> DeserializeState<'de, SchemaStack<'a>> for Object {
     where
         D: Deserializer<'de>,
     {
-        println!("Looking for {:?}", stack.current().kind);
         match stack.current().kind {
             TypeKind::Bool => de.deserialize_bool(BoolVisitor(stack)),
             TypeKind::Int => de.deserialize_i64(IntVisitor(stack)),

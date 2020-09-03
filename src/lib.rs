@@ -15,9 +15,6 @@ macro_rules! load {
         #[pyfunction]
         pub fn $f(ty: &PyAny, s: &str) -> PyResult<PyObject> {
             let schema = Schema::resolve(ty)?;
-
-            println!("{:#?}", schema);
-
             let mut stack = SchemaStack::new(&schema);
             let mut deserializer = $d::Deserializer::from_str(s);
             let obj: Object =
