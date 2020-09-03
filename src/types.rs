@@ -34,7 +34,7 @@ impl From<Object> for PyObject {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum TypeKind {
     /// bool -> deserialize_bool
     Bool,

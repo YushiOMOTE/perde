@@ -26,8 +26,13 @@ class A:
 
 @dataclass
 class X:
-    some: Union[int, str]
+    some: Union[int, Dict[str, int], C]
+
+@dataclass
+class E:
+    en: E
 
 print(perde.load_as(C, '{"key": 3, "value": "ok"}'))
 print(perde.load_as(A, '{"name": 3, "value": {"label": "hage", "tag": {"10": ["a",{"key": 333, "value": "hey"},5]}}}'))
-# print(perde.load_as(X, '{"some": "3"}'))
+print(perde.load_as(X, '{"some": {"x": 3}}'))
+print(perde.load_as(E, '{"en": "Z"}'))
