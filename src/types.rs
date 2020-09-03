@@ -159,6 +159,7 @@ pub struct ContainerAttr {
     rename_all: Option<StrCase>,
     rename: Option<String>,
     deny_unknown_fields: bool,
+    default: bool,
 }
 
 fn parse_container_attr(attrs: &HashMap<String, PyObject>) -> PyResult<ContainerAttr> {
@@ -172,6 +173,9 @@ fn parse_container_attr(attrs: &HashMap<String, PyObject>) -> PyResult<Container
             }
             "deny_unknown_fields" => {
                 attr.deny_unknown_fields = true;
+            }
+            "default" => {
+                attr.default = true;
             }
             _ => {}
         }
@@ -283,6 +287,13 @@ impl Schema {
         ))
     }
 
+    pub fn call_default<E>(&self) -> Result<Object, E>
+    where
+        E: de::Error,
+    {
+        Ok(Object::new(self.cls.as_ref(py()).call0().map_err(de)?))
+    }
+
     pub fn call_map<E>(&self, kwargs: Vec<(PyObject, PyObject)>) -> Result<Object, E>
     where
         E: de::Error,
@@ -305,7 +316,13 @@ impl Schema {
                 let k: &str = k.as_ref();
                 match map.remove(k) {
                     Some(v) => Ok(v),
-                    None => Err(de::Error::custom(format!("missing field \"{}\"", k))),
+                    None => {
+                        if self.container_attr.default {
+                            Ok(schema.call_default()?.to_pyobj())
+                        } else {
+                            Err(de::Error::custom(format!("missing field \"{}\"", k)))
+                        }
+                    }
                 }
             })
             .collect();
@@ -336,7 +353,13 @@ impl Schema {
                     let k: &str = k.as_ref();
                     match flatten_args.remove(k) {
                         Some(v) => Ok((k.to_object(py()), v)),
-                        None => Err(de::Error::custom(format!("missing field \"{}\"", k))),
+                        None => {
+                            if self.container_attr.default {
+                                Ok((k.to_object(py()), schema.call_default()?.to_pyobj()))
+                            } else {
+                                Err(de::Error::custom(format!("missing field \"{}\"", k)))
+                            }
+                        }
                     }
                 }
             })

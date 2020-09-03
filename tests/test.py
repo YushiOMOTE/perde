@@ -67,6 +67,13 @@ class R:
     this_is_it: int
     over_night: str
 
+@attr(default = True)
+@dataclass
+class Def:
+    a: int
+    b: int
+    c: int
+
 print(perde.load_as(C, '{"key": 3, "value": "ok"}'))
 print(perde.load_as(C, '{"key": 3, "value": "ok", "aa": 44}'))
 
@@ -82,3 +89,4 @@ print(perde.load_as(X, '{"some": {"x": 3}}'))
 print(perde.load_as(E, '{"en": "Z"}'))
 print(perde.load_as(F, '{"x":1,"y":2,"a":3,"c":4,"p":"3","q":"4"}'))
 print(perde.load_as(R, '{"thisIsIt": 3, "overNight": "haa"}'))
+print(perde.load_as(Def, '{"a": 3, "c": 1000}'))
