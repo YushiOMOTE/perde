@@ -75,6 +75,12 @@ class Def:
     c: int
 
 @dataclass
+class Def2:
+    a: int = field(metadata = {"perde_default": True})
+    b: int
+    c: int
+
+@dataclass
 class RenameF:
     a: int
     b: int = field(metadata = {"perde_rename": "kami"})
@@ -96,4 +102,5 @@ print(perde.load_as(E, '{"en": "Z"}'))
 print(perde.load_as(F, '{"x":1,"y":2,"a":3,"c":4,"p":"3","q":"4"}'))
 print(perde.load_as(R, '{"thisIsIt": 3, "overNight": "haa"}'))
 print(perde.load_as(Def, '{"a": 3, "c": 1000}'))
+print(perde.load_as(Def2, '{"b": 3, "c": 1000}'))
 print(perde.load_as(RenameF, '{"a": 3, "kami": 100000, "c": 1000}'))

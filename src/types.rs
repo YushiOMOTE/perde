@@ -140,6 +140,7 @@ pub fn has_flatten(s: &Schema) -> bool {
 pub struct FieldAttr {
     flatten: bool,
     rename: Option<String>,
+    default: bool,
 }
 
 fn parse_field_attr(attrs: &HashMap<String, PyObject>) -> PyResult<FieldAttr> {
@@ -153,6 +154,9 @@ fn parse_field_attr(attrs: &HashMap<String, PyObject>) -> PyResult<FieldAttr> {
             "perde_rename" => {
                 let rename: &str = val.extract(py())?;
                 attr.rename = Some(rename.into());
+            }
+            "perde_default" => {
+                attr.default = true;
             }
             _ => {}
         }
@@ -339,7 +343,7 @@ impl Schema {
                 match map.remove(k) {
                     Some(v) => Ok((argname, v)),
                     None => {
-                        if self.container_attr.default {
+                        if self.container_attr.default || schema.field_attr.default {
                             Ok((argname, schema.call_default()?.to_pyobj()))
                         } else {
                             Err(de::Error::custom(format!("missing field \"{}\"", k)))
