@@ -4,7 +4,7 @@ use pyo3::{
     types::{PyDict, PyModule, PyTuple, PyType},
 };
 use serde::de;
-use std::collections::HashMap;
+use std::{collections::HashMap, str::FromStr};
 
 pub struct Object {
     inner: PyObject,
@@ -86,39 +86,32 @@ impl std::str::FromStr for TypeKind {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum StrCase {
-    SnakeCase,
-    CamelCase,
+    Lower,
+    Upper,
+    Pascal,
+    Camel,
+    Snake,
+    ScreamingSnake,
+    Kebab,
+    ScreamingKebab,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub enum Attr {
-    RenameAll(StrCase),
-    Rename(String),
-    Skip,
-    Flatten,
-}
+impl FromStr for StrCase {
+    type Err = PyErr;
 
-fn parse_field_attr(attrs: &HashMap<String, PyObject>) -> PyResult<FieldAttr> {
-    let mut attr = FieldAttr::default();
-
-    attrs.iter().for_each(|(name, _val)| match name.as_ref() {
-        "perde_flatten" => {
-            attr.flatten = true;
+    fn from_str(s: &str) -> PyResult<Self> {
+        match s {
+            "lowercase" => Ok(StrCase::Lower),
+            "UPPERCASE" => Ok(StrCase::Upper),
+            "PascalCase" => Ok(StrCase::Pascal),
+            "camelCase" => Ok(StrCase::Camel),
+            "snake_case" => Ok(StrCase::Snake),
+            "SCREAMING_SNAKE_CASE" => Ok(StrCase::ScreamingSnake),
+            "kebab-case" => Ok(StrCase::Kebab),
+            "SCREAMING-KEBAB-CASE" => Ok(StrCase::ScreamingKebab),
+            c => Err(pyerr(format!("Unsupported string case: {}", c))),
         }
-        _ => {}
-    });
-
-    Ok(attr)
-}
-
-fn parse_container_attr(attrs: &HashMap<String, PyObject>) -> PyResult<ContainerAttr> {
-    let mut attr = ContainerAttr::default();
-
-    attrs.iter().for_each(|(name, _val)| match name {
-        _ => {}
-    });
-
-    Ok(attr)
+    }
 }
 
 fn collect_flatten_args(schema: &Schema) -> HashMap<String, Schema> {
@@ -148,22 +141,71 @@ pub struct FieldAttr {
     flatten: bool,
 }
 
+fn parse_field_attr(attrs: &HashMap<String, PyObject>) -> PyResult<FieldAttr> {
+    let mut attr = FieldAttr::default();
+
+    attrs.iter().for_each(|(name, _val)| match name.as_ref() {
+        "perde_flatten" => {
+            attr.flatten = true;
+        }
+        _ => {}
+    });
+
+    Ok(attr)
+}
+
 #[derive(Clone, Debug, Default)]
 pub struct ContainerAttr {
     rename_all: Option<StrCase>,
     rename: Option<String>,
+    deny_unknown_fields: bool,
 }
 
+fn parse_container_attr(attrs: &HashMap<String, PyObject>) -> PyResult<ContainerAttr> {
+    let mut attr = ContainerAttr::default();
+
+    for (name, val) in attrs {
+        match name.as_ref() {
+            "rename_all" => {
+                let case: &str = val.extract(py())?;
+                attr.rename_all = Some(case.parse()?);
+            }
+            "deny_unknown_fields" => {
+                attr.deny_unknown_fields = true;
+            }
+            _ => {}
+        }
+    }
+
+    Ok(attr)
+}
 #[pyclass]
 #[derive(Clone, Debug)]
 pub struct Schema {
     pub cls: Py<PyType>,
+    pub clsname: String,
     pub kind: TypeKind,
     pub args: Vec<Schema>,
     pub kwargs: HashMap<String, Schema>,
     pub field_attr: FieldAttr,
     pub container_attr: ContainerAttr,
     pub flatten_args: HashMap<String, Schema>,
+}
+
+fn convert_stringcase(s: &str, case: Option<StrCase>) -> String {
+    use inflections::Inflect;
+
+    match case {
+        Some(StrCase::Lower) => s.to_lower_case(),
+        Some(StrCase::Upper) => s.to_upper_case(),
+        Some(StrCase::Pascal) => s.to_pascal_case(),
+        Some(StrCase::Camel) => s.to_camel_case(),
+        Some(StrCase::Snake) => s.to_snake_case(),
+        Some(StrCase::ScreamingSnake) => s.to_constant_case(),
+        Some(StrCase::Kebab) => s.to_kebab_case(),
+        Some(StrCase::ScreamingKebab) => s.to_kebab_case().to_upper_case(),
+        None => s.into(),
+    }
 }
 
 #[pymethods]
@@ -196,8 +238,19 @@ impl Schema {
         let kind = kind.parse()?;
         let field_attr = parse_field_attr(&field_attr)?;
         let container_attr = parse_container_attr(&container_attr)?;
+
+        let clsname = container_attr
+            .rename
+            .clone()
+            .unwrap_or_else(|| cls.as_ref(py()).name().into());
+        let kwargs = kwargs
+            .into_iter()
+            .map(|(k, v)| (convert_stringcase(&k, container_attr.rename_all), v))
+            .collect();
+
         let mut schema = Self {
             cls,
+            clsname,
             kind,
             args,
             kwargs,
@@ -230,7 +283,7 @@ impl Schema {
         ))
     }
 
-    pub fn call_kw<E>(&self, kwargs: Vec<(PyObject, PyObject)>) -> Result<Object, E>
+    pub fn call_map<E>(&self, kwargs: Vec<(PyObject, PyObject)>) -> Result<Object, E>
     where
         E: de::Error,
     {
@@ -238,6 +291,28 @@ impl Schema {
 
         Ok(Object::new(
             self.cls.as_ref(py()).call((), Some(&dict)).map_err(de)?,
+        ))
+    }
+
+    pub fn call_class<'a, E>(&self, map: &mut HashMap<&'a str, PyObject>) -> Result<Object, E>
+    where
+        E: de::Error,
+    {
+        let args: Result<Vec<_>, _> = self
+            .kwargs
+            .iter()
+            .map(|(k, schema)| {
+                let k: &str = k.as_ref();
+                match map.remove(k) {
+                    Some(v) => Ok(v),
+                    None => Err(de::Error::custom(format!("missing field \"{}\"", k))),
+                }
+            })
+            .collect();
+
+        let args = PyTuple::new(py(), args?);
+        Ok(Object::new(
+            self.cls.as_ref(py()).call(args, None).map_err(de)?,
         ))
     }
 
@@ -304,7 +379,7 @@ impl<'a> SchemaStack<'a> {
         *self.stack.last().expect("Empty schema stack")
     }
 
-    pub fn push_by_name<E>(&mut self, name: &str) -> Result<(), E>
+    pub fn push_by_name<E>(&mut self, name: &str) -> Result<bool, E>
     where
         E: de::Error,
     {
@@ -314,12 +389,20 @@ impl<'a> SchemaStack<'a> {
         } else {
             &cur.kwargs
         };
-        let next = map
-            .get(name)
-            .ok_or_else(|| pyerr(format!("Couldn't find field with name: {}", name)))
-            .map_err(de)?;
+
+        let next = match map.get(name) {
+            Some(next) => next,
+            None => {
+                if cur.container_attr.deny_unknown_fields {
+                    return Err(de::Error::custom(format!("unknown field \"{}\"", name)));
+                } else {
+                    return Ok(false);
+                }
+            }
+        };
         self.stack.push(next);
-        Ok(())
+
+        Ok(true)
     }
 
     pub fn push_by_index<E>(&mut self, index: usize) -> Result<(), E>

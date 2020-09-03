@@ -7,7 +7,10 @@ use pyo3::{
     types::{PyDict, PyTuple},
 };
 use serde_state::{
-    de::{self, Deserializer, EnumAccess, Error, MapAccess, Seed, SeqAccess, Unexpected, Visitor},
+    de::{
+        self, Deserializer, EnumAccess, Error, IgnoredAny, MapAccess, Seed, SeqAccess, Unexpected,
+        Visitor,
+    },
     DeserializeState,
 };
 use std::{collections::HashMap, fmt};
@@ -46,7 +49,7 @@ impl<'a, 'b, 'de> Visitor<'de> for DictVisitor<'a, 'b> {
             args.push((key.to_pyobj(), value.to_pyobj()));
         }
 
-        Ok(self.0.current().call_kw(args)?)
+        Ok(self.0.current().call_map(args)?)
     }
 }
 
@@ -68,22 +71,23 @@ impl<'a, 'b, 'de> Visitor<'de> for ClassVisitor<'a, 'b> {
         while let Some(key) = access.next_key()? {
             let key: &str = key;
 
-            self.0.push_by_name(key)?;
-            let value: Object = access.next_value_seed(Seed::new(&mut *self.0))?;
-            self.0.pop();
+            if self.0.push_by_name(key)? {
+                let value: Object = access.next_value_seed(Seed::new(&mut *self.0))?;
+                self.0.pop();
 
-            args.insert(key, value.to_pyobj());
+                args.insert(key, value.to_pyobj());
+            } else {
+                let value: IgnoredAny = access.next_value()?;
+            }
         }
 
-        if self.0.current().has_flatten() {
-            Ok(self.0.current().call_flatten(&mut args)?)
+        let v = if self.0.current().has_flatten() {
+            self.0.current().call_flatten(&mut args)?
         } else {
-            Ok(self.0.current().call_kw(
-                args.into_iter()
-                    .map(|(k, v)| (k.to_object(py()), v))
-                    .collect(),
-            )?)
-        }
+            self.0.current().call_class(&mut args)?
+        };
+
+        Ok(v)
     }
 }
 
