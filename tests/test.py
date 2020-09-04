@@ -121,19 +121,24 @@ print(perde.load_as(SkipDe, '{"a": 300, "b": 3, "c": 1000}'))
 
 import timeit
 
-print(timeit.repeat('perde.load_as(C, \'{"key": 300, "value": "hoge"}\')', setup = '''
+res_perde_as = timeit.repeat('perde.load_as(C, \'{"key": 300, "value": "hoge"}\')', setup = '''
 import perde
 from dataclasses import dataclass
-
-print("setup")
 
 @dataclass
 class C:
     key: int
     value: str
 perde.load_as(C, \'{"key": 300, "value": "hoge"}\')
-''', number = 100000))
+''', number = 100000)
 
-import json
+res_json = timeit.repeat('json.loads(\'{"key": 300, "value": "hoge"}\')', setup = "import json", number = 100000)
+res_ujson = timeit.repeat('ujson.loads(\'{"key": 300, "value": "hoge"}\')', setup = "import ujson", number = 100000)
+res_perde = timeit.repeat('perde.loads(\'{"key": 300, "value": "hoge"}\')', setup = "import perde", number = 100000)
+res_orjson = timeit.repeat('orjson.loads(\'{"key": 300, "value": "hoge"}\')', setup = "import orjson", number = 100000)
 
-print(timeit.repeat('json.loads(\'{"key": 300, "value": "hoge"}\')', setup = "import json", number = 100000))
+print(f'json      = {res_json}')
+print(f'perde as  = {res_perde_as}')
+print(f'perde     = {res_perde}')
+print(f'ujson     = {res_ujson}')
+print(f'orjson    = {res_orjson}')

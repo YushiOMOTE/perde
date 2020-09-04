@@ -8,6 +8,8 @@ python_version = "3.7"
 
 [packages]
 typing_inspect = "*"
+orjson = "*"
+ujson = "*"
 
 [dev-packages]
 pytest = "*"
