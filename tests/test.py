@@ -1,5 +1,6 @@
 import perde
 import enum
+import timeit
 from typing_inspect import get_origin, get_args
 from dataclasses import dataclass, fields, is_dataclass, field
 from typing import Dict, TypeVar, Union, List, Tuple
@@ -12,14 +13,14 @@ def attr(**kwargs):
 
 
 def test(t, s, e):
-    p = perde.load_as(t, s)
+    p = perde.loads(s, type = t)
     assert p == e, f'\n * expected: {e}\n * got     : {p}'
     print(f'ok: {p}')
 
 
 def testp(t, s):
     try:
-        p = perde.load_as(t, s)
+        p = perde.loads_as(t, s)
         assert False, "this must panic"
     except:
         pass
@@ -35,6 +36,10 @@ class C:
 class CC:
     key: int
     value: str
+
+# print(perde.loads_as(C, '{"key": 3, "value": "ok"}'))
+# print(perde.loads_as(C, '{"key": 3, "value": "ok"}'))
+# exit()
 
 test(C, '{"key": 3, "value": "ok"}', C(3, "ok"))
 test(C, '{"key": 3, "value": "ok", "aa": 44}', C(3, "ok"))
@@ -139,9 +144,18 @@ class SkipDe:
 test(SkipDe, '{"a": 300, "b": 3}', SkipDe(300, 3, 0))
 
 
-import timeit
+pyfunc = timeit.repeat('f()', '''
+def f():
+    pass
+''', number = 100000)
+rsfunc = timeit.repeat('f()', '''
+from perde import f
+''', number = 100000)
 
-res_perde_as = timeit.repeat('perde.load_as(C, \'{"key": 300, "value": "hoge"}\')', setup = '''
+print(pyfunc)
+print(rsfunc)
+
+res_perde_as = timeit.repeat('perde.loads_as(C, \'{"key": 300, "value": "hoge"}\')', setup = '''
 import perde
 from dataclasses import dataclass
 
@@ -149,8 +163,23 @@ from dataclasses import dataclass
 class C:
     key: int
     value: str
-perde.load_as(C, \'{"key": 300, "value": "hoge"}\')
+perde.loads_as(C, \'{"key": 300, "value": "hoge"}\')
 ''', number = 100000)
+
+
+res_hand_json = timeit.repeat('hand()', '''
+import json
+from dataclasses import dataclass
+
+@dataclass
+class C:
+    key: int
+    value: str
+
+def hand():
+    d = json.loads(\'{"key": 300, "value": "hoge"}\')
+    return C(d["key"], d["value"])
+''')
 
 res_json = timeit.repeat('json.loads(\'{"key": 300, "value": "hoge"}\')', setup = "import json", number = 100000)
 res_ujson = timeit.repeat('ujson.loads(\'{"key": 300, "value": "hoge"}\')', setup = "import ujson", number = 100000)
@@ -158,6 +187,7 @@ res_perde = timeit.repeat('perde.loads(\'{"key": 300, "value": "hoge"}\')', setu
 res_orjson = timeit.repeat('orjson.loads(\'{"key": 300, "value": "hoge"}\')', setup = "import orjson", number = 100000)
 
 print(f'json      = {res_json}')
+print(f'json hand = {res_hand_json}')
 print(f'perde as  = {res_perde_as}')
 print(f'perde     = {res_perde}')
 print(f'ujson     = {res_ujson}')

@@ -17,7 +17,7 @@ def to_schema(t: TypeVar, attr = {}):
         raise TypeError(f'Unsupported type {t}')
 
 def to_simple(t: TypeVar, attr = {}):
-    return Schema(t, t.__name__, [], {}, attr)
+    return Schema(t, t.__name__, [], [], attr)
 
 def is_generic(t: TypeVar):
     if get_origin(t) is not None:
@@ -37,12 +37,12 @@ def to_generic(t: TypeVar, attr = {}):
     else:
         ty = get_origin(t)
         name = ty.__name__
-    return Schema(ty, name, args, {}, attr)
+    return Schema(ty, name, args, [], attr)
 
 def to_enum(t: TypeVar, attr = {}):
-    fs = dict([(f.name, to_schema(type(f.value))) for f in t])
+    fs = [(f.name, to_schema(type(f.value))) for f in t]
     return Schema(t, "enum", [], fs, attr)
 
 def to_class(t: TypeVar, attr = {}):
-    fs = dict([(f.name, to_schema(f.type, dict(f.metadata))) for f in fields(t)])
+    fs = [(f.name, to_schema(f.type, dict(f.metadata))) for f in fields(t)]
     return Schema(t, "class", [], fs, attr)

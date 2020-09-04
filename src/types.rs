@@ -1,4 +1,5 @@
 use crate::util::*;
+use indexmap::IndexMap;
 use pyo3::{
     prelude::*,
     types::{PyDict, PyModule, PyTuple, PyType},
@@ -115,8 +116,8 @@ impl FromStr for StrCase {
     }
 }
 
-fn collect_flatten_args(schema: &Schema) -> HashMap<String, Schema> {
-    let mut args = HashMap::new();
+fn collect_flatten_args(schema: &Schema) -> IndexMap<String, Schema> {
+    let mut args = IndexMap::new();
 
     for (name, subschema) in &schema.kwargs {
         if subschema.is_flatten() {
@@ -212,10 +213,10 @@ pub struct Schema {
     pub argname: String,
     pub kind: TypeKind,
     pub args: Vec<Schema>,
-    pub kwargs: HashMap<String, Schema>,
+    pub kwargs: IndexMap<String, Schema>,
     pub field_attr: FieldAttr,
     pub container_attr: ContainerAttr,
-    pub flatten_args: HashMap<String, Schema>,
+    pub flatten_args: IndexMap<String, Schema>,
 }
 
 fn convert_stringcase(s: &str, case: Option<StrCase>) -> String {
@@ -241,7 +242,7 @@ impl Schema {
         cls: Py<PyType>,
         kind: &str,
         args: Vec<Schema>,
-        kwargs: HashMap<String, Schema>,
+        kwargs: Vec<(String, Schema)>,
         field_attr: HashMap<String, PyObject>,
     ) -> PyResult<Self> {
         Self::new(cls, kind, args, kwargs, field_attr)
@@ -253,7 +254,7 @@ impl Schema {
         cls: Py<PyType>,
         kind: &str,
         args: Vec<Schema>,
-        kwargs: HashMap<String, Schema>,
+        kwargs: Vec<(String, Schema)>,
         field_attr: HashMap<String, PyObject>,
     ) -> PyResult<Self> {
         let container_attr = match cls.as_ref(py()).getattr("__perde_attr__") {
@@ -295,7 +296,7 @@ impl Schema {
             kwargs,
             field_attr,
             container_attr,
-            flatten_args: HashMap::new(),
+            flatten_args: IndexMap::new(),
         };
 
         if has_flatten(&schema) {
@@ -344,21 +345,21 @@ impl Schema {
     where
         E: de::Error,
     {
-        let kwargs: Result<Vec<_>, _> = self
+        let args: Result<Vec<_>, E> = self
             .kwargs
             .iter()
             .map(|(k, schema)| {
-                let argname = schema.argname.to_object(py());
+                // let argname = schema.argname.to_object(py());
                 let k: &str = k.as_ref();
                 match map.remove(k) {
-                    Some(v) => Ok((argname, v)),
+                    Some(v) => Ok(v),
                     None => {
                         if self.container_attr.default
                             || schema.field_attr.default
                             || schema.field_attr.skip
                             || schema.field_attr.skip_deserializing
                         {
-                            Ok((argname, schema.call_default()?.to_pyobj()))
+                            Ok(schema.call_default()?.to_pyobj())
                         } else {
                             Err(de::Error::custom(format!("missing field \"{}\"", k)))
                         }
@@ -367,10 +368,42 @@ impl Schema {
             })
             .collect();
 
-        let dict = PyDict::from_sequence(py(), kwargs?.into_py(py())).map_err(de)?;
-        Ok(Object::new(
-            self.cls.as_ref(py()).call((), Some(&dict)).map_err(de)?,
-        ))
+        self.call_class_by_vec(args?)
+    }
+
+    pub fn call_class_by_vec<'a, E>(&self, args: Vec<PyObject>) -> Result<Object, E>
+    where
+        E: de::Error,
+    {
+        macro_rules! to_tuple {
+            ($args:expr, $($t:tt),*) => {{
+                let mut args = $args.into_iter();
+                $(let $t = args.next().unwrap();)*
+                    Ok(Object::new(
+                        self.cls
+                            .as_ref(py())
+                            .call1(($($t,)*))
+                            .map_err(de)?,
+                    ))
+            }}
+        }
+
+        match args.len() {
+            0 => Ok(Object::new(self.cls.as_ref(py()).call0().map_err(de)?)),
+            1 => to_tuple!(args, a),
+            2 => to_tuple!(args, a, b),
+            3 => to_tuple!(args, a, b, c),
+            4 => to_tuple!(args, a, b, c, d),
+            5 => to_tuple!(args, a, b, c, d, e),
+            6 => to_tuple!(args, a, b, c, d, e, f),
+            7 => to_tuple!(args, a, b, c, d, e, f, g),
+            8 => to_tuple!(args, a, b, c, d, e, f, g, h),
+            9 => to_tuple!(args, a, b, c, d, e, f, g, h, i),
+            _ => {
+                let args = PyTuple::new(py(), args);
+                Ok(Object::new(self.cls.as_ref(py()).call1(args).map_err(de)?))
+            }
+        }
     }
 
     pub fn call_flatten<'a, 'b, E>(

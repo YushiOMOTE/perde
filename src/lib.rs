@@ -3,8 +3,11 @@ use crate::{
     types::{Object, Schema},
     util::*,
 };
-use pyo3::{prelude::*, wrap_pyfunction};
+use pyo3::{prelude::*, types::PyDict, wrap_pyfunction};
 use serde::Deserialize;
+
+#[macro_use]
+extern crate flamer;
 
 mod de;
 mod state;
@@ -13,20 +16,36 @@ mod util;
 
 #[cfg(feature = "json")]
 #[pyfunction]
-pub fn load_as(ty: &PyAny, s: &str) -> PyResult<PyObject> {
+pub fn loads_as(ty: &PyAny, s: &str) -> PyResult<PyObject> {
+    // flame::start("load_as");
     let schema = Schema::resolve(ty)?;
     let schema = schema.borrow_mut();
     let mut deserializer = serde_json::Deserializer::from_str(s);
     let obj: Object = Object::deserialize_state(&*schema, &mut deserializer).map_err(pyerr)?;
+    // flame::end("load_as");
+
+    // flame::dump_html(&mut std::fs::File::create("flame-graph.html").unwrap()).unwrap();
+    // flame::clear();
     Ok(obj.into())
 }
 
 #[cfg(feature = "json")]
-#[pyfunction]
-pub fn loads(s: &str) -> PyResult<PyObject> {
+#[pyfunction(kwargs = "**")]
+pub fn loads(s: &str, kwargs: Option<&PyDict>) -> PyResult<PyObject> {
+    if let Some(kwargs) = kwargs {
+        if let Some(ty) = kwargs.get_item("type") {
+            return loads_as(ty, s);
+        }
+    }
+
     let mut deserializer = serde_json::Deserializer::from_str(s);
     let obj = Object::deserialize(&mut deserializer).map_err(pyerr)?;
     Ok(obj.into())
+}
+
+#[pyfunction]
+pub fn f() -> PyResult<()> {
+    Ok(())
 }
 
 // load!("json", load_as, serde_json);
@@ -45,9 +64,11 @@ fn perde(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
     m.add_class::<Schema>()?;
 
     #[cfg(feature = "json")]
-    m.add_wrapped(wrap_pyfunction!(load_as))?;
+    m.add_wrapped(wrap_pyfunction!(loads_as))?;
     #[cfg(feature = "json")]
     m.add_wrapped(wrap_pyfunction!(loads))?;
+
+    m.add_wrapped(wrap_pyfunction!(f))?;
     // #[cfg(feature = "yaml")]
     // m.add_wrapped(wrap_pyfunction!(yaml_load))?;
     // #[cfg(feature = "toml")]
