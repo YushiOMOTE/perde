@@ -432,70 +432,46 @@ impl Schema {
 
         Ok(module.call1("to_schema", (ty,))?.extract()?)
     }
-}
 
-#[derive(Debug)]
-pub struct SchemaStack<'a> {
-    stack: SmallVec<[&'a Schema; 16]>,
-}
-
-impl<'a> SchemaStack<'a> {
-    pub fn new(schema: &'a Schema) -> Self {
-        Self {
-            stack: smallvec![schema],
-        }
-    }
-
-    pub fn current(&self) -> &'a Schema {
-        *self.stack.last().expect("Empty schema stack")
-    }
-
-    pub fn push_by_name<E>(&mut self, name: &str) -> Result<bool, E>
+    pub fn type_param<E>(&self, index: usize) -> Result<&Schema, E>
     where
         E: de::Error,
     {
-        let cur = self.stack.last().expect("Empty schema stack");
-        let map = if cur.has_flatten() {
-            &cur.flatten_args
+        self.args.get(index).ok_or_else(|| {
+            de::Error::custom(format!(
+                "the type parameter {} in the type definition of `{}` is missing",
+                index, self.clsname
+            ))
+        })
+    }
+
+    pub fn member<E>(&self, name: &str) -> Result<Option<&Schema>, E>
+    where
+        E: de::Error,
+    {
+        let map = if self.has_flatten() {
+            &self.flatten_args
         } else {
-            &cur.kwargs
+            &self.kwargs
         };
 
-        let next = match map.get(name) {
-            Some(next) => {
-                if next.field_attr.skip || next.field_attr.skip_deserializing {
-                    return Ok(false);
-                }
-                next
-            }
-            None => {
-                if cur.container_attr.deny_unknown_fields {
-                    return Err(de::Error::custom(format!("unknown field \"{}\"", name)));
+        map.get(name)
+            .map(|v| {
+                if self.field_attr.skip || self.field_attr.skip_deserializing {
+                    Ok(None)
                 } else {
-                    return Ok(false);
+                    Ok(Some(v))
                 }
-            }
-        };
-        self.stack.push(next);
-
-        Ok(true)
-    }
-
-    pub fn push_by_index<E>(&mut self, index: usize) -> Result<(), E>
-    where
-        E: de::Error,
-    {
-        let cur = self.stack.last().expect("Empty schema stack");
-        let next = cur
-            .args
-            .get(index)
-            .ok_or_else(|| pyerr(format!("Couldn't find field with index: {}", index)))
-            .map_err(de)?;
-        self.stack.push(next);
-        Ok(())
-    }
-
-    pub fn pop(&mut self) {
-        self.stack.pop();
+            })
+            .unwrap_or_else(|| {
+                if self.container_attr.deny_unknown_fields {
+                    Err(de::Error::custom(format!(
+                        "the member `{}` in `{}` type is missing",
+                        name, self.clsname
+                    )))
+                } else {
+                    Ok(None)
+                }
+            })
     }
 }

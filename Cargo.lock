@@ -207,7 +207,6 @@ dependencies = [
  "rmp-serde",
  "serde",
  "serde_json",
- "serde_state",
  "serde_yaml",
  "smallvec",
  "toml",
@@ -328,15 +327,6 @@ checksum = "164eacbdb13512ec2745fb09d51fd5b22b0d65ed294a1dcf7285a360c80a675c"
 dependencies = [
  "itoa",
  "ryu",
- "serde",
-]
-
-[[package]]
-name = "serde_state"
-version = "0.4.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "12995e4a9ba68c8cca66f365be3deef19b4c6a5b2e8d383d163811ee531aa35f"
-dependencies = [
  "serde",
 ]
 

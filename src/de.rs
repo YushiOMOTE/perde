@@ -1,23 +1,21 @@
 use crate::{
-    types::{Object, SchemaStack, TypeKind},
+    state::{DeserializeState, Seed},
+    types::{Object, Schema, TypeKind},
     util::*,
 };
 use pyo3::{
     prelude::*,
     types::{PyDict, PyTuple},
 };
-use serde_state::{
-    de::{
-        self, Deserialize, Deserializer, EnumAccess, Error, IgnoredAny, MapAccess, Seed, SeqAccess,
-        Unexpected, Visitor,
-    },
-    DeserializeState,
+use serde::de::{
+    self, Deserialize, Deserializer, EnumAccess, Error, IgnoredAny, MapAccess, SeqAccess,
+    Unexpected, Visitor,
 };
 use std::{collections::HashMap, fmt};
 
-struct DictVisitor<'a, 'b>(&'b mut SchemaStack<'a>);
+struct DictVisitor<'a>(&'a Schema);
 
-impl<'a, 'b, 'de> Visitor<'de> for DictVisitor<'a, 'b> {
+impl<'a, 'de> Visitor<'de> for DictVisitor<'a> {
     type Value = Object;
 
     fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -31,9 +29,8 @@ impl<'a, 'b, 'de> Visitor<'de> for DictVisitor<'a, 'b> {
         let mut args = Vec::new();
 
         loop {
-            self.0.push_by_index(0)?;
-            let key = access.next_key_seed(Seed::new(&mut *self.0))?;
-            self.0.pop();
+            let seed = Seed::new(self.0.type_param(0)?);
+            let key = access.next_key_seed(seed)?;
 
             let key: Object = match key {
                 Some(key) => key,
@@ -42,20 +39,19 @@ impl<'a, 'b, 'de> Visitor<'de> for DictVisitor<'a, 'b> {
                 }
             };
 
-            self.0.push_by_index(1)?;
-            let value: Object = access.next_value_seed(Seed::new(&mut *self.0))?;
-            self.0.pop();
+            let seed = Seed::new(self.0.type_param(1)?);
+            let value: Object = access.next_value_seed(seed)?;
 
             args.push((key.to_pyobj(), value.to_pyobj()));
         }
 
-        Ok(self.0.current().call_map(args)?)
+        Ok(self.0.call_map(args)?)
     }
 }
 
-struct ClassVisitor<'a, 'b>(&'b mut SchemaStack<'a>);
+struct ClassVisitor<'a>(&'a Schema);
 
-impl<'a, 'b, 'de> Visitor<'de> for ClassVisitor<'a, 'b> {
+impl<'a, 'de> Visitor<'de> for ClassVisitor<'a> {
     type Value = Object;
 
     fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -71,9 +67,9 @@ impl<'a, 'b, 'de> Visitor<'de> for ClassVisitor<'a, 'b> {
         while let Some(key) = access.next_key()? {
             let key: &str = key;
 
-            if self.0.push_by_name(key)? {
-                let value: Object = access.next_value_seed(Seed::new(&mut *self.0))?;
-                self.0.pop();
+            if let Some(schema) = self.0.member(key)? {
+                let seed = Seed::new(schema);
+                let value: Object = access.next_value_seed(seed)?;
 
                 args.insert(key, value.to_pyobj());
             } else {
@@ -81,19 +77,19 @@ impl<'a, 'b, 'de> Visitor<'de> for ClassVisitor<'a, 'b> {
             }
         }
 
-        let v = if self.0.current().has_flatten() {
-            self.0.current().call_flatten(&mut args)?
+        let v = if self.0.has_flatten() {
+            self.0.call_flatten(&mut args)?
         } else {
-            self.0.current().call_class(&mut args)?
+            self.0.call_class(&mut args)?
         };
 
         Ok(v)
     }
 }
 
-struct ListVisitor<'a, 'b>(&'b mut SchemaStack<'a>);
+struct ListVisitor<'a>(&'a Schema);
 
-impl<'a, 'b, 'de> Visitor<'de> for ListVisitor<'a, 'b> {
+impl<'a, 'de> Visitor<'de> for ListVisitor<'a> {
     type Value = Object;
 
     fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -107,27 +103,22 @@ impl<'a, 'b, 'de> Visitor<'de> for ListVisitor<'a, 'b> {
         let mut items = Vec::new();
 
         loop {
-            self.0.push_by_index(0)?;
-            let value = seq.next_element_seed(Seed::new(&mut *self.0))?;
-            self.0.pop();
-
-            let value: Object = match value {
+            let seed = Seed::new(self.0.type_param(0)?);
+            let value: Object = match seq.next_element_seed(seed)? {
                 Some(value) => value,
-                None => {
-                    break;
-                }
+                None => break,
             };
 
             items.push(value.to_pyobj());
         }
 
-        Ok(self.0.current().call((items,))?)
+        Ok(self.0.call((items,))?)
     }
 }
 
-struct TupleVisitor<'a, 'b>(&'b mut SchemaStack<'a>);
+struct TupleVisitor<'a>(&'a Schema);
 
-impl<'a, 'b, 'de> Visitor<'de> for TupleVisitor<'a, 'b> {
+impl<'a, 'de> Visitor<'de> for TupleVisitor<'a> {
     type Value = Object;
 
     fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -141,32 +132,35 @@ impl<'a, 'b, 'de> Visitor<'de> for TupleVisitor<'a, 'b> {
         let mut items = Vec::new();
 
         let mut index = 0;
-        let len = self.0.current().args.len();
+        let len = self.0.args.len();
 
         loop {
-            self.0.push_by_index(index.min(len - 1))?;
-            let value = seq.next_element_seed(Seed::new(&mut *self.0))?;
-            self.0.pop();
-
-            let value: Object = match value {
-                Some(value) => value,
-                None => {
-                    break;
+            let seed = Seed::new(self.0.type_param(index.min(len.saturating_sub(1)))?);
+            let value: Object = match seq.next_element_seed(seed)? {
+                Some(value) => {
+                    if index >= len {
+                        return Err(Error::custom(format!(
+                            "the tuple expects {} elements but got more",
+                            len
+                        )));
+                    } else {
+                        value
+                    }
                 }
+                None => break,
             };
 
             index += 1;
-
             items.push(value.to_pyobj());
         }
 
-        Ok(self.0.current().call((items,))?)
+        Ok(self.0.call((items,))?)
     }
 }
 
-struct BoolVisitor<'a, 'b>(&'b mut SchemaStack<'a>);
+struct BoolVisitor<'a>(&'a Schema);
 
-impl<'a, 'b, 'de> Visitor<'de> for BoolVisitor<'a, 'b> {
+impl<'a, 'de> Visitor<'de> for BoolVisitor<'a> {
     type Value = Object;
 
     fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -181,9 +175,9 @@ impl<'a, 'b, 'de> Visitor<'de> for BoolVisitor<'a, 'b> {
     }
 }
 
-struct IntVisitor<'a, 'b>(&'b mut SchemaStack<'a>);
+struct IntVisitor<'a>(&'a Schema);
 
-impl<'a, 'b, 'de> Visitor<'de> for IntVisitor<'a, 'b> {
+impl<'a, 'de> Visitor<'de> for IntVisitor<'a> {
     type Value = Object;
 
     fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -240,9 +234,9 @@ impl<'a, 'b, 'de> Visitor<'de> for IntVisitor<'a, 'b> {
     }
 }
 
-struct FloatVisitor<'a, 'b>(&'b mut SchemaStack<'a>);
+struct FloatVisitor<'a>(&'a Schema);
 
-impl<'a, 'b, 'de> Visitor<'de> for FloatVisitor<'a, 'b> {
+impl<'a, 'de> Visitor<'de> for FloatVisitor<'a> {
     type Value = Object;
 
     fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -264,9 +258,9 @@ impl<'a, 'b, 'de> Visitor<'de> for FloatVisitor<'a, 'b> {
     }
 }
 
-struct StrVisitor<'a, 'b>(&'b mut SchemaStack<'a>);
+struct StrVisitor<'a>(&'a Schema);
 
-impl<'a, 'b, 'de> Visitor<'de> for StrVisitor<'a, 'b> {
+impl<'a, 'de> Visitor<'de> for StrVisitor<'a> {
     type Value = Object;
 
     fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -302,9 +296,9 @@ impl<'a, 'b, 'de> Visitor<'de> for StrVisitor<'a, 'b> {
     }
 }
 
-struct BytesVisitor<'a, 'b>(&'b mut SchemaStack<'a>);
+struct BytesVisitor<'a>(&'a Schema);
 
-impl<'a, 'b, 'de> Visitor<'de> for BytesVisitor<'a, 'b> {
+impl<'a, 'de> Visitor<'de> for BytesVisitor<'a> {
     type Value = Object;
 
     fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -315,27 +309,27 @@ impl<'a, 'b, 'de> Visitor<'de> for BytesVisitor<'a, 'b> {
     where
         E: Error,
     {
-        self.0.current().call((value,))
+        self.0.call((value,))
     }
 
     fn visit_borrowed_bytes<E>(self, value: &'de [u8]) -> Result<Self::Value, E>
     where
         E: Error,
     {
-        self.0.current().call((value,))
+        self.0.call((value,))
     }
 
     fn visit_byte_buf<E>(self, value: Vec<u8>) -> Result<Self::Value, E>
     where
         E: Error,
     {
-        self.0.current().call((value,))
+        self.0.call((value,))
     }
 }
 
-struct OptionVisitor<'a, 'b>(&'b mut SchemaStack<'a>);
+struct OptionVisitor<'a>(&'a Schema);
 
-impl<'a, 'b, 'de> Visitor<'de> for OptionVisitor<'a, 'b> {
+impl<'a, 'de> Visitor<'de> for OptionVisitor<'a> {
     type Value = Object;
 
     fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -353,64 +347,47 @@ impl<'a, 'b, 'de> Visitor<'de> for OptionVisitor<'a, 'b> {
     where
         D: Deserializer<'de>,
     {
-        self.0.push_by_index(0)?;
-        let obj = Object::deserialize_state(self.0, deserializer);
-        self.0.pop();
-        obj
+        let schema = self.0.type_param(0)?;
+        Object::deserialize_state(schema, deserializer)
     }
 }
 
-struct UnionVisitor<'a, 'b>(&'b mut SchemaStack<'a>);
+struct UnionVisitor<'a>(&'a Schema);
 
-impl<'a, 'b, 'c> UnionVisitor<'a, 'b> {
-    fn find<E>(&mut self, kind: &[TypeKind], unexpected: Unexpected<'c>) -> Result<TypeKind, E>
+impl<'a, 'c> UnionVisitor<'a> {
+    fn find_container<E>(
+        &mut self,
+        kind: &[TypeKind],
+        unexpected: Unexpected<'c>,
+    ) -> Result<&Schema, E>
     where
         E: Error,
     {
-        match self
-            .0
-            .current()
+        self.0
             .args
             .iter()
-            .enumerate()
-            .find(|(_, s)| kind.contains(&s.kind))
-        {
-            Some((i, s)) => {
-                self.0.push_by_index(i)?;
-                Ok(s.kind)
-            }
-            None => Err(Error::invalid_type(unexpected, self)),
-        }
+            .find(|s| kind.contains(&s.kind))
+            .ok_or_else(|| Error::invalid_type(unexpected, self))
     }
 
-    fn check<E>(&mut self, kind: TypeKind, unexpected: Unexpected<'c>) -> Result<(), E>
+    fn find<E>(&mut self, kind: TypeKind, unexpected: Unexpected<'c>) -> Result<&Schema, E>
     where
         E: Error,
     {
-        match self
-            .0
-            .current()
+        self.0
             .args
             .iter()
-            .enumerate()
-            .find(|(_, s)| s.kind == kind)
-        {
-            Some((i, _)) => {
-                self.0.push_by_index(i)?;
-                Ok(())
-            }
-            None => Err(Error::invalid_type(unexpected, self)),
-        }
+            .find(|s| s.kind == kind)
+            .ok_or_else(|| Error::invalid_type(unexpected, self))
     }
 }
 
-impl<'a, 'b, 'de> Visitor<'de> for UnionVisitor<'a, 'b> {
+impl<'a, 'de> Visitor<'de> for UnionVisitor<'a> {
     type Value = Object;
 
     fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let names: Vec<_> = self
             .0
-            .current()
             .args
             .iter()
             .map(|s| s.cls.as_ref(py()).name())
@@ -422,10 +399,8 @@ impl<'a, 'b, 'de> Visitor<'de> for UnionVisitor<'a, 'b> {
     where
         E: Error,
     {
-        self.check(TypeKind::Bool, Unexpected::Bool(v))?;
-        let v = BoolVisitor(self.0).visit_bool(v);
-        self.0.pop();
-        v
+        let schema = self.find(TypeKind::Bool, Unexpected::Bool(v))?;
+        BoolVisitor(schema).visit_bool(v)
     }
 
     fn visit_i8<E>(self, v: i8) -> Result<Self::Value, E>
@@ -453,10 +428,8 @@ impl<'a, 'b, 'de> Visitor<'de> for UnionVisitor<'a, 'b> {
     where
         E: Error,
     {
-        self.check(TypeKind::Int, Unexpected::Signed(v))?;
-        let v = IntVisitor(self.0).visit_i64(v);
-        self.0.pop();
-        v
+        let schema = self.find(TypeKind::Int, Unexpected::Signed(v))?;
+        IntVisitor(schema).visit_i64(v)
     }
 
     fn visit_u8<E>(self, v: u8) -> Result<Self::Value, E>
@@ -484,10 +457,8 @@ impl<'a, 'b, 'de> Visitor<'de> for UnionVisitor<'a, 'b> {
     where
         E: Error,
     {
-        self.check(TypeKind::Int, Unexpected::Unsigned(v))?;
-        let v = IntVisitor(self.0).visit_u64(v);
-        self.0.pop();
-        v
+        let schema = self.find(TypeKind::Int, Unexpected::Unsigned(v))?;
+        IntVisitor(schema).visit_u64(v)
     }
 
     fn visit_f32<E>(self, v: f32) -> Result<Self::Value, E>
@@ -501,135 +472,114 @@ impl<'a, 'b, 'de> Visitor<'de> for UnionVisitor<'a, 'b> {
     where
         E: Error,
     {
-        self.check(TypeKind::Float, Unexpected::Float(v))?;
-        let v = FloatVisitor(self.0).visit_f64(v);
-        self.0.pop();
-        v
+        let schema = self.find(TypeKind::Float, Unexpected::Float(v))?;
+        FloatVisitor(schema).visit_f64(v)
     }
 
     fn visit_char<E>(mut self, v: char) -> Result<Self::Value, E>
     where
         E: Error,
     {
-        self.check(TypeKind::Str, Unexpected::Str(&v.to_string()))?;
-        let v = StrVisitor(self.0).visit_char(v);
-        self.0.pop();
-        v
+        let schema = self.find(TypeKind::Str, Unexpected::Str(&v.to_string()))?;
+        StrVisitor(schema).visit_char(v)
     }
 
     fn visit_str<E>(mut self, v: &str) -> Result<Self::Value, E>
     where
         E: Error,
     {
-        self.check(TypeKind::Str, Unexpected::Str(v))?;
-        let v = StrVisitor(self.0).visit_str(v);
-        self.0.pop();
-        v
+        let schema = self.find(TypeKind::Str, Unexpected::Str(v))?;
+        StrVisitor(schema).visit_str(v)
     }
 
     fn visit_borrowed_str<E>(mut self, v: &'de str) -> Result<Self::Value, E>
     where
         E: Error,
     {
-        self.check(TypeKind::Str, Unexpected::Str(v))?;
-        let v = StrVisitor(self.0).visit_borrowed_str(v);
-        self.0.pop();
-        v
+        let schema = self.find(TypeKind::Str, Unexpected::Str(v))?;
+        StrVisitor(schema).visit_borrowed_str(v)
     }
 
     fn visit_string<E>(mut self, v: String) -> Result<Self::Value, E>
     where
         E: Error,
     {
-        self.check(TypeKind::Str, Unexpected::Str(&v))?;
-        let v = StrVisitor(self.0).visit_string(v);
-        self.0.pop();
-        v
+        let schema = self.find(TypeKind::Str, Unexpected::Str(&v))?;
+        StrVisitor(schema).visit_string(v)
     }
 
     fn visit_bytes<E>(mut self, v: &[u8]) -> Result<Self::Value, E>
     where
         E: Error,
     {
-        self.check(TypeKind::Bytes, Unexpected::Bytes(v))?;
-        let v = BytesVisitor(self.0).visit_bytes(v);
-        self.0.pop();
-        v
+        let schema = self.find(TypeKind::Bytes, Unexpected::Bytes(v))?;
+        BytesVisitor(schema).visit_bytes(v)
     }
 
     fn visit_borrowed_bytes<E>(mut self, v: &'de [u8]) -> Result<Self::Value, E>
     where
         E: Error,
     {
-        self.check(TypeKind::Bytes, Unexpected::Bytes(v))?;
-        let v = BytesVisitor(self.0).visit_borrowed_bytes(v);
-        self.0.pop();
-        v
+        let schema = self.find(TypeKind::Bytes, Unexpected::Bytes(v))?;
+        BytesVisitor(schema).visit_borrowed_bytes(v)
     }
 
     fn visit_byte_buf<E>(mut self, v: Vec<u8>) -> Result<Self::Value, E>
     where
         E: Error,
     {
-        self.check(TypeKind::Bytes, Unexpected::Bytes(&v))?;
-        let v = BytesVisitor(self.0).visit_byte_buf(v);
-        self.0.pop();
-        v
+        let schema = self.find(TypeKind::Bytes, Unexpected::Bytes(&v))?;
+        BytesVisitor(schema).visit_byte_buf(v)
     }
 
     fn visit_none<E>(mut self) -> Result<Self::Value, E>
     where
         E: Error,
     {
-        self.check(TypeKind::Option, Unexpected::Option)?;
-        let v = OptionVisitor(self.0).visit_none();
-        self.0.pop();
-        v
+        let schema = self.find(TypeKind::Option, Unexpected::Option)?;
+        OptionVisitor(schema).visit_none()
     }
 
     fn visit_some<D>(mut self, deserializer: D) -> Result<Self::Value, D::Error>
     where
         D: Deserializer<'de>,
     {
-        self.check(TypeKind::Option, Unexpected::Option)?;
-        let v = OptionVisitor(self.0).visit_some(deserializer);
-        self.0.pop();
-        v
+        let schema = self.find(TypeKind::Option, Unexpected::Option)?;
+        OptionVisitor(schema).visit_some(deserializer)
     }
 
     fn visit_seq<A>(mut self, seq: A) -> Result<Self::Value, A::Error>
     where
         A: SeqAccess<'de>,
     {
-        let v = match self.find(&[TypeKind::List, TypeKind::Tuple], Unexpected::Seq)? {
-            TypeKind::List => ListVisitor(self.0).visit_seq(seq),
-            TypeKind::Tuple => TupleVisitor(self.0).visit_seq(seq),
+        let schema = self.find_container(&[TypeKind::List, TypeKind::Tuple], Unexpected::Seq)?;
+
+        match schema.kind {
+            TypeKind::List => ListVisitor(schema).visit_seq(seq),
+            TypeKind::Tuple => TupleVisitor(schema).visit_seq(seq),
             _ => unreachable!(),
-        };
-        self.0.pop();
-        v
+        }
     }
 
     fn visit_map<A>(mut self, map: A) -> Result<Self::Value, A::Error>
     where
         A: MapAccess<'de>,
     {
-        let v = match self.find(&[TypeKind::Dict, TypeKind::Class], Unexpected::Seq)? {
-            TypeKind::Dict => DictVisitor(self.0).visit_map(map),
-            TypeKind::Class => ClassVisitor(self.0).visit_map(map),
+        let schema = self.find_container(&[TypeKind::Dict, TypeKind::Class], Unexpected::Seq)?;
+
+        match schema.kind {
+            TypeKind::Dict => DictVisitor(schema).visit_map(map),
+            TypeKind::Class => ClassVisitor(schema).visit_map(map),
             _ => unreachable!(),
-        };
-        self.0.pop();
-        v
+        }
     }
 }
 
-struct EnumVisitor<'a, 'b>(&'b mut SchemaStack<'a>);
+struct EnumVisitor<'a>(&'a Schema);
 
-impl<'a, 'b> EnumVisitor<'a, 'b> {
+impl<'a> EnumVisitor<'a> {
     fn vars(&self) -> Vec<&str> {
         self.0
-            .current()
             .kwargs
             .iter()
             .map(|(name, _)| name.as_ref())
@@ -640,10 +590,9 @@ impl<'a, 'b> EnumVisitor<'a, 'b> {
     where
         E: Error,
     {
-        match self.0.current().kwargs.iter().find(|(name, _)| *name == s) {
+        match self.0.kwargs.iter().find(|(name, _)| *name == s) {
             Some(_) => Ok(self
                 .0
-                .current()
                 .cls
                 .as_ref(py())
                 .getattr(s)
@@ -657,7 +606,7 @@ impl<'a, 'b> EnumVisitor<'a, 'b> {
     }
 }
 
-impl<'a, 'b, 'de> Visitor<'de> for EnumVisitor<'a, 'b> {
+impl<'a, 'de> Visitor<'de> for EnumVisitor<'a> {
     type Value = Object;
 
     fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -893,24 +842,24 @@ impl<'de> Visitor<'de> for AnyVisitor {
     }
 }
 
-impl<'a, 'de> DeserializeState<'de, SchemaStack<'a>> for Object {
-    fn deserialize_state<'b, D>(stack: &'b mut SchemaStack<'a>, de: D) -> Result<Self, D::Error>
+impl<'a, 'de> DeserializeState<'de, Schema> for Object {
+    fn deserialize_state<'b, D>(schema: &Schema, de: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
     {
-        match stack.current().kind {
-            TypeKind::Bool => de.deserialize_bool(BoolVisitor(stack)),
-            TypeKind::Int => de.deserialize_i64(IntVisitor(stack)),
-            TypeKind::Float => de.deserialize_i64(FloatVisitor(stack)),
-            TypeKind::Str => de.deserialize_str(StrVisitor(stack)),
-            TypeKind::Bytes => de.deserialize_bytes(BytesVisitor(stack)),
-            TypeKind::List => de.deserialize_seq(ListVisitor(stack)),
-            TypeKind::Tuple => de.deserialize_seq(TupleVisitor(stack)),
-            TypeKind::Dict => de.deserialize_map(DictVisitor(stack)),
-            TypeKind::Class => de.deserialize_map(ClassVisitor(stack)),
-            TypeKind::Enum => de.deserialize_any(EnumVisitor(stack)),
-            TypeKind::Option => de.deserialize_option(OptionVisitor(stack)),
-            TypeKind::Union => de.deserialize_any(UnionVisitor(stack)),
+        match schema.kind {
+            TypeKind::Bool => de.deserialize_bool(BoolVisitor(schema)),
+            TypeKind::Int => de.deserialize_i64(IntVisitor(schema)),
+            TypeKind::Float => de.deserialize_i64(FloatVisitor(schema)),
+            TypeKind::Str => de.deserialize_str(StrVisitor(schema)),
+            TypeKind::Bytes => de.deserialize_bytes(BytesVisitor(schema)),
+            TypeKind::List => de.deserialize_seq(ListVisitor(schema)),
+            TypeKind::Tuple => de.deserialize_seq(TupleVisitor(schema)),
+            TypeKind::Dict => de.deserialize_map(DictVisitor(schema)),
+            TypeKind::Class => de.deserialize_map(ClassVisitor(schema)),
+            TypeKind::Enum => de.deserialize_any(EnumVisitor(schema)),
+            TypeKind::Option => de.deserialize_option(OptionVisitor(schema)),
+            TypeKind::Union => de.deserialize_any(UnionVisitor(schema)),
         }
     }
 }

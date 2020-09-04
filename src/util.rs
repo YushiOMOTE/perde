@@ -16,8 +16,8 @@ pub fn pyerr<E: ToString>(e: E) -> PyErr {
 
 pub fn de<E>(e: PyErr) -> E
 where
-    E: serde_state::de::Error,
+    E: serde::de::Error,
 {
     e.restore(py());
-    serde_state::de::Error::custom("Python error")
+    serde::de::Error::custom("Python error")
 }
