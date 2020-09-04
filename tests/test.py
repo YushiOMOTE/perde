@@ -10,10 +10,20 @@ def attr(**kwargs):
         return ty
     return func
 
-class E(enum.Enum):
-    X = 1
-    Y = "hage"
-    Z = 3
+
+def test(t, s, e):
+    p = perde.load_as(t, s)
+    assert p == e, f'\n * expected: {e}\n * got     : {p}'
+    print(f'ok: {p}')
+
+
+def testp(t, s):
+    try:
+        p = perde.load_as(t, s)
+        assert False, "this must panic"
+    except:
+        pass
+
 
 @dataclass
 class C:
@@ -26,6 +36,11 @@ class CC:
     key: int
     value: str
 
+test(C, '{"key": 3, "value": "ok"}', C(3, "ok"))
+test(C, '{"key": 3, "value": "ok", "aa": 44}', C(3, "ok"))
+test(CC, '{"key": 3, "value": "ok"}', CC(3, "ok"))
+testp(CC, '{"key": 3, "value": "ok", "aa": 44}')
+
 @dataclass
 class B:
     label: str
@@ -36,13 +51,25 @@ class A:
     name: int
     value: B
 
+test(A, '{"name": 3, "value": {"label": "hage", "tag": {"10": ["a",{"key": 333, "value": "hey"},5]}}}',
+     A(3, B("hage", {"10": ("a", C(333, "hey"), 5)})))
+
 @dataclass
 class X:
     some: Union[int, Dict[str, int], C]
 
+test(X, '{"some": {"x": 3}}', X({"x": 3}))
+
+class EN(enum.Enum):
+    X = 1
+    Y = "hage"
+    Z = 3
+
 @dataclass
 class E:
-    en: E
+    en: EN
+
+test(E, '{"en": "Z"}', E(EN.Z))
 
 @dataclass
 class FFF:
@@ -61,11 +88,15 @@ class F:
     y: int
     z: FF = field(metadata = {"perde_flatten": True})
 
+test(F, '{"x":1,"y":2,"a":3,"c":4,"p":"3","q":"4"}', F(1,2,FF(3,FFF("3","4"),4)))
+
 @attr(rename_all = "camelCase")
 @dataclass
 class R:
     this_is_it: int
     over_night: str
+
+test(R, '{"thisIsIt": 3, "overNight": "haa"}', R(3, "haa"))
 
 @attr(default = True)
 @dataclass
@@ -74,17 +105,23 @@ class Def:
     b: int
     c: int
 
+test(Def, '{"a": 3, "c": 1000}', Def(3, 0, 1000))
+
 @dataclass
 class Def2:
     a: int = field(metadata = {"perde_default": True})
     b: int
     c: int
 
+test(Def2, '{"b": 3, "c": 1000}', Def2(0, 3, 1000))
+
 @dataclass
 class RenameF:
     a: int
     b: int = field(metadata = {"perde_rename": "kami"})
     c: int
+
+test(RenameF, '{"a": 3, "kami": 100000, "c": 1000}', RenameF(3, 100000, 1000))
 
 @dataclass
 class Skip:
@@ -98,31 +135,9 @@ class SkipDe:
     b: int
     c: int = field(metadata = {"perde_skip_deserializing": True})
 
-print(perde.load_as(C, '{"key": 3, "value": "ok"}'))
-print("second")
-print(perde.load_as(C, '{"key": 3, "value": "ok"}'))
-print("third")
-print(perde.load_as(C, '{"key": 3, "value": "ok"}'))
+    test(Skip, '{"b": 3, "c": 1000}', Skip(0, 3, 1000))
+test(SkipDe, '{"a": 300, "b": 3}', SkipDe(300, 3, 0))
 
-print(perde.load_as(C, '{"key": 3, "value": "ok", "aa": 44}'))
-
-print(perde.load_as(CC, '{"key": 3, "value": "ok"}'))
-try:
-    print(perde.load_as(CC, '{"key": 3, "value": "ok", "aa": 44}'))
-    exit()
-except:
-    print(f'OK')
-
-print(perde.load_as(A, '{"name": 3, "value": {"label": "hage", "tag": {"10": ["a",{"key": 333, "value": "hey"},5]}}}'))
-print(perde.load_as(X, '{"some": {"x": 3}}'))
-print(perde.load_as(E, '{"en": "Z"}'))
-print(perde.load_as(F, '{"x":1,"y":2,"a":3,"c":4,"p":"3","q":"4"}'))
-print(perde.load_as(R, '{"thisIsIt": 3, "overNight": "haa"}'))
-print(perde.load_as(Def, '{"a": 3, "c": 1000}'))
-print(perde.load_as(Def2, '{"b": 3, "c": 1000}'))
-print(perde.load_as(RenameF, '{"a": 3, "kami": 100000, "c": 1000}'))
-print(perde.load_as(Skip, '{"a": 300, "b": 3, "c": 1000}'))
-print(perde.load_as(SkipDe, '{"a": 300, "b": 3, "c": 1000}'))
 
 import timeit
 
