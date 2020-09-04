@@ -209,6 +209,7 @@ dependencies = [
  "serde_json",
  "serde_state",
  "serde_yaml",
+ "smallvec",
  "toml",
 ]
 

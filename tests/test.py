@@ -99,6 +99,11 @@ class SkipDe:
     c: int = field(metadata = {"perde_skip_deserializing": True})
 
 print(perde.load_as(C, '{"key": 3, "value": "ok"}'))
+print("second")
+print(perde.load_as(C, '{"key": 3, "value": "ok"}'))
+print("third")
+print(perde.load_as(C, '{"key": 3, "value": "ok"}'))
+
 print(perde.load_as(C, '{"key": 3, "value": "ok", "aa": 44}'))
 
 print(perde.load_as(CC, '{"key": 3, "value": "ok"}'))

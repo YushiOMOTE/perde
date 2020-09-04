@@ -4,6 +4,7 @@ use pyo3::{
     types::{PyDict, PyModule, PyTuple, PyType},
 };
 use serde::de;
+use smallvec::{smallvec, SmallVec};
 use std::{collections::HashMap, str::FromStr};
 
 pub struct Object {
@@ -435,13 +436,13 @@ impl Schema {
 
 #[derive(Debug)]
 pub struct SchemaStack<'a> {
-    stack: Vec<&'a Schema>,
+    stack: SmallVec<[&'a Schema; 16]>,
 }
 
 impl<'a> SchemaStack<'a> {
     pub fn new(schema: &'a Schema) -> Self {
         Self {
-            stack: vec![schema],
+            stack: smallvec![schema],
         }
     }
 

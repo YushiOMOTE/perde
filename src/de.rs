@@ -177,7 +177,7 @@ impl<'a, 'b, 'de> Visitor<'de> for BoolVisitor<'a, 'b> {
     where
         E: de::Error,
     {
-        self.0.current().call((value,))
+        Ok(Object::new(value))
     }
 }
 
@@ -208,7 +208,7 @@ impl<'a, 'b, 'de> Visitor<'de> for IntVisitor<'a, 'b> {
     where
         E: de::Error,
     {
-        self.0.current().call((value,))
+        Ok(Object::new(value))
     }
 
     fn visit_u8<E>(self, value: u8) -> Result<Self::Value, E>
@@ -236,7 +236,7 @@ impl<'a, 'b, 'de> Visitor<'de> for IntVisitor<'a, 'b> {
     where
         E: de::Error,
     {
-        self.0.current().call((value,))
+        Ok(Object::new(value))
     }
 }
 
@@ -260,7 +260,7 @@ impl<'a, 'b, 'de> Visitor<'de> for FloatVisitor<'a, 'b> {
     where
         E: Error,
     {
-        self.0.current().call((value,))
+        Ok(Object::new(value))
     }
 }
 
@@ -277,28 +277,28 @@ impl<'a, 'b, 'de> Visitor<'de> for StrVisitor<'a, 'b> {
     where
         E: Error,
     {
-        self.0.current().call((value.to_string(),))
+        Ok(Object::new(value.to_string()))
     }
 
     fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
     where
         E: Error,
     {
-        self.0.current().call((value,))
+        Ok(Object::new(value))
     }
 
     fn visit_borrowed_str<E>(self, value: &'de str) -> Result<Self::Value, E>
     where
         E: Error,
     {
-        self.0.current().call((value,))
+        Ok(Object::new(value))
     }
 
     fn visit_string<E>(self, value: String) -> Result<Self::Value, E>
     where
         E: Error,
     {
-        self.0.current().call((value,))
+        Ok(Object::new(value))
     }
 }
 
