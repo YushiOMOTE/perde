@@ -14,6 +14,7 @@ mod util;
 #[pyfunction]
 pub fn load_as(ty: &PyAny, s: &str) -> PyResult<PyObject> {
     let schema = Schema::resolve(ty)?;
+    let schema = schema.borrow();
     let mut stack = SchemaStack::new(&schema);
     let mut deserializer = serde_json::Deserializer::from_str(s);
     let obj: Object = Object::deserialize_state(&mut stack, &mut deserializer).map_err(pyerr)?;

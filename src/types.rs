@@ -202,6 +202,7 @@ fn parse_container_attr(attrs: &HashMap<String, PyObject>) -> PyResult<Container
 
     Ok(attr)
 }
+
 #[pyclass]
 #[derive(Clone, Debug)]
 pub struct Schema {
@@ -414,18 +415,18 @@ impl Schema {
         ))
     }
 
-    pub fn resolve(ty: &PyAny) -> PyResult<Self> {
+    pub fn resolve(ty: &PyAny) -> PyResult<&PyCell<Self>> {
         Ok(match ty.getattr("__perde_schema__") {
             Ok(attr) => attr.extract()?,
             Err(_) => {
                 let schema = Schema::walk(ty)?;
-                ty.setattr("__perde_schema__", PyCell::new(py(), schema.clone())?)?;
-                schema
+                ty.setattr("__perde_schema__", schema)?;
+                &schema
             }
         })
     }
 
-    fn walk(ty: &PyAny) -> PyResult<Self> {
+    fn walk(ty: &PyAny) -> PyResult<&PyCell<Self>> {
         let module = PyModule::from_code(py(), include_str!("walk.py"), "walk.py", "walk")?;
 
         Ok(module.call1("to_schema", (ty,))?.extract()?)
