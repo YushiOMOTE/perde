@@ -4,7 +4,7 @@ use pyo3::{
     prelude::*,
     types::{PyDict, PyModule, PyTuple, PyType},
 };
-use serde::de;
+use serde::{de, ser};
 use smallvec::{smallvec, SmallVec};
 use std::{borrow::Cow, collections::HashMap, str::FromStr};
 
@@ -30,6 +30,14 @@ impl Object {
     #[cfg_attr(feature = "perf", flame)]
     pub fn to_pyobj(self) -> PyObject {
         self.inner
+    }
+
+    #[cfg_attr(feature = "perf", flame)]
+    pub fn to_value<'a, T: FromPyObject<'a>, E>(&'a self) -> Result<T, E>
+    where
+        E: ser::Error,
+    {
+        self.inner.extract(py()).map_err(ser)
     }
 }
 
@@ -223,6 +231,7 @@ pub struct Schema {
     kwargs: IndexMap<String, Schema>,
     cls: Py<PyType>,
     clsname: String,
+    argname: String,
     field_attr: FieldAttr,
     container_attr: ContainerAttr,
     flatten_args: IndexMap<String, Schema>,
@@ -283,14 +292,17 @@ impl Schema {
             .unwrap_or_else(|| cls.as_ref(py()).name().into());
         let kwargs = kwargs
             .into_iter()
-            .map(|(k, v)| {
+            .map(|(k, mut v)| {
                 (
                     if let Some(rename) = v.field_attr.rename.as_ref() {
                         rename.into()
                     } else {
                         convert_stringcase(&k, container_attr.rename_all)
                     },
-                    v,
+                    {
+                        v.argname = k;
+                        v
+                    },
                 )
             })
             .collect();
@@ -298,6 +310,7 @@ impl Schema {
         let mut schema = Self {
             cls,
             clsname,
+            argname: "".into(),
             kind,
             args,
             kwargs,
@@ -315,6 +328,10 @@ impl Schema {
 
     pub fn name(&self) -> Cow<str> {
         self.cls.as_ref(py()).name()
+    }
+
+    pub fn clsname(&self) -> &str {
+        &self.clsname
     }
 
     pub fn kind(&self) -> TypeKind {
@@ -513,12 +530,9 @@ impl Schema {
     }
 
     #[cfg_attr(feature = "perf", flame)]
-    pub fn type_param<E>(&self, index: usize) -> Result<&Schema, E>
-    where
-        E: de::Error,
-    {
+    pub fn type_param(&self, index: usize) -> PyResult<&Schema> {
         self.args.get(index).ok_or_else(|| {
-            de::Error::custom(format!(
+            pyerr(format!(
                 "the type parameter {} in the type definition of `{}` is missing",
                 index, self.clsname
             ))
@@ -558,6 +572,53 @@ impl Schema {
                 } else {
                     Ok(None)
                 }
+            })
+    }
+
+    #[cfg_attr(feature = "perf", flame)]
+    pub fn retrieve_members<'a, 'b, E>(
+        &'a self,
+        value: &'b PyAny,
+    ) -> Result<Vec<(&'a str, &'b PyAny, &'a Schema)>, E>
+    where
+        E: ser::Error,
+    {
+        self.kwargs.iter().try_fold(vec![], |mut mems, (k, s)| {
+            if s.field_attr.flatten {
+                let v = value.getattr(&s.argname).map_err(ser)?;
+                mems.extend(s.retrieve_members(v)?);
+            } else {
+                mems.push((k.as_ref(), value.getattr(&s.argname).map_err(ser)?, s))
+            }
+            Ok(mems)
+        })
+    }
+
+    #[cfg_attr(feature = "perf", flame)]
+    pub fn verify_variant<'a, E>(&self, value: &'a PyAny) -> Result<&'a str, E>
+    where
+        E: ser::Error,
+    {
+        let name: &str = value
+            .getattr("name")
+            .and_then(|v| v.extract())
+            .map_err(ser)?;
+        self.kwargs
+            .get(name)
+            .ok_or_else(|| ser::Error::custom(format!("unknown variant `{}`", name)))?;
+        Ok(name)
+    }
+
+    #[cfg_attr(feature = "perf", flame)]
+    pub fn find_union_variant<E>(&self, value: &PyAny) -> Result<&Schema, E>
+    where
+        E: ser::Error,
+    {
+        self.args
+            .iter()
+            .find(|s| s.cls.as_ref(py()).eq(value.get_type()))
+            .ok_or_else(|| {
+                ser::Error::custom(format!("unknown variant `{}`", value.get_type().name()))
             })
     }
 }

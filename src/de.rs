@@ -31,7 +31,7 @@ impl<'a, 'de> Visitor<'de> for DictVisitor<'a> {
         let mut args = Vec::new();
 
         loop {
-            let seed = Seed::new(self.0.type_param(0)?);
+            let seed = Seed::new(self.0.type_param(0).map_err(de)?);
             let key = access.next_key_seed(seed)?;
 
             let key: Object = match key {
@@ -41,7 +41,7 @@ impl<'a, 'de> Visitor<'de> for DictVisitor<'a> {
                 }
             };
 
-            let seed = Seed::new(self.0.type_param(1)?);
+            let seed = Seed::new(self.0.type_param(1).map_err(de)?);
             let value: Object = access.next_value_seed(seed)?;
 
             args.push((key.to_pyobj(), value.to_pyobj()));
@@ -109,7 +109,7 @@ impl<'a, 'de> Visitor<'de> for ListVisitor<'a> {
         let mut items = Vec::new();
 
         loop {
-            let seed = Seed::new(self.0.type_param(0)?);
+            let seed = Seed::new(self.0.type_param(0).map_err(de)?);
             let value: Object = match seq.next_element_seed(seed)? {
                 Some(value) => value,
                 None => break,
@@ -144,7 +144,7 @@ impl<'a, 'de> Visitor<'de> for TupleVisitor<'a> {
 
         loop {
             let value: Object = if index < len {
-                let seed = Seed::new(self.0.type_param(index)?);
+                let seed = Seed::new(self.0.type_param(index).map_err(de)?);
                 match seq.next_element_seed(seed)? {
                     Some(value) => value,
                     None => break,
@@ -386,7 +386,7 @@ impl<'a, 'de> Visitor<'de> for OptionVisitor<'a> {
     where
         D: Deserializer<'de>,
     {
-        let schema = self.0.type_param(0)?;
+        let schema = self.0.type_param(0).map_err(de)?;
         Object::deserialize_state(schema, deserializer)
     }
 }

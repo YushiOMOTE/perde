@@ -21,3 +21,11 @@ where
     e.restore(py());
     serde::de::Error::custom("Python error")
 }
+
+pub fn ser<E>(e: PyErr) -> E
+where
+    E: serde::ser::Error,
+{
+    e.restore(py());
+    serde::ser::Error::custom("Python error")
+}
