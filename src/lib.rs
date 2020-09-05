@@ -72,7 +72,7 @@ pub fn loads(s: &str, kwargs: Option<&PyDict>) -> PyResult<PyObject> {
 
 #[pyfunction(kwargs = "**")]
 pub fn attr(ty: &PyAny, kwargs: Option<&PyDict>) -> PyResult<()> {
-    let schema = Schema::resolve_with_attr(ty, kwargs)?;
+    Schema::resolve_with_attr(ty, kwargs)?;
     Ok(())
 }
 

@@ -5,7 +5,6 @@ use pyo3::{
     types::{PyDict, PyModule, PyTuple, PyType},
 };
 use serde::{de, ser};
-use smallvec::{smallvec, SmallVec};
 use std::{borrow::Cow, collections::HashMap, str::FromStr};
 
 pub struct Object {

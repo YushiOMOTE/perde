@@ -3,10 +3,6 @@ use crate::{
     types::{Object, Schema, TypeKind},
     util::*,
 };
-use pyo3::{
-    prelude::*,
-    types::{PyDict, PyTuple},
-};
 use serde::de::{
     self, Deserialize, Deserializer, EnumAccess, Error, IgnoredAny, MapAccess, SeqAccess,
     Unexpected, Visitor,
