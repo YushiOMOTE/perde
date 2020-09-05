@@ -37,9 +37,9 @@ class CC:
     key: int
     value: str
 
-print(perde.loads_as(C, '{"key": 3, "value": "ok"}'))
-print(perde.loads_as(C, '{"value": "ok", "key": 3}'))
-exit()
+# print(perde.loads_as(C, '{"key": 3, "value": "ok"}'))
+# print(perde.loads_as(C, '{"value": "ok", "key": 3}'))
+# exit()
 
 test(C, '{"key": 3, "value": "ok"}', C(3, "ok"))
 test(C, '{"key": 3, "value": "ok", "aa": 44}', C(3, "ok"))

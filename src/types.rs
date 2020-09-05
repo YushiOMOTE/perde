@@ -6,7 +6,7 @@ use pyo3::{
 };
 use serde::de;
 use smallvec::{smallvec, SmallVec};
-use std::{collections::HashMap, str::FromStr};
+use std::{borrow::Cow, collections::HashMap, str::FromStr};
 
 pub struct Object {
     inner: PyObject,
@@ -218,15 +218,14 @@ fn parse_container_attr(attrs: &HashMap<String, PyObject>) -> PyResult<Container
 #[pyclass]
 #[derive(Clone, Debug)]
 pub struct Schema {
-    pub cls: Py<PyType>,
-    pub clsname: String,
-    pub argname: String,
-    pub kind: TypeKind,
-    pub args: Vec<Schema>,
-    pub kwargs: IndexMap<String, Schema>,
-    pub field_attr: FieldAttr,
-    pub container_attr: ContainerAttr,
-    pub flatten_args: IndexMap<String, Schema>,
+    kind: TypeKind,
+    args: Vec<Schema>,
+    kwargs: IndexMap<String, Schema>,
+    cls: Py<PyType>,
+    clsname: String,
+    field_attr: FieldAttr,
+    container_attr: ContainerAttr,
+    flatten_args: IndexMap<String, Schema>,
 }
 
 #[cfg_attr(feature = "perf", flame)]
@@ -284,17 +283,14 @@ impl Schema {
             .unwrap_or_else(|| cls.as_ref(py()).name().into());
         let kwargs = kwargs
             .into_iter()
-            .map(|(k, mut v)| {
+            .map(|(k, v)| {
                 (
                     if let Some(rename) = v.field_attr.rename.as_ref() {
                         rename.into()
                     } else {
                         convert_stringcase(&k, container_attr.rename_all)
                     },
-                    {
-                        v.argname = k;
-                        v
-                    },
+                    v,
                 )
             })
             .collect();
@@ -302,7 +298,6 @@ impl Schema {
         let mut schema = Self {
             cls,
             clsname,
-            argname: "".into(),
             kind,
             args,
             kwargs,
@@ -316,6 +311,18 @@ impl Schema {
         }
 
         Ok(schema)
+    }
+
+    pub fn name(&self) -> Cow<str> {
+        self.cls.as_ref(py()).name()
+    }
+
+    pub fn kind(&self) -> TypeKind {
+        self.kind
+    }
+
+    pub fn num_args(&self) -> usize {
+        self.args.len()
     }
 
     #[cfg_attr(feature = "perf", flame)]
@@ -359,6 +366,31 @@ impl Schema {
     }
 
     #[cfg_attr(feature = "perf", flame)]
+    pub fn variant(&self, name: &str) -> PyResult<Option<Object>> {
+        self.kwargs
+            .iter()
+            .find(|(n, _)| *n == name)
+            .map(|_| {
+                Ok(self
+                    .cls
+                    .as_ref(py())
+                    .getattr(name)
+                    .map(|v| Object::new(v))?)
+            })
+            .transpose()
+    }
+
+    #[cfg_attr(feature = "perf", flame)]
+    pub fn variant_names(&self) -> Vec<&str> {
+        self.kwargs.iter().map(|(name, _)| name.as_ref()).collect()
+    }
+
+    #[cfg_attr(feature = "perf", flame)]
+    pub fn type_names(&self) -> Vec<Cow<str>> {
+        self.kwargs.iter().map(|(_, s)| s.name()).collect()
+    }
+
+    #[cfg_attr(feature = "perf", flame)]
     pub fn call_class<'a, E>(&self, map: &mut HashMap<&'a str, PyObject>) -> Result<Object, E>
     where
         E: de::Error,
@@ -367,7 +399,6 @@ impl Schema {
             .kwargs
             .iter()
             .map(|(k, schema)| {
-                // let argname = schema.argname.to_object(py());
                 let k: &str = k.as_ref();
                 match map.remove(k) {
                     Some(v) => Ok(v),
@@ -433,27 +464,23 @@ impl Schema {
     where
         E: de::Error,
     {
-        let kwargs: Result<Vec<_>, _> = self
+        let args: Result<Vec<_>, _> = self
             .kwargs
             .iter()
             .map(|(k, schema)| {
-                let argname = schema.argname.to_object(py());
-
                 if schema.is_flatten() {
-                    schema
-                        .call_flatten(flatten_args)
-                        .map(|v| (argname, v.to_pyobj()))
+                    schema.call_flatten(flatten_args).map(|v| v.to_pyobj())
                 } else {
                     let k: &str = k.as_ref();
                     match flatten_args.remove(k) {
-                        Some(v) => Ok((argname, v)),
+                        Some(v) => Ok(v),
                         None => {
                             if self.container_attr.default
                                 || schema.field_attr.default
                                 || schema.field_attr.skip
                                 || schema.field_attr.skip_deserializing
                             {
-                                Ok((argname, schema.call_default()?.to_pyobj()))
+                                Ok(schema.call_default()?.to_pyobj())
                             } else {
                                 Err(de::Error::custom(format!("missing field \"{}\"", k)))
                             }
@@ -463,10 +490,7 @@ impl Schema {
             })
             .collect();
 
-        let dict = PyDict::from_sequence(py(), kwargs?.into_py(py())).map_err(de)?;
-        Ok(Object::new(
-            self.cls.as_ref(py()).call((), Some(&dict)).map_err(de)?,
-        ))
+        self.call_class_by_vec(args?)
     }
 
     #[cfg_attr(feature = "perf", flame)]
@@ -499,6 +523,11 @@ impl Schema {
                 index, self.clsname
             ))
         })
+    }
+
+    #[cfg_attr(feature = "perf", flame)]
+    pub fn compatible_type_param(&self, kinds: &[TypeKind]) -> Option<&Schema> {
+        self.args.iter().find(|s| kinds.contains(&s.kind))
     }
 
     #[cfg_attr(feature = "perf", flame)]

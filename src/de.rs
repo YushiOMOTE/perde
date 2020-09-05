@@ -140,29 +140,35 @@ impl<'a, 'de> Visitor<'de> for TupleVisitor<'a> {
         let mut items = Vec::new();
 
         let mut index = 0;
-        let len = self.0.args.len();
+        let len = self.0.num_args();
 
         loop {
-            let seed = Seed::new(self.0.type_param(index.min(len.saturating_sub(1)))?);
-            let value: Object = match seq.next_element_seed(seed)? {
-                Some(value) => {
-                    if index >= len {
-                        return Err(Error::custom(format!(
-                            "the tuple expects {} elements but got more",
-                            len
-                        )));
-                    } else {
-                        value
-                    }
+            let value: Object = if index < len {
+                let seed = Seed::new(self.0.type_param(index)?);
+                match seq.next_element_seed(seed)? {
+                    Some(value) => value,
+                    None => break,
                 }
-                None => break,
+            } else {
+                let _: IgnoredAny = match seq.next_element()? {
+                    Some(value) => value,
+                    None => break,
+                };
+                continue;
             };
 
             index += 1;
             items.push(value.to_pyobj());
         }
 
-        Ok(self.0.call((items,))?)
+        if index == self.0.num_args() {
+            Ok(self.0.call((items,))?)
+        } else {
+            Err(Error::custom(format!(
+                "the tuple expects {} elements but got {}",
+                len, index
+            )))
+        }
     }
 }
 
@@ -398,9 +404,7 @@ impl<'a, 'c> UnionVisitor<'a> {
         E: Error,
     {
         self.0
-            .args
-            .iter()
-            .find(|s| kind.contains(&s.kind))
+            .compatible_type_param(kind)
             .ok_or_else(|| Error::invalid_type(unexpected, self))
     }
 
@@ -410,9 +414,7 @@ impl<'a, 'c> UnionVisitor<'a> {
         E: Error,
     {
         self.0
-            .args
-            .iter()
-            .find(|s| s.kind == kind)
+            .compatible_type_param(&[kind])
             .ok_or_else(|| Error::invalid_type(unexpected, self))
     }
 }
@@ -422,13 +424,7 @@ impl<'a, 'de> Visitor<'de> for UnionVisitor<'a> {
 
     #[cfg_attr(feature = "perf", flame)]
     fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let names: Vec<_> = self
-            .0
-            .args
-            .iter()
-            .map(|s| s.cls.as_ref(py()).name())
-            .collect();
-        write!(f, "any of {:?}", names)
+        write!(f, "any of {:?}", self.0.type_names())
     }
 
     #[cfg_attr(feature = "perf", flame)]
@@ -611,7 +607,7 @@ impl<'a, 'de> Visitor<'de> for UnionVisitor<'a> {
     {
         let schema = self.find_container(&[TypeKind::List, TypeKind::Tuple], Unexpected::Seq)?;
 
-        match schema.kind {
+        match schema.kind() {
             TypeKind::List => ListVisitor(schema).visit_seq(seq),
             TypeKind::Tuple => TupleVisitor(schema).visit_seq(seq),
             _ => unreachable!(),
@@ -625,7 +621,7 @@ impl<'a, 'de> Visitor<'de> for UnionVisitor<'a> {
     {
         let schema = self.find_container(&[TypeKind::Dict, TypeKind::Class], Unexpected::Seq)?;
 
-        match schema.kind {
+        match schema.kind() {
             TypeKind::Dict => DictVisitor(schema).visit_map(map),
             TypeKind::Class => ClassVisitor(schema).visit_map(map),
             _ => unreachable!(),
@@ -638,11 +634,7 @@ struct EnumVisitor<'a>(&'a Schema);
 impl<'a> EnumVisitor<'a> {
     #[cfg_attr(feature = "perf", flame)]
     fn vars(&self) -> Vec<&str> {
-        self.0
-            .kwargs
-            .iter()
-            .map(|(name, _)| name.as_ref())
-            .collect()
+        self.0.variant_names()
     }
 
     #[cfg_attr(feature = "perf", flame)]
@@ -650,19 +642,9 @@ impl<'a> EnumVisitor<'a> {
     where
         E: Error,
     {
-        match self.0.kwargs.iter().find(|(name, _)| *name == s) {
-            Some(_) => Ok(self
-                .0
-                .cls
-                .as_ref(py())
-                .getattr(s)
-                .map(|v| Object::new(v))
-                .map_err(de)?),
-            None => Err(Error::custom(format!(
-                "the enum value must be any of {:?}",
-                self.vars()
-            ))),
-        }
+        self.0.variant(s).map_err(de)?.ok_or_else(|| {
+            Error::custom(format!("the enum value must be any of {:?}", self.vars()))
+        })
     }
 }
 
@@ -956,7 +938,7 @@ impl<'a, 'de> DeserializeState<'de, Schema> for Object {
     where
         D: Deserializer<'de>,
     {
-        match schema.kind {
+        match schema.kind() {
             TypeKind::Bool => de.deserialize_bool(BoolVisitor(schema)),
             TypeKind::Int => de.deserialize_i64(IntVisitor(schema)),
             TypeKind::Float => de.deserialize_i64(FloatVisitor(schema)),
