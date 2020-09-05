@@ -7,7 +7,7 @@ from typing import Dict, TypeVar, Union, List, Tuple
 
 def attr(**kwargs):
     def func(ty):
-        setattr(ty, "__perde_attr__", kwargs)
+        perde.attr(ty, **kwargs)
         return ty
     return func
 

@@ -263,8 +263,16 @@ impl Schema {
         args: Vec<Schema>,
         kwargs: Vec<(String, Schema)>,
         field_attr: HashMap<String, PyObject>,
+        container_attr: HashMap<String, PyObject>,
     ) -> PyResult<Self> {
-        Self::new(cls, kind, args, kwargs, field_attr)
+        Self::new(
+            cls,
+            kind,
+            args,
+            kwargs,
+            field_attr,
+            parse_container_attr(&container_attr)?,
+        )
     }
 }
 
@@ -276,15 +284,10 @@ impl Schema {
         args: Vec<Schema>,
         kwargs: Vec<(String, Schema)>,
         field_attr: HashMap<String, PyObject>,
+        container_attr: ContainerAttr,
     ) -> PyResult<Self> {
-        let container_attr = match cls.as_ref(py()).getattr("__perde_attr__") {
-            Ok(v) => v.extract()?,
-            Err(_) => HashMap::new(),
-        };
-
         let kind = kind.parse()?;
         let field_attr = parse_field_attr(&field_attr)?;
-        let container_attr = parse_container_attr(&container_attr)?;
 
         let clsname = container_attr
             .rename
@@ -511,11 +514,19 @@ impl Schema {
     }
 
     #[cfg_attr(feature = "perf", flame)]
-    pub fn resolve(ty: &PyAny) -> PyResult<&PyCell<Self>> {
+    pub fn resolve<'a>(ty: &'a PyAny) -> PyResult<&'a PyCell<Self>> {
+        Self::resolve_with_attr(ty, None)
+    }
+
+    #[cfg_attr(feature = "perf", flame)]
+    pub fn resolve_with_attr<'a>(
+        ty: &'a PyAny,
+        kwargs: Option<&PyDict>,
+    ) -> PyResult<&'a PyCell<Self>> {
         Ok(match ty.getattr("__perde_schema__") {
             Ok(attr) => attr.extract()?,
             Err(_) => {
-                let schema = Schema::walk(ty)?;
+                let schema = Schema::walk(ty, kwargs)?;
                 ty.setattr("__perde_schema__", schema)?;
                 &schema
             }
@@ -523,10 +534,12 @@ impl Schema {
     }
 
     #[cfg_attr(feature = "perf", flame)]
-    fn walk(ty: &PyAny) -> PyResult<&PyCell<Self>> {
+    fn walk<'a>(ty: &'a PyAny, kwargs: Option<&PyDict>) -> PyResult<&'a PyCell<Self>> {
         let module = PyModule::from_code(py(), include_str!("walk.py"), "walk.py", "walk")?;
 
-        Ok(module.call1("to_schema", (ty,))?.extract()?)
+        Ok(module
+            .call("to_schema", (ty, PyDict::new(py())), kwargs)?
+            .extract()?)
     }
 
     #[cfg_attr(feature = "perf", flame)]

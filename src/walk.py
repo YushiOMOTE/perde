@@ -4,20 +4,20 @@ from dataclasses import dataclass, fields, is_dataclass, field
 from typing import Dict, TypeVar, Union, List, Optional, Union
 from enum import Enum
 
-def to_schema(t: TypeVar, attr = {}):
+def to_schema(t: TypeVar, attr = {}, **kwargs):
     if is_dataclass(t):
-        return to_class(t, attr)
+        return to_class(t, attr, **kwargs)
     if is_generic(t):
-        return to_generic(t, attr)
+        return to_generic(t, attr, **kwargs)
     if issubclass(t, Enum):
-        return to_enum(t, attr)
+        return to_enum(t, attr, **kwargs)
     if issubclass(t, (bool, int, float, str, bytes, bytearray)):
-        return to_simple(t, attr)
+        return to_simple(t, attr, **kwargs)
     else:
         raise TypeError(f'Unsupported type {t}')
 
-def to_simple(t: TypeVar, attr = {}):
-    return Schema(t, t.__name__, [], [], attr)
+def to_simple(t: TypeVar, attr = {}, **kwargs):
+    return Schema(t, t.__name__, [], [], attr, kwargs)
 
 def is_generic(t: TypeVar):
     if get_origin(t) is not None:
@@ -26,7 +26,7 @@ def is_generic(t: TypeVar):
         return True
     return False
 
-def to_generic(t: TypeVar, attr = {}):
+def to_generic(t: TypeVar, attr = {}, **kwargs):
     args = [to_schema(arg) for arg in get_args(t)]
     if is_optional_type(t):
         ty = type(None)
@@ -37,12 +37,12 @@ def to_generic(t: TypeVar, attr = {}):
     else:
         ty = get_origin(t)
         name = ty.__name__
-    return Schema(ty, name, args, [], attr)
+    return Schema(ty, name, args, [], attr, kwargs)
 
-def to_enum(t: TypeVar, attr = {}):
+def to_enum(t: TypeVar, attr = {}, **kwargs):
     fs = [(f.name, to_schema(type(f.value))) for f in t]
-    return Schema(t, "enum", [], fs, attr)
+    return Schema(t, "enum", [], fs, attr, kwargs)
 
-def to_class(t: TypeVar, attr = {}):
+def to_class(t: TypeVar, attr = {}, **kwargs):
     fs = [(f.name, to_schema(f.type, dict(f.metadata))) for f in fields(t)]
-    return Schema(t, "class", [], fs, attr)
+    return Schema(t, "class", [], fs, attr, kwargs)

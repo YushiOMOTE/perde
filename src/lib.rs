@@ -41,7 +41,7 @@ pub fn dumps(v: &PyAny) -> PyResult<String> {
     let schema = schema.borrow();
     let object = v.to_object(py());
     let object = TypedObject::new(&*schema, object);
-    // let schema = schema.borrow_mut();
+
     let buf = vec![];
     let mut serializer = serde_json::Serializer::new(buf);
     object.serialize(&mut serializer).map_err(pyerr)?;
@@ -70,6 +70,12 @@ pub fn loads(s: &str, kwargs: Option<&PyDict>) -> PyResult<PyObject> {
     Ok(obj.into())
 }
 
+#[pyfunction(kwargs = "**")]
+pub fn attr(ty: &PyAny, kwargs: Option<&PyDict>) -> PyResult<()> {
+    let schema = Schema::resolve_with_attr(ty, kwargs)?;
+    Ok(())
+}
+
 #[pymodule]
 fn perde(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
     m.add_class::<Schema>()?;
@@ -80,6 +86,8 @@ fn perde(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
     m.add_wrapped(wrap_pyfunction!(loads))?;
     #[cfg(feature = "json")]
     m.add_wrapped(wrap_pyfunction!(dumps))?;
+
+    m.add_wrapped(wrap_pyfunction!(attr))?;
 
     Ok(())
 }
