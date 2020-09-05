@@ -37,9 +37,9 @@ class CC:
     key: int
     value: str
 
-# print(perde.loads_as(C, '{"key": 3, "value": "ok"}'))
-# print(perde.loads_as(C, '{"key": 3, "value": "ok"}'))
-# exit()
+print(perde.loads_as(C, '{"key": 3, "value": "ok"}'))
+print(perde.loads_as(C, '{"value": "ok", "key": 3}'))
+exit()
 
 test(C, '{"key": 3, "value": "ok"}', C(3, "ok"))
 test(C, '{"key": 3, "value": "ok", "aa": 44}', C(3, "ok"))
@@ -142,18 +142,6 @@ class SkipDe:
 
     test(Skip, '{"b": 3, "c": 1000}', Skip(0, 3, 1000))
 test(SkipDe, '{"a": 300, "b": 3}', SkipDe(300, 3, 0))
-
-
-pyfunc = timeit.repeat('f()', '''
-def f():
-    pass
-''', number = 100000)
-rsfunc = timeit.repeat('f()', '''
-from perde import f
-''', number = 100000)
-
-print(pyfunc)
-print(rsfunc)
 
 res_perde_as = timeit.repeat('perde.loads_as(C, \'{"key": 300, "value": "hoge"}\')', setup = '''
 import perde

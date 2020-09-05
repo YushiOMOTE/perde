@@ -14,6 +14,7 @@ pub struct Seed<S, T> {
 }
 
 impl<S, T> Seed<S, T> {
+    #[cfg_attr(feature = "perf", flame)]
     pub fn new(seed: S) -> Seed<S, T> {
         Seed {
             seed,
@@ -29,6 +30,7 @@ where
 {
     type Value = T;
 
+    #[cfg_attr(feature = "perf", flame)]
     fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
     where
         D: Deserializer<'de>,

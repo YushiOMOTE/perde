@@ -13,9 +13,9 @@ serde_json = { version = "1.0", optional = true }
 serde_yaml = { version = "0.8", optional = true }
 serde_toml = { version = "0.5", package = "toml", optional = true }
 rmp-serde = { version = "0.14", optional = true }
-flame = "0.2"
-flamer = "0.3"
 indexmap = "1.5"
+flame = { version = "0.2", optional = true }
+flamer = { version = "0.3", optional = true }
 
 [lib]
 name = "perde"
@@ -27,3 +27,4 @@ json = ["serde_json"]
 yaml = ["serde_yaml"]
 toml = ["serde_toml"]
 msgpack = ["rmp-serde"]
+perf = ["flame", "flamer"]

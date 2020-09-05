@@ -13,24 +13,28 @@ pub struct Object {
 }
 
 impl Object {
+    #[cfg_attr(feature = "perf", flame)]
     pub fn new<T: ToPyObject>(value: T) -> Self {
         Self {
             inner: value.to_object(py()),
         }
     }
 
+    #[cfg_attr(feature = "perf", flame)]
     pub fn null() -> Self {
         Self {
             inner: ().to_object(py()),
         }
     }
 
+    #[cfg_attr(feature = "perf", flame)]
     pub fn to_pyobj(self) -> PyObject {
         self.inner
     }
 }
 
 impl From<Object> for PyObject {
+    #[cfg_attr(feature = "perf", flame)]
     fn from(obj: Object) -> Self {
         obj.to_pyobj()
     }
@@ -67,6 +71,7 @@ pub enum TypeKind {
 impl std::str::FromStr for TypeKind {
     type Err = PyErr;
 
+    #[cfg_attr(feature = "perf", flame)]
     fn from_str(s: &str) -> PyResult<Self> {
         match s {
             "bool" => Ok(Self::Bool),
@@ -101,6 +106,7 @@ pub enum StrCase {
 impl FromStr for StrCase {
     type Err = PyErr;
 
+    #[cfg_attr(feature = "perf", flame)]
     fn from_str(s: &str) -> PyResult<Self> {
         match s {
             "lowercase" => Ok(StrCase::Lower),
@@ -116,6 +122,7 @@ impl FromStr for StrCase {
     }
 }
 
+#[cfg_attr(feature = "perf", flame)]
 fn collect_flatten_args(schema: &Schema) -> IndexMap<String, Schema> {
     let mut args = IndexMap::new();
 
@@ -131,6 +138,7 @@ fn collect_flatten_args(schema: &Schema) -> IndexMap<String, Schema> {
     args
 }
 
+#[cfg_attr(feature = "perf", flame)]
 pub fn has_flatten(s: &Schema) -> bool {
     s.kwargs
         .iter()
@@ -147,6 +155,7 @@ pub struct FieldAttr {
     skip_deserializing: bool,
 }
 
+#[cfg_attr(feature = "perf", flame)]
 fn parse_field_attr(attrs: &HashMap<String, PyObject>) -> PyResult<FieldAttr> {
     let mut attr = FieldAttr::default();
 
@@ -183,6 +192,7 @@ pub struct ContainerAttr {
     default: bool,
 }
 
+#[cfg_attr(feature = "perf", flame)]
 fn parse_container_attr(attrs: &HashMap<String, PyObject>) -> PyResult<ContainerAttr> {
     let mut attr = ContainerAttr::default();
 
@@ -219,6 +229,7 @@ pub struct Schema {
     pub flatten_args: IndexMap<String, Schema>,
 }
 
+#[cfg_attr(feature = "perf", flame)]
 fn convert_stringcase(s: &str, case: Option<StrCase>) -> String {
     use inflections::Inflect;
 
@@ -250,6 +261,7 @@ impl Schema {
 }
 
 impl Schema {
+    #[cfg_attr(feature = "perf", flame)]
     fn new(
         cls: Py<PyType>,
         kind: &str,
@@ -306,14 +318,17 @@ impl Schema {
         Ok(schema)
     }
 
+    #[cfg_attr(feature = "perf", flame)]
     pub fn is_flatten(&self) -> bool {
         self.field_attr.flatten
     }
 
+    #[cfg_attr(feature = "perf", flame)]
     pub fn has_flatten(&self) -> bool {
         !self.flatten_args.is_empty()
     }
 
+    #[cfg_attr(feature = "perf", flame)]
     pub fn call<E>(&self, args: impl IntoPy<Py<PyTuple>>) -> Result<Object, E>
     where
         E: de::Error,
@@ -323,6 +338,7 @@ impl Schema {
         ))
     }
 
+    #[cfg_attr(feature = "perf", flame)]
     pub fn call_default<E>(&self) -> Result<Object, E>
     where
         E: de::Error,
@@ -330,6 +346,7 @@ impl Schema {
         Ok(Object::new(self.cls.as_ref(py()).call0().map_err(de)?))
     }
 
+    #[cfg_attr(feature = "perf", flame)]
     pub fn call_map<E>(&self, kwargs: Vec<(PyObject, PyObject)>) -> Result<Object, E>
     where
         E: de::Error,
@@ -341,6 +358,7 @@ impl Schema {
         ))
     }
 
+    #[cfg_attr(feature = "perf", flame)]
     pub fn call_class<'a, E>(&self, map: &mut HashMap<&'a str, PyObject>) -> Result<Object, E>
     where
         E: de::Error,
@@ -371,6 +389,7 @@ impl Schema {
         self.call_class_by_vec(args?)
     }
 
+    #[cfg_attr(feature = "perf", flame)]
     pub fn call_class_by_vec<'a, E>(&self, args: Vec<PyObject>) -> Result<Object, E>
     where
         E: de::Error,
@@ -406,6 +425,7 @@ impl Schema {
         }
     }
 
+    #[cfg_attr(feature = "perf", flame)]
     pub fn call_flatten<'a, 'b, E>(
         &self,
         flatten_args: &'a mut HashMap<&'b str, PyObject>,
@@ -449,6 +469,7 @@ impl Schema {
         ))
     }
 
+    #[cfg_attr(feature = "perf", flame)]
     pub fn resolve(ty: &PyAny) -> PyResult<&PyCell<Self>> {
         Ok(match ty.getattr("__perde_schema__") {
             Ok(attr) => attr.extract()?,
@@ -460,12 +481,14 @@ impl Schema {
         })
     }
 
+    #[cfg_attr(feature = "perf", flame)]
     fn walk(ty: &PyAny) -> PyResult<&PyCell<Self>> {
         let module = PyModule::from_code(py(), include_str!("walk.py"), "walk.py", "walk")?;
 
         Ok(module.call1("to_schema", (ty,))?.extract()?)
     }
 
+    #[cfg_attr(feature = "perf", flame)]
     pub fn type_param<E>(&self, index: usize) -> Result<&Schema, E>
     where
         E: de::Error,
@@ -478,6 +501,7 @@ impl Schema {
         })
     }
 
+    #[cfg_attr(feature = "perf", flame)]
     pub fn member<E>(&self, name: &str) -> Result<Option<&Schema>, E>
     where
         E: de::Error,

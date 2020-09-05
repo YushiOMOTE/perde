@@ -18,10 +18,12 @@ struct DictVisitor<'a>(&'a Schema);
 impl<'a, 'de> Visitor<'de> for DictVisitor<'a> {
     type Value = Object;
 
+    #[cfg_attr(feature = "perf", flame)]
     fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "a map")
     }
 
+    #[cfg_attr(feature = "perf", flame)]
     fn visit_map<M>(self, mut access: M) -> Result<Self::Value, M::Error>
     where
         M: MapAccess<'de>,
@@ -54,10 +56,12 @@ struct ClassVisitor<'a>(&'a Schema);
 impl<'a, 'de> Visitor<'de> for ClassVisitor<'a> {
     type Value = Object;
 
+    #[cfg_attr(feature = "perf", flame)]
     fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "a map")
     }
 
+    #[cfg_attr(feature = "perf", flame)]
     fn visit_map<M>(self, mut access: M) -> Result<Self::Value, M::Error>
     where
         M: MapAccess<'de>,
@@ -92,10 +96,12 @@ struct ListVisitor<'a>(&'a Schema);
 impl<'a, 'de> Visitor<'de> for ListVisitor<'a> {
     type Value = Object;
 
+    #[cfg_attr(feature = "perf", flame)]
     fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "a sequence")
     }
 
+    #[cfg_attr(feature = "perf", flame)]
     fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
     where
         A: SeqAccess<'de>,
@@ -121,10 +127,12 @@ struct TupleVisitor<'a>(&'a Schema);
 impl<'a, 'de> Visitor<'de> for TupleVisitor<'a> {
     type Value = Object;
 
+    #[cfg_attr(feature = "perf", flame)]
     fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "a sequence")
     }
 
+    #[cfg_attr(feature = "perf", flame)]
     fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
     where
         A: SeqAccess<'de>,
@@ -163,10 +171,12 @@ struct BoolVisitor<'a>(&'a Schema);
 impl<'a, 'de> Visitor<'de> for BoolVisitor<'a> {
     type Value = Object;
 
+    #[cfg_attr(feature = "perf", flame)]
     fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "a boolean")
     }
 
+    #[cfg_attr(feature = "perf", flame)]
     fn visit_bool<E>(self, value: bool) -> Result<Self::Value, E>
     where
         E: de::Error,
@@ -180,10 +190,12 @@ struct IntVisitor<'a>(&'a Schema);
 impl<'a, 'de> Visitor<'de> for IntVisitor<'a> {
     type Value = Object;
 
+    #[cfg_attr(feature = "perf", flame)]
     fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "an integer")
     }
 
+    #[cfg_attr(feature = "perf", flame)]
     fn visit_i8<E>(self, value: i8) -> Result<Self::Value, E>
     where
         E: de::Error,
@@ -191,6 +203,7 @@ impl<'a, 'de> Visitor<'de> for IntVisitor<'a> {
         self.visit_i64(value as i64)
     }
 
+    #[cfg_attr(feature = "perf", flame)]
     fn visit_i32<E>(self, value: i32) -> Result<Self::Value, E>
     where
         E: de::Error,
@@ -198,6 +211,7 @@ impl<'a, 'de> Visitor<'de> for IntVisitor<'a> {
         self.visit_i64(value as i64)
     }
 
+    #[cfg_attr(feature = "perf", flame)]
     fn visit_i64<E>(self, value: i64) -> Result<Self::Value, E>
     where
         E: de::Error,
@@ -205,6 +219,7 @@ impl<'a, 'de> Visitor<'de> for IntVisitor<'a> {
         Ok(Object::new(value))
     }
 
+    #[cfg_attr(feature = "perf", flame)]
     fn visit_u8<E>(self, value: u8) -> Result<Self::Value, E>
     where
         E: de::Error,
@@ -212,6 +227,7 @@ impl<'a, 'de> Visitor<'de> for IntVisitor<'a> {
         self.visit_u64(value as u64)
     }
 
+    #[cfg_attr(feature = "perf", flame)]
     fn visit_u16<E>(self, value: u16) -> Result<Self::Value, E>
     where
         E: de::Error,
@@ -219,6 +235,7 @@ impl<'a, 'de> Visitor<'de> for IntVisitor<'a> {
         self.visit_u64(value as u64)
     }
 
+    #[cfg_attr(feature = "perf", flame)]
     fn visit_u32<E>(self, value: u32) -> Result<Self::Value, E>
     where
         E: de::Error,
@@ -226,6 +243,7 @@ impl<'a, 'de> Visitor<'de> for IntVisitor<'a> {
         self.visit_u64(value as u64)
     }
 
+    #[cfg_attr(feature = "perf", flame)]
     fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
     where
         E: de::Error,
@@ -239,10 +257,12 @@ struct FloatVisitor<'a>(&'a Schema);
 impl<'a, 'de> Visitor<'de> for FloatVisitor<'a> {
     type Value = Object;
 
+    #[cfg_attr(feature = "perf", flame)]
     fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "a float")
     }
 
+    #[cfg_attr(feature = "perf", flame)]
     fn visit_f32<E>(self, value: f32) -> Result<Self::Value, E>
     where
         E: Error,
@@ -250,6 +270,7 @@ impl<'a, 'de> Visitor<'de> for FloatVisitor<'a> {
         self.visit_f64(value as f64)
     }
 
+    #[cfg_attr(feature = "perf", flame)]
     fn visit_f64<E>(self, value: f64) -> Result<Self::Value, E>
     where
         E: Error,
@@ -263,10 +284,12 @@ struct StrVisitor<'a>(&'a Schema);
 impl<'a, 'de> Visitor<'de> for StrVisitor<'a> {
     type Value = Object;
 
+    #[cfg_attr(feature = "perf", flame)]
     fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "a string")
     }
 
+    #[cfg_attr(feature = "perf", flame)]
     fn visit_char<E>(self, value: char) -> Result<Self::Value, E>
     where
         E: Error,
@@ -274,6 +297,7 @@ impl<'a, 'de> Visitor<'de> for StrVisitor<'a> {
         Ok(Object::new(value.to_string()))
     }
 
+    #[cfg_attr(feature = "perf", flame)]
     fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
     where
         E: Error,
@@ -281,6 +305,7 @@ impl<'a, 'de> Visitor<'de> for StrVisitor<'a> {
         Ok(Object::new(value))
     }
 
+    #[cfg_attr(feature = "perf", flame)]
     fn visit_borrowed_str<E>(self, value: &'de str) -> Result<Self::Value, E>
     where
         E: Error,
@@ -288,6 +313,7 @@ impl<'a, 'de> Visitor<'de> for StrVisitor<'a> {
         Ok(Object::new(value))
     }
 
+    #[cfg_attr(feature = "perf", flame)]
     fn visit_string<E>(self, value: String) -> Result<Self::Value, E>
     where
         E: Error,
@@ -301,10 +327,12 @@ struct BytesVisitor<'a>(&'a Schema);
 impl<'a, 'de> Visitor<'de> for BytesVisitor<'a> {
     type Value = Object;
 
+    #[cfg_attr(feature = "perf", flame)]
     fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "byte array")
     }
 
+    #[cfg_attr(feature = "perf", flame)]
     fn visit_bytes<E>(self, value: &[u8]) -> Result<Self::Value, E>
     where
         E: Error,
@@ -312,6 +340,7 @@ impl<'a, 'de> Visitor<'de> for BytesVisitor<'a> {
         self.0.call((value,))
     }
 
+    #[cfg_attr(feature = "perf", flame)]
     fn visit_borrowed_bytes<E>(self, value: &'de [u8]) -> Result<Self::Value, E>
     where
         E: Error,
@@ -319,6 +348,7 @@ impl<'a, 'de> Visitor<'de> for BytesVisitor<'a> {
         self.0.call((value,))
     }
 
+    #[cfg_attr(feature = "perf", flame)]
     fn visit_byte_buf<E>(self, value: Vec<u8>) -> Result<Self::Value, E>
     where
         E: Error,
@@ -332,10 +362,12 @@ struct OptionVisitor<'a>(&'a Schema);
 impl<'a, 'de> Visitor<'de> for OptionVisitor<'a> {
     type Value = Object;
 
+    #[cfg_attr(feature = "perf", flame)]
     fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "an option")
     }
 
+    #[cfg_attr(feature = "perf", flame)]
     fn visit_none<E>(self) -> Result<Self::Value, E>
     where
         E: Error,
@@ -343,6 +375,7 @@ impl<'a, 'de> Visitor<'de> for OptionVisitor<'a> {
         Ok(Object::null())
     }
 
+    #[cfg_attr(feature = "perf", flame)]
     fn visit_some<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
     where
         D: Deserializer<'de>,
@@ -355,6 +388,7 @@ impl<'a, 'de> Visitor<'de> for OptionVisitor<'a> {
 struct UnionVisitor<'a>(&'a Schema);
 
 impl<'a, 'c> UnionVisitor<'a> {
+    #[cfg_attr(feature = "perf", flame)]
     fn find_container<E>(
         &mut self,
         kind: &[TypeKind],
@@ -370,6 +404,7 @@ impl<'a, 'c> UnionVisitor<'a> {
             .ok_or_else(|| Error::invalid_type(unexpected, self))
     }
 
+    #[cfg_attr(feature = "perf", flame)]
     fn find<E>(&mut self, kind: TypeKind, unexpected: Unexpected<'c>) -> Result<&Schema, E>
     where
         E: Error,
@@ -385,6 +420,7 @@ impl<'a, 'c> UnionVisitor<'a> {
 impl<'a, 'de> Visitor<'de> for UnionVisitor<'a> {
     type Value = Object;
 
+    #[cfg_attr(feature = "perf", flame)]
     fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let names: Vec<_> = self
             .0
@@ -395,6 +431,7 @@ impl<'a, 'de> Visitor<'de> for UnionVisitor<'a> {
         write!(f, "any of {:?}", names)
     }
 
+    #[cfg_attr(feature = "perf", flame)]
     fn visit_bool<E>(mut self, v: bool) -> Result<Self::Value, E>
     where
         E: Error,
@@ -403,6 +440,7 @@ impl<'a, 'de> Visitor<'de> for UnionVisitor<'a> {
         BoolVisitor(schema).visit_bool(v)
     }
 
+    #[cfg_attr(feature = "perf", flame)]
     fn visit_i8<E>(self, v: i8) -> Result<Self::Value, E>
     where
         E: Error,
@@ -410,6 +448,7 @@ impl<'a, 'de> Visitor<'de> for UnionVisitor<'a> {
         self.visit_i64(v as i64)
     }
 
+    #[cfg_attr(feature = "perf", flame)]
     fn visit_i16<E>(self, v: i16) -> Result<Self::Value, E>
     where
         E: Error,
@@ -417,6 +456,7 @@ impl<'a, 'de> Visitor<'de> for UnionVisitor<'a> {
         self.visit_i64(v as i64)
     }
 
+    #[cfg_attr(feature = "perf", flame)]
     fn visit_i32<E>(self, v: i32) -> Result<Self::Value, E>
     where
         E: Error,
@@ -424,6 +464,7 @@ impl<'a, 'de> Visitor<'de> for UnionVisitor<'a> {
         self.visit_i64(v as i64)
     }
 
+    #[cfg_attr(feature = "perf", flame)]
     fn visit_i64<E>(mut self, v: i64) -> Result<Self::Value, E>
     where
         E: Error,
@@ -432,6 +473,7 @@ impl<'a, 'de> Visitor<'de> for UnionVisitor<'a> {
         IntVisitor(schema).visit_i64(v)
     }
 
+    #[cfg_attr(feature = "perf", flame)]
     fn visit_u8<E>(self, v: u8) -> Result<Self::Value, E>
     where
         E: Error,
@@ -439,6 +481,7 @@ impl<'a, 'de> Visitor<'de> for UnionVisitor<'a> {
         self.visit_u64(v as u64)
     }
 
+    #[cfg_attr(feature = "perf", flame)]
     fn visit_u16<E>(self, v: u16) -> Result<Self::Value, E>
     where
         E: Error,
@@ -446,6 +489,7 @@ impl<'a, 'de> Visitor<'de> for UnionVisitor<'a> {
         self.visit_u64(v as u64)
     }
 
+    #[cfg_attr(feature = "perf", flame)]
     fn visit_u32<E>(self, v: u32) -> Result<Self::Value, E>
     where
         E: Error,
@@ -453,6 +497,7 @@ impl<'a, 'de> Visitor<'de> for UnionVisitor<'a> {
         self.visit_u64(v as u64)
     }
 
+    #[cfg_attr(feature = "perf", flame)]
     fn visit_u64<E>(mut self, v: u64) -> Result<Self::Value, E>
     where
         E: Error,
@@ -461,6 +506,7 @@ impl<'a, 'de> Visitor<'de> for UnionVisitor<'a> {
         IntVisitor(schema).visit_u64(v)
     }
 
+    #[cfg_attr(feature = "perf", flame)]
     fn visit_f32<E>(self, v: f32) -> Result<Self::Value, E>
     where
         E: Error,
@@ -468,6 +514,7 @@ impl<'a, 'de> Visitor<'de> for UnionVisitor<'a> {
         self.visit_f64(v as f64)
     }
 
+    #[cfg_attr(feature = "perf", flame)]
     fn visit_f64<E>(mut self, v: f64) -> Result<Self::Value, E>
     where
         E: Error,
@@ -476,6 +523,7 @@ impl<'a, 'de> Visitor<'de> for UnionVisitor<'a> {
         FloatVisitor(schema).visit_f64(v)
     }
 
+    #[cfg_attr(feature = "perf", flame)]
     fn visit_char<E>(mut self, v: char) -> Result<Self::Value, E>
     where
         E: Error,
@@ -484,6 +532,7 @@ impl<'a, 'de> Visitor<'de> for UnionVisitor<'a> {
         StrVisitor(schema).visit_char(v)
     }
 
+    #[cfg_attr(feature = "perf", flame)]
     fn visit_str<E>(mut self, v: &str) -> Result<Self::Value, E>
     where
         E: Error,
@@ -492,6 +541,7 @@ impl<'a, 'de> Visitor<'de> for UnionVisitor<'a> {
         StrVisitor(schema).visit_str(v)
     }
 
+    #[cfg_attr(feature = "perf", flame)]
     fn visit_borrowed_str<E>(mut self, v: &'de str) -> Result<Self::Value, E>
     where
         E: Error,
@@ -500,6 +550,7 @@ impl<'a, 'de> Visitor<'de> for UnionVisitor<'a> {
         StrVisitor(schema).visit_borrowed_str(v)
     }
 
+    #[cfg_attr(feature = "perf", flame)]
     fn visit_string<E>(mut self, v: String) -> Result<Self::Value, E>
     where
         E: Error,
@@ -508,6 +559,7 @@ impl<'a, 'de> Visitor<'de> for UnionVisitor<'a> {
         StrVisitor(schema).visit_string(v)
     }
 
+    #[cfg_attr(feature = "perf", flame)]
     fn visit_bytes<E>(mut self, v: &[u8]) -> Result<Self::Value, E>
     where
         E: Error,
@@ -516,6 +568,7 @@ impl<'a, 'de> Visitor<'de> for UnionVisitor<'a> {
         BytesVisitor(schema).visit_bytes(v)
     }
 
+    #[cfg_attr(feature = "perf", flame)]
     fn visit_borrowed_bytes<E>(mut self, v: &'de [u8]) -> Result<Self::Value, E>
     where
         E: Error,
@@ -524,6 +577,7 @@ impl<'a, 'de> Visitor<'de> for UnionVisitor<'a> {
         BytesVisitor(schema).visit_borrowed_bytes(v)
     }
 
+    #[cfg_attr(feature = "perf", flame)]
     fn visit_byte_buf<E>(mut self, v: Vec<u8>) -> Result<Self::Value, E>
     where
         E: Error,
@@ -532,6 +586,7 @@ impl<'a, 'de> Visitor<'de> for UnionVisitor<'a> {
         BytesVisitor(schema).visit_byte_buf(v)
     }
 
+    #[cfg_attr(feature = "perf", flame)]
     fn visit_none<E>(mut self) -> Result<Self::Value, E>
     where
         E: Error,
@@ -540,6 +595,7 @@ impl<'a, 'de> Visitor<'de> for UnionVisitor<'a> {
         OptionVisitor(schema).visit_none()
     }
 
+    #[cfg_attr(feature = "perf", flame)]
     fn visit_some<D>(mut self, deserializer: D) -> Result<Self::Value, D::Error>
     where
         D: Deserializer<'de>,
@@ -548,6 +604,7 @@ impl<'a, 'de> Visitor<'de> for UnionVisitor<'a> {
         OptionVisitor(schema).visit_some(deserializer)
     }
 
+    #[cfg_attr(feature = "perf", flame)]
     fn visit_seq<A>(mut self, seq: A) -> Result<Self::Value, A::Error>
     where
         A: SeqAccess<'de>,
@@ -561,6 +618,7 @@ impl<'a, 'de> Visitor<'de> for UnionVisitor<'a> {
         }
     }
 
+    #[cfg_attr(feature = "perf", flame)]
     fn visit_map<A>(mut self, map: A) -> Result<Self::Value, A::Error>
     where
         A: MapAccess<'de>,
@@ -578,6 +636,7 @@ impl<'a, 'de> Visitor<'de> for UnionVisitor<'a> {
 struct EnumVisitor<'a>(&'a Schema);
 
 impl<'a> EnumVisitor<'a> {
+    #[cfg_attr(feature = "perf", flame)]
     fn vars(&self) -> Vec<&str> {
         self.0
             .kwargs
@@ -586,6 +645,7 @@ impl<'a> EnumVisitor<'a> {
             .collect()
     }
 
+    #[cfg_attr(feature = "perf", flame)]
     fn get<E>(&self, s: &str) -> Result<Object, E>
     where
         E: Error,
@@ -609,10 +669,12 @@ impl<'a> EnumVisitor<'a> {
 impl<'a, 'de> Visitor<'de> for EnumVisitor<'a> {
     type Value = Object;
 
+    #[cfg_attr(feature = "perf", flame)]
     fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "a enum value: {:?}", self.vars())
     }
 
+    #[cfg_attr(feature = "perf", flame)]
     fn visit_char<E>(self, value: char) -> Result<Self::Value, E>
     where
         E: Error,
@@ -620,6 +682,7 @@ impl<'a, 'de> Visitor<'de> for EnumVisitor<'a> {
         self.get(&value.to_string())
     }
 
+    #[cfg_attr(feature = "perf", flame)]
     fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
     where
         E: Error,
@@ -627,6 +690,7 @@ impl<'a, 'de> Visitor<'de> for EnumVisitor<'a> {
         self.get(value)
     }
 
+    #[cfg_attr(feature = "perf", flame)]
     fn visit_borrowed_str<E>(self, value: &'de str) -> Result<Self::Value, E>
     where
         E: Error,
@@ -634,6 +698,7 @@ impl<'a, 'de> Visitor<'de> for EnumVisitor<'a> {
         self.get(value)
     }
 
+    #[cfg_attr(feature = "perf", flame)]
     fn visit_string<E>(self, value: String) -> Result<Self::Value, E>
     where
         E: Error,
@@ -647,10 +712,12 @@ struct AnyVisitor;
 impl<'de> Visitor<'de> for AnyVisitor {
     type Value = Object;
 
+    #[cfg_attr(feature = "perf", flame)]
     fn expecting(&self, _: &mut fmt::Formatter) -> fmt::Result {
         unreachable!()
     }
 
+    #[cfg_attr(feature = "perf", flame)]
     fn visit_bool<E>(self, v: bool) -> Result<Self::Value, E>
     where
         E: Error,
@@ -658,6 +725,7 @@ impl<'de> Visitor<'de> for AnyVisitor {
         Ok(Object::new(v))
     }
 
+    #[cfg_attr(feature = "perf", flame)]
     fn visit_i8<E>(self, v: i8) -> Result<Self::Value, E>
     where
         E: Error,
@@ -665,6 +733,7 @@ impl<'de> Visitor<'de> for AnyVisitor {
         Ok(Object::new(v))
     }
 
+    #[cfg_attr(feature = "perf", flame)]
     fn visit_i16<E>(self, v: i16) -> Result<Self::Value, E>
     where
         E: Error,
@@ -672,6 +741,7 @@ impl<'de> Visitor<'de> for AnyVisitor {
         Ok(Object::new(v))
     }
 
+    #[cfg_attr(feature = "perf", flame)]
     fn visit_i32<E>(self, v: i32) -> Result<Self::Value, E>
     where
         E: Error,
@@ -679,6 +749,7 @@ impl<'de> Visitor<'de> for AnyVisitor {
         Ok(Object::new(v))
     }
 
+    #[cfg_attr(feature = "perf", flame)]
     fn visit_i64<E>(self, v: i64) -> Result<Self::Value, E>
     where
         E: Error,
@@ -686,96 +757,127 @@ impl<'de> Visitor<'de> for AnyVisitor {
         Ok(Object::new(v))
     }
 
+    #[cfg_attr(feature = "perf", flame)]
     fn visit_i128<E>(self, v: i128) -> Result<Self::Value, E>
     where
         E: Error,
     {
         Ok(Object::new(v))
     }
+
+    #[cfg_attr(feature = "perf", flame)]
     fn visit_u8<E>(self, v: u8) -> Result<Self::Value, E>
     where
         E: Error,
     {
         Ok(Object::new(v))
     }
+
+    #[cfg_attr(feature = "perf", flame)]
     fn visit_u16<E>(self, v: u16) -> Result<Self::Value, E>
     where
         E: Error,
     {
         Ok(Object::new(v))
     }
+
+    #[cfg_attr(feature = "perf", flame)]
     fn visit_u32<E>(self, v: u32) -> Result<Self::Value, E>
     where
         E: Error,
     {
         Ok(Object::new(v))
     }
+
+    #[cfg_attr(feature = "perf", flame)]
     fn visit_u64<E>(self, v: u64) -> Result<Self::Value, E>
     where
         E: Error,
     {
         Ok(Object::new(v))
     }
+
+    #[cfg_attr(feature = "perf", flame)]
     fn visit_u128<E>(self, v: u128) -> Result<Self::Value, E>
     where
         E: Error,
     {
         Ok(Object::new(v))
     }
+
+    #[cfg_attr(feature = "perf", flame)]
     fn visit_f32<E>(self, v: f32) -> Result<Self::Value, E>
     where
         E: Error,
     {
         Ok(Object::new(v))
     }
+
+    #[cfg_attr(feature = "perf", flame)]
     fn visit_f64<E>(self, v: f64) -> Result<Self::Value, E>
     where
         E: Error,
     {
         Ok(Object::new(v))
     }
+
+    #[cfg_attr(feature = "perf", flame)]
     fn visit_char<E>(self, v: char) -> Result<Self::Value, E>
     where
         E: Error,
     {
         Ok(Object::new(v.to_string()))
     }
+
+    #[cfg_attr(feature = "perf", flame)]
     fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
     where
         E: Error,
     {
         Ok(Object::new(v))
     }
+
+    #[cfg_attr(feature = "perf", flame)]
     fn visit_borrowed_str<E>(self, v: &'de str) -> Result<Self::Value, E>
     where
         E: Error,
     {
         Ok(Object::new(v))
     }
+
+    #[cfg_attr(feature = "perf", flame)]
     fn visit_string<E>(self, v: String) -> Result<Self::Value, E>
     where
         E: Error,
     {
         Ok(Object::new(v))
     }
+
+    #[cfg_attr(feature = "perf", flame)]
     fn visit_bytes<E>(self, v: &[u8]) -> Result<Self::Value, E>
     where
         E: Error,
     {
         Ok(Object::new(v))
     }
+
+    #[cfg_attr(feature = "perf", flame)]
     fn visit_borrowed_bytes<E>(self, v: &'de [u8]) -> Result<Self::Value, E>
     where
         E: Error,
     {
         Ok(Object::new(v))
     }
+
+    #[cfg_attr(feature = "perf", flame)]
     fn visit_byte_buf<E>(self, v: Vec<u8>) -> Result<Self::Value, E>
     where
         E: Error,
     {
         Ok(Object::new(v))
     }
+
+    #[cfg_attr(feature = "perf", flame)]
     fn visit_none<E>(self) -> Result<Self::Value, E>
     where
         E: Error,
@@ -783,6 +885,7 @@ impl<'de> Visitor<'de> for AnyVisitor {
         Ok(Object::null())
     }
 
+    #[cfg_attr(feature = "perf", flame)]
     fn visit_some<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
     where
         D: Deserializer<'de>,
@@ -790,6 +893,7 @@ impl<'de> Visitor<'de> for AnyVisitor {
         deserializer.deserialize_any(AnyVisitor)
     }
 
+    #[cfg_attr(feature = "perf", flame)]
     fn visit_unit<E>(self) -> Result<Self::Value, E>
     where
         E: Error,
@@ -797,6 +901,7 @@ impl<'de> Visitor<'de> for AnyVisitor {
         Ok(Object::null())
     }
 
+    #[cfg_attr(feature = "perf", flame)]
     fn visit_newtype_struct<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
     where
         D: Deserializer<'de>,
@@ -804,6 +909,7 @@ impl<'de> Visitor<'de> for AnyVisitor {
         deserializer.deserialize_any(AnyVisitor)
     }
 
+    #[cfg_attr(feature = "perf", flame)]
     fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
     where
         A: SeqAccess<'de>,
@@ -818,6 +924,7 @@ impl<'de> Visitor<'de> for AnyVisitor {
         Ok(Object::new(args))
     }
 
+    #[cfg_attr(feature = "perf", flame)]
     fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
     where
         A: MapAccess<'de>,
@@ -833,6 +940,7 @@ impl<'de> Visitor<'de> for AnyVisitor {
         Ok(Object::new(args))
     }
 
+    #[cfg_attr(feature = "perf", flame)]
     fn visit_enum<A>(self, data: A) -> Result<Self::Value, A::Error>
     where
         A: EnumAccess<'de>,
@@ -843,6 +951,7 @@ impl<'de> Visitor<'de> for AnyVisitor {
 }
 
 impl<'a, 'de> DeserializeState<'de, Schema> for Object {
+    #[cfg_attr(feature = "perf", flame)]
     fn deserialize_state<'b, D>(schema: &Schema, de: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
@@ -865,6 +974,7 @@ impl<'a, 'de> DeserializeState<'de, Schema> for Object {
 }
 
 impl<'de> Deserialize<'de> for Object {
+    #[cfg_attr(feature = "perf", flame)]
     fn deserialize<D>(de: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
