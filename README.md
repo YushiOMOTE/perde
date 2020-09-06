@@ -10,7 +10,7 @@ pip install perde
 
 ### Usage
 
-```sh
+```python
 from perde import json
 
 @dataclass
