@@ -13,6 +13,9 @@ mod state;
 mod types;
 mod util;
 
+mod decode;
+mod schema;
+
 #[pyfunction(kwargs = "**")]
 pub fn resolve(ty: &PyAny, kwargs: Option<&PyDict>) -> PyResult<()> {
     Schema::resolve_with_attr(ty, kwargs)?;

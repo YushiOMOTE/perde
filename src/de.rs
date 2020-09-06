@@ -954,7 +954,7 @@ impl<'a, 'de> DeserializeState<'de, Schema> for Object {
         match schema.kind() {
             TypeKind::Bool => de.deserialize_bool(BoolVisitor(schema)),
             TypeKind::Int => de.deserialize_i64(IntVisitor(schema)),
-            TypeKind::Float => de.deserialize_i64(FloatVisitor(schema)),
+            TypeKind::Float => de.deserialize_f64(FloatVisitor(schema)),
             TypeKind::Str => de.deserialize_str(StrVisitor(schema)),
             TypeKind::Bytes | TypeKind::ByteArray => de.deserialize_bytes(BytesVisitor(schema)),
             TypeKind::List => de.deserialize_seq(ListVisitor(schema)),

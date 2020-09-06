@@ -130,6 +130,12 @@ pub enum TypeKind {
     Union,
 }
 
+macro_rules! is {
+    ($ty:expr, $pyty:ty) => {
+        $ty.eq(PyType::new::<$pyty>(py()).into())
+    };
+}
+
 impl std::str::FromStr for TypeKind {
     type Err = PyErr;
 
@@ -292,6 +298,24 @@ pub struct Schema {
     flatten_args: IndexMap<String, Schema>,
 }
 
+// impl Schema {
+//     fn resolve2(ty: &PyAny) -> PyResult<&PyCell<Schema>> {
+//         Self::load_schema_cache(ty).or_else(|e| Self::inspect(ty))
+//     }
+
+//     fn try_inspect_as_primitive(ty: &PyAny) -> PyResult<Option<&PyCell<Schema>>> {
+//         unimplemented!()
+//     }
+
+//     fn store_schema_cache(ty: &PyAny, schema: &PyCell<Schema>) -> PyResult<()> {
+//         ty.setattr("__perde_schema__", schema)
+//     }
+
+//     fn load_schema_cache(ty: &PyAny) -> PyResult<&PyCell<Schema>> {
+//         ty.getattr("__perde_schema__").and_then(|s| s.extract())
+//     }
+// }
+
 #[cfg_attr(feature = "perf", flame)]
 fn convert_stringcase(s: &str, case: Option<StrCase>) -> String {
     use inflections::Inflect;
@@ -320,7 +344,7 @@ impl Schema {
         field_attr: HashMap<String, PyObject>,
         container_attr: HashMap<String, PyObject>,
     ) -> PyResult<Self> {
-        Self::new(
+        Self::new_py(
             cls,
             kind,
             args,
@@ -347,7 +371,7 @@ impl Schema {
     }
 
     #[cfg_attr(feature = "perf", flame)]
-    fn new(
+    fn new_py(
         cls: Py<PyType>,
         kind: &str,
         args: Vec<Schema>,
@@ -725,4 +749,47 @@ impl Schema {
                 ser::Error::custom(format!("unknown variant `{}`", value.get_type().name()))
             })
     }
+}
+
+lazy_static::lazy_static! {
+    static ref DATACLASS: Option<Py<PyModule>> = {
+        PyModule::import(py(), "dataclasses").map(|m| m.into()).ok()
+    };
+    static ref TYPING_INSPECT: Option<Py<PyModule>> = {
+        PyModule::import(py(), "typing_inspect").map(|m| m.into()).ok()
+    };
+    static ref ENUM: Option<Py<PyModule>> = {
+        PyModule::import(py(), "enum").map(|m| m.into()).ok()
+    };
+}
+
+pub fn fields(ty: &PyAny) -> PyResult<Option<Vec<Schema>>> {
+    let dataclass = DATACLASS
+        .as_ref()
+        .ok_or_else(|| pyerr(format!("couldn't import dataclasses")))?
+        .as_ref(py());
+    if dataclass.call1("is_dataclass", (ty,))?.extract()? {
+        let fields: Vec<&PyAny> = dataclass.call1("fields", (ty,))?.extract()?;
+
+        let fields: PyResult<Vec<(String, Schema)>> = fields
+            .into_iter()
+            .map(|field| {
+                let name: String = field.getattr("name")?.extract()?;
+                let ty: &PyAny = field.getattr("type")?;
+                let attr: &PyAny = field.getattr("metadata")?.extract()?;
+
+                Ok((name, to_schema(ty, attr)?))
+            })
+            .collect();
+
+        let ty: &PyType = ty.downcast()?;
+        unimplemented!()
+    // Ok(Some(Schema::new(ty.into())))
+    } else {
+        Ok(None)
+    }
+}
+
+pub fn to_schema(ty: &PyAny, attr: &PyAny) -> PyResult<Schema> {
+    unimplemented!()
 }
