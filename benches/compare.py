@@ -26,16 +26,6 @@ class C:
 json.loads_as(C, \'{"key": 300, "value": "hoge"}\')
 ''', number = 100000)
 
-res_perde_ty = timeit.repeat('json.loads(\'{"key": 300, "value": "hoge"}\', type = C)', setup = '''
-from perde import json
-from dataclasses import dataclass
-
-@dataclass
-class C:
-    key: int
-    value: str
-json.loads_as(C, \'{"key": 300, "value": "hoge"}\')
-''', number = 100000)
 
 res_json = timeit.repeat('json.loads(\'{"key": 300, "value": "hoge"}\')', setup = "import json", number = 100000)
 res_ujson = timeit.repeat('ujson.loads(\'{"key": 300, "value": "hoge"}\')', setup = "import ujson", number = 100000)
@@ -44,7 +34,6 @@ res_orjson = timeit.repeat('orjson.loads(\'{"key": 300, "value": "hoge"}\')', se
 
 print(f'json      = {res_json}')
 print(f'perde as  = {res_perde_as}')
-print(f'perde ty  = {res_perde_ty}')
 print(f'perde     = {res_perde}')
 print(f'ujson     = {res_ujson}')
 print(f'orjson    = {res_orjson}')
