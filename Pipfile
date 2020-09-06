@@ -7,9 +7,9 @@ name = "pypi"
 python_version = "3.7"
 
 [packages]
-typing_inspect = "*"
-orjson = "*"
-ujson = "*"
+typing_inspect = ">=0.6.0"
+orjson = ">=3.3.1"
+ujson = ">=3.1.0"
 
 [dev-packages]
-pytest = "*"
+pytest = ">=6.0.1"

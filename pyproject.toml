@@ -1,0 +1,7 @@
+[project]
+name = "perde"
+repository = "https://github.com/yushiomote/perde"
+
+[build-system]
+requires = ["maturin"]
+build-backend = "maturin"

@@ -21,9 +21,39 @@ name = "perde"
 crate-type = ["cdylib"]
 
 [features]
-default = []
+default = ["json"]
 json = ["serde_json"]
 yaml = ["serde_yaml"]
 toml = ["serde_toml"]
 msgpack = ["rmp-serde"]
 perf = ["flame", "flamer"]
+
+[profile.release]
+codegen-units = 1
+debug = false
+incremental = false
+lto = "thin"
+opt-level = 3
+panic = "abort"
+
+[package.metadata.maturin]
+requires-python = ">=3.6"
+requires-dist = [
+    "typing-insepct>=0.6.0",
+]
+classifier = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: MacOS",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.6",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python",
+    "Programming Language :: Rust",
+    "Typing :: Typed",
+]

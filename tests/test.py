@@ -166,20 +166,16 @@ class C:
 perde.loads_as(C, \'{"key": 300, "value": "hoge"}\')
 ''', number = 100000)
 
+res_perde_ty = timeit.repeat('perde.loads(\'{"key": 300, "value": "hoge"}\', type = C)', setup = '''
+import perde
+from dataclasses import dataclass
 
-# res_hand_json = timeit.repeat('hand()', '''
-# import json
-# from dataclasses import dataclass
-
-# @dataclass
-# class C:
-#     key: int
-#     value: str
-
-# def hand():
-#     d = json.loads(\'{"key": 300, "value": "hoge"}\')
-#     return C(d["key"], d["value"])
-# ''')
+@dataclass
+class C:
+    key: int
+    value: str
+perde.loads_as(C, \'{"key": 300, "value": "hoge"}\')
+''', number = 100000)
 
 res_json = timeit.repeat('json.loads(\'{"key": 300, "value": "hoge"}\')', setup = "import json", number = 100000)
 res_ujson = timeit.repeat('ujson.loads(\'{"key": 300, "value": "hoge"}\')', setup = "import ujson", number = 100000)
@@ -187,8 +183,8 @@ res_perde = timeit.repeat('perde.loads(\'{"key": 300, "value": "hoge"}\')', setu
 res_orjson = timeit.repeat('orjson.loads(\'{"key": 300, "value": "hoge"}\')', setup = "import orjson", number = 100000)
 
 print(f'json      = {res_json}')
-# print(f'json hand = {res_hand_json}')
 print(f'perde as  = {res_perde_as}')
+print(f'perde ty  = {res_perde_ty}')
 print(f'perde     = {res_perde}')
 print(f'ujson     = {res_ujson}')
 print(f'orjson    = {res_orjson}')
