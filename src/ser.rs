@@ -51,6 +51,10 @@ impl<'a> Serialize for TypedObject<'a> {
                 let v = self.object.to_value()?;
                 s.serialize_bytes(v)
             }
+            TypeKind::ByteArray => {
+                let v: Vec<u8> = self.object.to_value()?;
+                s.serialize_bytes(&v)
+            }
             TypeKind::List => {
                 let list: &PyList = self.object.to_value()?;
                 let mut seq = s.serialize_seq(Some(list.len()))?;

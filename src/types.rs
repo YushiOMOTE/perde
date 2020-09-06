@@ -7,6 +7,59 @@ use pyo3::{
 use serde::{de, ser};
 use std::{borrow::Cow, collections::HashMap, str::FromStr};
 
+struct Key(Py<PyAny>);
+
+use std::{
+    cmp::{Eq, PartialEq},
+    hash::{Hash, Hasher},
+};
+
+impl Hash for Key {
+    fn hash<H>(&self, state: &mut H)
+    where
+        H: Hasher,
+    {
+        self.0.as_ref(py()).hash().unwrap().hash(state);
+    }
+}
+
+impl PartialEq for Key {
+    fn eq(&self, other: &Self) -> bool {
+        self.0.as_ref(py()).eq(&other.0.as_ref(py()))
+    }
+}
+
+impl Eq for Key {}
+
+lazy_static::lazy_static! {
+    static ref PRIMITIVES: HashMap<Key, Schema> = {
+        use pyo3::types::*;
+
+        let mut map = HashMap::new();
+
+        macro_rules! insert {
+            ($t:ty, $k:expr) => {
+                let ty = py().get_type::<$t>();
+                map.insert(Key(ty.as_ref().into()), Schema::primitive(ty.into(), $k));
+            }
+        }
+
+        insert!(PyUnicode, TypeKind::Str);
+        insert!(PyBytes, TypeKind::Bytes);
+        insert!(PyBool, TypeKind::Bool);
+        insert!(PyLong, TypeKind::Int);
+        insert!(PyFloat, TypeKind::Float);
+        insert!(PyList, TypeKind::List);
+        insert!(PyDict, TypeKind::Dict);
+        insert!(PyTuple, TypeKind::Tuple);
+        insert!(PySet, TypeKind::List);
+        insert!(PyFrozenSet, TypeKind::List);
+        insert!(PyByteArray, TypeKind::ByteArray);
+
+        map
+    };
+}
+
 pub struct Object {
     inner: PyObject,
 }
@@ -59,6 +112,8 @@ pub enum TypeKind {
     Str,
     /// bytes, bytearray -> deserialize_bytes
     Bytes,
+    /// bytes, bytearray -> deserialize_bytes
+    ByteArray,
     /// list, set, frozenset -> deserialize_seq
     List,
     /// tuple -> deserialize_tuple
@@ -85,7 +140,8 @@ impl std::str::FromStr for TypeKind {
             "int" => Ok(Self::Int),
             "float" => Ok(Self::Float),
             "str" => Ok(Self::Str),
-            "bytes" | "bytearray" => Ok(Self::Bytes),
+            "bytes" => Ok(Self::Bytes),
+            "bytearray" => Ok(Self::ByteArray),
             "list" => Ok(Self::List),
             "tuple" => Ok(Self::Tuple),
             "dict" => Ok(Self::Dict),
@@ -276,6 +332,20 @@ impl Schema {
 }
 
 impl Schema {
+    fn primitive(ty: &PyType, kind: TypeKind) -> Self {
+        Self {
+            kind,
+            args: vec![],
+            kwargs: IndexMap::new(),
+            cls: ty.into(),
+            clsname: "".into(),
+            argname: "".into(),
+            field_attr: FieldAttr::default(),
+            container_attr: ContainerAttr::default(),
+            flatten_args: IndexMap::new(),
+        }
+    }
+
     #[cfg_attr(feature = "perf", flame)]
     fn new(
         cls: Py<PyType>,
@@ -515,6 +585,28 @@ impl Schema {
     #[cfg_attr(feature = "perf", flame)]
     pub fn resolve<'a>(ty: &'a PyAny) -> PyResult<&'a PyCell<Self>> {
         Self::resolve_with_attr(ty, None)
+    }
+
+    #[cfg_attr(feature = "perf", flame)]
+    pub fn resolve_primitive(ty: &PyAny) -> Option<&Self> {
+        PRIMITIVES.get(&Key(ty.into()))
+    }
+
+    #[cfg_attr(feature = "perf", flame)]
+    pub fn with<F, R>(ty: &PyAny, f: F) -> PyResult<R>
+    where
+        F: FnOnce(&Self) -> PyResult<R>,
+    {
+        match Self::resolve(ty) {
+            Ok(ty) => {
+                let ty = ty.borrow();
+                f(&*ty)
+            }
+            Err(e) => match Self::resolve_primitive(ty) {
+                Some(ty) => f(ty),
+                None => Err(e),
+            },
+        }
     }
 
     #[cfg_attr(feature = "perf", flame)]

@@ -357,6 +357,23 @@ impl<'a, 'de> Visitor<'de> for BytesVisitor<'a> {
     {
         self.0.call((value,))
     }
+
+    #[cfg_attr(feature = "perf", flame)]
+    fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
+    where
+        A: SeqAccess<'de>,
+    {
+        let mut bytes = Vec::<u8>::new();
+
+        loop {
+            bytes.push(match seq.next_element()? {
+                Some(value) => value,
+                None => break,
+            });
+        }
+
+        Ok(self.0.call((bytes,))?)
+    }
 }
 
 struct OptionVisitor<'a>(&'a Schema);
@@ -939,7 +956,7 @@ impl<'a, 'de> DeserializeState<'de, Schema> for Object {
             TypeKind::Int => de.deserialize_i64(IntVisitor(schema)),
             TypeKind::Float => de.deserialize_i64(FloatVisitor(schema)),
             TypeKind::Str => de.deserialize_str(StrVisitor(schema)),
-            TypeKind::Bytes => de.deserialize_bytes(BytesVisitor(schema)),
+            TypeKind::Bytes | TypeKind::ByteArray => de.deserialize_bytes(BytesVisitor(schema)),
             TypeKind::List => de.deserialize_seq(ListVisitor(schema)),
             TypeKind::Tuple => de.deserialize_seq(TupleVisitor(schema)),
             TypeKind::Dict => de.deserialize_map(DictVisitor(schema)),
