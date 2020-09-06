@@ -22,10 +22,10 @@ class A:
 json.dumps(A(300, "hoge"))
 
 # Deserialize json as data class (with type checking)
-json.loads_as(A, \'{"key": 300, "value": "hoge"}\')
+json.loads_as(A, '{"key": 300, "value": "hoge"}')
 
 # Deserialize json as objects (without type checking)
-json.loads(\'{"key": 300, "value": "hoge"}\')
+json.loads('{"key": 300, "value": "hoge"}')
 ```
 
 ### Develop
