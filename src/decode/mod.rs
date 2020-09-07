@@ -7,6 +7,7 @@ pub mod class;
 pub mod dict;
 pub mod enums;
 pub mod list;
+pub mod object;
 pub mod option;
 pub mod primitive;
 pub mod set;

@@ -1,4 +1,4 @@
-use crate::util::*;
+use crate::{inspect::to_schema, util::*};
 use derive_new::new;
 use indexmap::IndexMap;
 use pyo3::{prelude::*, types::*};
@@ -118,10 +118,19 @@ impl ClassAttr {
     }
 }
 
-#[derive(Clone, Debug, new)]
+#[derive(Clone, Debug, Default, new)]
 pub struct EnumAttr {
     pub rename_all: Option<StrCase>,
     pub rename: Option<String>,
+}
+
+impl EnumAttr {
+    pub fn parse(dict: &PyDict) -> PyResult<Self> {
+        Ok(Self::new(
+            extract_parse!(dict, "rename_all"),
+            extract!(dict, "rename"),
+        ))
+    }
 }
 
 #[pyclass]
@@ -131,17 +140,31 @@ struct SchemaInfo {
 }
 
 impl Schema {
-    fn resolve(ty: &PyAny) -> PyResult<&PyCell<SchemaInfo>> {
-        ty.getattr(SCHEMA_CACHE)?.extract().or_else(|_| {
-            Self::inspect(ty).and_then(|schema| {
-                ty.setattr(SCHEMA_CACHE, schema)?;
-                Ok(schema)
-            })
-        })
+    pub fn deserialize<'de, D: serde::de::Deserializer<'de>>(
+        ty: &PyAny,
+        deserializer: D,
+    ) -> PyResult<PyObject> {
+        use serde::de::DeserializeSeed;
+        let info = Self::resolve(ty, None)?;
+        let info = info.borrow();
+        info.schema.deserialize(deserializer).map_err(pyerr)
     }
 
-    fn inspect(ty: &PyAny) -> PyResult<&PyCell<SchemaInfo>> {
+    pub fn serialize<S: serde::ser::Serializer>(value: &PyAny, serializer: S) -> PyResult<()> {
         unimplemented!()
+    }
+
+    fn resolve<'a>(ty: &'a PyAny, attr: Option<&PyDict>) -> PyResult<&'a PyCell<SchemaInfo>> {
+        ty.getattr(SCHEMA_CACHE)?.extract().or_else(|_| {
+            to_schema(ty, attr).and_then(|schema| match &schema {
+                Schema::Class(_) => {
+                    let schema = PyCell::new(py(), SchemaInfo::new(schema))?;
+                    ty.setattr(SCHEMA_CACHE, schema)?;
+                    Ok(schema)
+                }
+                _ => PyCell::new(py(), SchemaInfo::new(schema)),
+            })
+        })
     }
 }
 

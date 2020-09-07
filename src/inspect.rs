@@ -2,8 +2,17 @@ use crate::{schema::*, util::*};
 use indexmap::IndexMap;
 use pyo3::{
     prelude::*,
-    types::{PyDict, PyFrozenSet, PyList, PyModule, PySet, PyType},
+    types::{
+        PyBool, PyByteArray, PyBytes, PyDict, PyFloat, PyFrozenSet, PyList, PyLong, PyModule,
+        PySet, PyType, PyUnicode,
+    },
 };
+
+macro_rules! is_type {
+    ($given:expr, $($type:ty),*) => {
+        $(py().get_type::<$type>().eq($given))||*
+    };
+}
 
 #[cfg_attr(feature = "perf", flame)]
 fn convert_stringcase(s: &str, case: Option<StrCase>) -> String {
@@ -35,6 +44,11 @@ lazy_static::lazy_static! {
             .ok()
             .map(|v| v.into())
     };
+    static ref BUILTINS: Option<Py<PyModule>> = {
+        PyModule::import(py(), "builtins")
+            .ok()
+            .map(|v| v.into())
+    };
 }
 
 fn dataclasses<'a>(py: Python<'a>) -> PyResult<&'a PyModule> {
@@ -48,6 +62,19 @@ fn typing_inspect<'a>(py: Python<'a>) -> PyResult<&'a PyModule> {
     TYPING_INSPECT
         .as_ref()
         .ok_or_else(|| pyerr(format!("couldn't import `typing_inspect`")))
+        .map(|v| v.as_ref(py))
+}
+
+fn builtins<'a>(py: Python<'a>) -> PyResult<&'a PyModule> {
+    BUILTINS
+        .as_ref()
+        .ok_or_else(|| pyerr(format!("couldn't import python built-ins")))
+        .map(|v| v.as_ref(py))
+}
+
+fn enum_class<'a>(py: Python<'a>) -> PyResult<&'a PyAny> {
+    ENUM.as_ref()
+        .ok_or_else(|| pyerr(format!("couldn't import python `enum.Enum`")))
         .map(|v| v.as_ref(py))
 }
 
@@ -90,6 +117,12 @@ fn is_generic(ty: &PyAny) -> PyResult<bool> {
         && (is_union_type(ty)? || is_optional_type(ty)? || is_tuple_type(ty)?))
 }
 
+fn is_enum(ty: &PyAny) -> PyResult<bool> {
+    builtins(py())?
+        .call1("issubclass", (ty, enum_class(py())?))
+        .and_then(|v| v.extract())
+}
+
 fn fields(ty: &PyAny) -> PyResult<Vec<&PyAny>> {
     dataclasses(py())?
         .call1("fields", (ty,))
@@ -101,12 +134,39 @@ pub fn to_schema(ty: &PyAny, cattr: Option<&PyDict>) -> PyResult<Schema> {
         to_class(ty, cattr)
     } else if is_generic(ty)? {
         to_generic(ty)
+    } else if is_enum(ty)? {
+        to_enum(ty, cattr)
     } else {
-        unimplemented!()
+        to_primitive(ty)
     }
 }
 
-pub fn to_class(ty: &PyAny, cattr: Option<&PyDict>) -> PyResult<Schema> {
+fn to_primitive(ty: &PyAny) -> PyResult<Schema> {
+    let ty = ty.downcast()?;
+    if is_type!(ty, PyUnicode) {
+        Ok(Schema::Primitive(Primitive::Str))
+    } else if is_type!(ty, PyBytes) {
+        Ok(Schema::Primitive(Primitive::Bytes(Bytes::new(
+            ty.into(),
+            false,
+        ))))
+    } else if is_type!(ty, PyBool) {
+        Ok(Schema::Primitive(Primitive::Bool))
+    } else if is_type!(ty, PyLong) {
+        Ok(Schema::Primitive(Primitive::Int))
+    } else if is_type!(ty, PyFloat) {
+        Ok(Schema::Primitive(Primitive::Float))
+    } else if is_type!(ty, PyByteArray) {
+        Ok(Schema::Primitive(Primitive::Bytes(Bytes::new(
+            ty.into(),
+            true,
+        ))))
+    } else {
+        Err(pyerr(format!("unsupported type object `{}`", ty.name())))
+    }
+}
+
+fn to_class(ty: &PyAny, cattr: Option<&PyDict>) -> PyResult<Schema> {
     let cattr = cattr
         .map(|v| ClassAttr::parse(v))
         .transpose()?
@@ -149,7 +209,7 @@ pub fn to_class(ty: &PyAny, cattr: Option<&PyDict>) -> PyResult<Schema> {
     )))
 }
 
-pub fn to_generic(ty: &PyAny) -> PyResult<Schema> {
+fn to_generic(ty: &PyAny) -> PyResult<Schema> {
     if is_optional_type(ty)? {
         let args = get_args(ty)?;
         let arg = args
@@ -173,7 +233,7 @@ pub fn to_generic(ty: &PyAny) -> PyResult<Schema> {
     } else {
         let origty: &PyType = get_origin(ty)?.downcast()?;
 
-        if py().get_type::<PyDict>().eq(origty) {
+        if is_type!(origty, PyDict) {
             let args = get_args(ty)?;
             let key = args
                 .get(0)
@@ -185,13 +245,13 @@ pub fn to_generic(ty: &PyAny) -> PyResult<Schema> {
                 Box::new(to_schema(key, None)?),
                 Box::new(to_schema(value, None)?),
             )))
-        } else if py().get_type::<PyList>().eq(origty) {
+        } else if is_type!(origty, PyList) {
             let args = get_args(ty)?;
             let arg = args
                 .get(0)
                 .ok_or_else(|| pyerr("`List` is missing type parameter"))?;
             Ok(Schema::List(List::new(Box::new(to_schema(arg, None)?))))
-        } else if py().get_type::<PySet>().eq(origty) || py().get_type::<PyFrozenSet>().eq(origty) {
+        } else if is_type!(origty, PySet) || is_type!(origty, PyFrozenSet) {
             let args = get_args(ty)?;
             let arg = args
                 .get(0)
@@ -204,4 +264,31 @@ pub fn to_generic(ty: &PyAny) -> PyResult<Schema> {
             Err(pyerr(format!("Unsupported type `{}`", origty.name())))
         }
     }
+}
+
+fn to_enum(ty: &PyAny, cattr: Option<&PyDict>) -> PyResult<Schema> {
+    let variants: PyResult<IndexMap<_, _>> = ty
+        .iter()?
+        .map(|v| {
+            let v = v?;
+            let name: &str = v.getattr("name")?.extract()?;
+            let value = v.getattr("value")?;
+            Ok((
+                name.into(),
+                VariantSchema::new(
+                    name.into(),
+                    VariantAttr::default(),
+                    to_schema(value.get_type(), None)?,
+                ),
+            ))
+        })
+        .collect();
+
+    let attr = cattr.map(|v| EnumAttr::parse(v)).transpose()?;
+
+    Ok(Schema::Enum(Enum::new(
+        ty.downcast::<PyType>()?.into(),
+        attr.unwrap_or_default(),
+        variants?,
+    )))
 }

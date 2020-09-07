@@ -1,18 +1,11 @@
-use crate::{
-    ser::TypedObject,
-    state::DeserializeState,
-    types::{Object, Schema},
-    util::*,
-};
+use crate::{object::Object, schema::Schema, ser::TypedObject, state::DeserializeState, util::*};
 use pyo3::{prelude::*, wrap_pyfunction, wrap_pymodule};
 use serde::{Deserialize, Serialize};
 
 #[pyfunction]
 pub fn loads_as(ty: &PyAny, s: &str) -> PyResult<PyObject> {
-    let obj: Object = Schema::with(ty, |schema| {
-        let mut deserializer = serde_json::Deserializer::from_str(s);
-        Object::deserialize_state(schema, &mut deserializer).map_err(pyerr)
-    })?;
+    let mut deserializer = serde_json::Deserializer::from_str(s);
+    let obj = Schema::deserialize(ty, &mut deserializer)?;
 
     #[cfg(feature = "perf")]
     {
@@ -20,21 +13,15 @@ pub fn loads_as(ty: &PyAny, s: &str) -> PyResult<PyObject> {
         flame::clear();
     }
 
-    Ok(obj.into())
+    Ok(obj)
 }
 
 #[pyfunction]
 pub fn dumps(v: &PyAny) -> PyResult<String> {
-    let ty = v.get_type();
-    let buf = Schema::with(ty, |schema| {
-        let object = v.to_object(py());
-        let object = TypedObject::new(&*schema, object);
-
-        let buf = vec![];
-        let mut serializer = serde_json::Serializer::new(buf);
-        object.serialize(&mut serializer).map_err(pyerr)?;
-        Ok(serializer.into_inner())
-    })?;
+    let buf = vec![];
+    let mut serializer = serde_json::Serializer::new(buf);
+    Schema::serialize(v, &mut serializer)?;
+    let buf = serializer.into_inner();
 
     #[cfg(feature = "perf")]
     {
@@ -48,8 +35,9 @@ pub fn dumps(v: &PyAny) -> PyResult<String> {
 #[pyfunction(kwargs = "**")]
 pub fn loads(s: &str) -> PyResult<PyObject> {
     let mut deserializer = serde_json::Deserializer::from_str(s);
-    let obj = Object::deserialize(&mut deserializer).map_err(pyerr)?;
-    Ok(obj.into())
+    Object::deserialize(&mut deserializer)
+        .map_err(pyerr)
+        .map(|v| v.to_pyobj())
 }
 
 #[pymodule]

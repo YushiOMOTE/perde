@@ -5,7 +5,6 @@ use pyo3::{prelude::*, types::PyDict, wrap_pyfunction};
 #[macro_use]
 extern crate flamer;
 
-mod de;
 #[cfg(feature = "json")]
 mod json;
 mod ser;
@@ -15,6 +14,7 @@ mod util;
 
 mod decode;
 mod inspect;
+mod object;
 mod schema;
 
 #[pyfunction(kwargs = "**")]
