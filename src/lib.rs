@@ -14,6 +14,7 @@ mod types;
 mod util;
 
 mod decode;
+mod inspect;
 mod schema;
 
 #[pyfunction(kwargs = "**")]

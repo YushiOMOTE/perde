@@ -21,6 +21,16 @@ impl<'a, 'de> DeserializeSeed<'de> for &'a Schema {
     where
         D: Deserializer<'de>,
     {
-        unimplemented!()
+        match self {
+            Schema::Primitive(p) => p.deserialize(deserializer),
+            Schema::Dict(d) => d.deserialize(deserializer),
+            Schema::List(l) => l.deserialize(deserializer),
+            Schema::Set(s) => s.deserialize(deserializer),
+            Schema::Tuple(t) => t.deserialize(deserializer),
+            Schema::Class(c) => c.deserialize(deserializer),
+            Schema::Enum(e) => e.deserialize(deserializer),
+            Schema::Optional(o) => o.deserialize(deserializer),
+            Schema::Union(u) => u.deserialize(deserializer),
+        }
     }
 }

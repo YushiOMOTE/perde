@@ -32,3 +32,15 @@ impl<'a, 'de> Visitor<'de> for OptionVisitor<'a> {
         (&*self.0.value).deserialize(deserializer)
     }
 }
+
+impl<'a, 'de> DeserializeSeed<'de> for &'a Optional {
+    type Value = PyObject;
+
+    #[cfg_attr(feature = "perf", flame)]
+    fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        deserializer.deserialize_option(OptionVisitor(self))
+    }
+}

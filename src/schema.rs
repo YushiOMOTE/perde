@@ -2,7 +2,7 @@ use crate::util::*;
 use derive_new::new;
 use indexmap::IndexMap;
 use pyo3::{prelude::*, types::*};
-use std::borrow::Cow;
+use std::{borrow::Cow, str::FromStr};
 
 const SCHEMA_CACHE: &'static str = "__perde_schema__";
 
@@ -18,7 +18,26 @@ pub enum StrCase {
     ScreamingKebab,
 }
 
-#[derive(Clone, Debug, new)]
+impl FromStr for StrCase {
+    type Err = PyErr;
+
+    #[cfg_attr(feature = "perf", flame)]
+    fn from_str(s: &str) -> PyResult<Self> {
+        match s {
+            "lowercase" => Ok(StrCase::Lower),
+            "UPPERCASE" => Ok(StrCase::Upper),
+            "PascalCase" => Ok(StrCase::Pascal),
+            "camelCase" => Ok(StrCase::Camel),
+            "snake_case" => Ok(StrCase::Snake),
+            "SCREAMING_SNAKE_CASE" => Ok(StrCase::ScreamingSnake),
+            "kebab-case" => Ok(StrCase::Kebab),
+            "SCREAMING-KEBAB-CASE" => Ok(StrCase::ScreamingKebab),
+            c => Err(pyerr(format!("Unsupported string case: {}", c))),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Default, new)]
 pub struct FieldAttr {
     pub flatten: bool,
     pub rename: Option<String>,
@@ -28,17 +47,75 @@ pub struct FieldAttr {
     pub skip_deserializing: bool,
 }
 
-#[derive(Clone, Debug, new)]
+macro_rules! extract_parse {
+    ($dict:expr, $field:expr) => {
+        $dict
+            .get_item($field)
+            .map(|v| {
+                let s: &str = v.extract()?;
+                s.parse()
+                    .map_err(|_| pyerr(format!("invalid string `{}` in attribute `{}`", s, $field)))
+            })
+            .transpose()?
+    };
+}
+
+macro_rules! extract_bool {
+    ($dict:expr, $field:expr) => {
+        $dict
+            .get_item($field)
+            .map(|v| v.extract())
+            .transpose()
+            .map_err(|_| pyerr(format!("expected `bool` in attribute `{}`", $field)))?
+            .unwrap_or(false)
+    };
+}
+
+macro_rules! extract {
+    ($dict:expr, $field:expr) => {
+        $dict
+            .get_item($field)
+            .map(|v| v.extract())
+            .transpose()
+            .map_err(|_| pyerr(format!("expected `str` in attribute `{}`", $field)))?
+    };
+}
+
+impl FieldAttr {
+    pub fn parse(dict: &PyDict) -> PyResult<Self> {
+        Ok(Self::new(
+            extract_bool!(dict, "flatten"),
+            extract!(dict, "rename"),
+            extract!(dict, "default"),
+            extract!(dict, "default_factory"),
+            extract_bool!(dict, "skip"),
+            extract_bool!(dict, "skip_deserializing"),
+        ))
+    }
+}
+
+#[derive(Clone, Debug, Default, new)]
 pub struct VariantAttr {
     pub rename: Option<String>,
 }
 
-#[derive(Clone, Debug, new)]
+#[derive(Clone, Debug, Default, new)]
 pub struct ClassAttr {
     pub rename_all: Option<StrCase>,
     pub rename: Option<String>,
     pub deny_unknown_fields: bool,
     pub default: bool,
+}
+
+impl ClassAttr {
+    pub fn parse(dict: &PyDict) -> PyResult<Self> {
+        Ok(Self::new(
+            extract_parse!(dict, "rename_all"),
+            extract!(dict, "rename"),
+            extract_bool!(dict, "deny_unknown_fields"),
+            extract_bool!(dict, "default"),
+        ))
+    }
 }
 
 #[derive(Clone, Debug, new)]
@@ -68,7 +145,7 @@ impl Schema {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, new)]
 pub struct Bytes {
     pub ty: Py<PyType>,
     pub is_byte_array: bool,
@@ -165,6 +242,7 @@ pub struct VariantSchema {
 #[derive(Debug, Clone, new)]
 pub struct Class {
     pub ty: Py<PyType>,
+    pub name: String,
     pub attr: ClassAttr,
     pub fields: IndexMap<String, FieldSchema>,
     pub flatten_fields: IndexMap<String, FieldSchema>,
