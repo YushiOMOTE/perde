@@ -36,13 +36,7 @@ impl<'a, 'de> Visitor<'de> for UnionVisitor<'a> {
 
     #[cfg_attr(feature = "perf", flame)]
     fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        // let names: Vec<_> = self
-        //     .0
-        //     .variants
-        //     .iter()
-        //     .map(|v| v.ty.as_ref(py()).name())
-        //     .collect();
-        // TODO: names
+        let names: Vec<_> = self.0.variants.iter().map(|v| v.name()).collect();
         write!(f, "any of {:?}", "")
     }
 
