@@ -162,16 +162,18 @@ impl Schema {
     }
 
     pub fn resolve<'a>(ty: &'a PyAny, attr: Option<&PyDict>) -> PyResult<&'a PyCell<SchemaInfo>> {
-        ty.getattr(SCHEMA_CACHE)?.extract().or_else(|_| {
-            to_schema(ty, attr).and_then(|schema| match &schema {
-                Schema::Class(_) => {
-                    let schema = PyCell::new(py(), SchemaInfo::new(schema))?;
-                    ty.setattr(SCHEMA_CACHE, schema)?;
-                    Ok(schema)
-                }
-                _ => PyCell::new(py(), SchemaInfo::new(schema)),
+        ty.getattr(SCHEMA_CACHE)
+            .and_then(|v| v.extract())
+            .or_else(|_| {
+                to_schema(ty, attr).and_then(|schema| match &schema {
+                    Schema::Class(_) => {
+                        let schema = PyCell::new(py(), SchemaInfo::new(schema))?;
+                        ty.setattr(SCHEMA_CACHE, schema)?;
+                        Ok(schema)
+                    }
+                    _ => PyCell::new(py(), SchemaInfo::new(schema)),
+                })
             })
-        })
     }
 }
 

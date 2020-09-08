@@ -114,7 +114,9 @@ fn is_tuple_type(ty: &PyAny) -> PyResult<bool> {
 
 fn is_generic(ty: &PyAny) -> PyResult<bool> {
     Ok(!get_origin(ty)?.is_none()
-        && (is_union_type(ty)? || is_optional_type(ty)? || is_tuple_type(ty)?))
+        || is_union_type(ty)?
+        || is_optional_type(ty)?
+        || is_tuple_type(ty)?)
 }
 
 fn is_enum(ty: &PyAny) -> PyResult<bool> {
@@ -175,10 +177,17 @@ fn to_class(ty: &PyAny, cattr: Option<&PyDict>) -> PyResult<Schema> {
         .into_iter()
         .map(|v| {
             let name: &str = v.getattr("name")?.extract()?;
-            let value = v.getattr("value")?;
-            let metadata = v.getattr("metadata")?.extract()?;
-            let attr = FieldAttr::parse(metadata)?;
-            let schema = to_schema(value.get_type(), None)?;
+            let ty = v.getattr("type")?;
+            let metadata = v.getattr("metadata")?;
+            let attr = if metadata.is_none() {
+                FieldAttr::default()
+            } else {
+                match metadata.extract() {
+                    Ok(dict) => FieldAttr::parse(dict)?,
+                    Err(_) => FieldAttr::default(),
+                }
+            };
+            let schema = to_schema(ty.downcast()?, None)?;
 
             let origname = name.to_string();
             let name = convert_stringcase(name, cattr.rename_all);
