@@ -1,10 +1,7 @@
 use crate::{schema::*, util::*};
-use pyo3::{
-    prelude::*,
-    types::{PyTuple, PyType},
-};
-use serde::de::{self, DeserializeSeed, Deserializer, IgnoredAny, MapAccess, Visitor};
-use std::{collections::HashMap, fmt};
+use pyo3::prelude::*;
+use serde::de::{self, DeserializeSeed, Deserializer, Visitor};
+use std::fmt;
 
 struct EnumVisitor<'a>(&'a Enum);
 

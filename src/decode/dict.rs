@@ -1,7 +1,7 @@
 use crate::{schema::*, util::*};
 use pyo3::{prelude::*, types::PyDict};
-use serde::de::{self, DeserializeSeed, Deserializer, MapAccess, Visitor};
-use std::{collections::HashMap, fmt};
+use serde::de::{DeserializeSeed, Deserializer, MapAccess, Visitor};
+use std::fmt;
 
 pub struct DictVisitor<'a>(pub &'a Dict);
 

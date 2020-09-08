@@ -1,6 +1,6 @@
 use crate::{schema::*, util::*};
 use pyo3::{prelude::*, types::PyTuple};
-use serde::de::{self, DeserializeSeed, Deserializer, IgnoredAny, SeqAccess, Visitor};
+use serde::de::{DeserializeSeed, Deserializer, IgnoredAny, SeqAccess, Visitor};
 use std::fmt;
 
 pub struct TupleVisitor<'a>(pub &'a Tuple);

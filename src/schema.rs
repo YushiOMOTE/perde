@@ -1,4 +1,4 @@
-use crate::{inspect::to_schema, util::*};
+use crate::{inspect::to_schema, object::TypedObject, util::*};
 use derive_new::new;
 use indexmap::IndexMap;
 use pyo3::{prelude::*, types::*};
@@ -135,7 +135,7 @@ impl EnumAttr {
 
 #[pyclass]
 #[derive(Debug, Clone, new)]
-struct SchemaInfo {
+pub struct SchemaInfo {
     pub schema: Schema,
 }
 
@@ -151,10 +151,17 @@ impl Schema {
     }
 
     pub fn serialize<S: serde::ser::Serializer>(value: &PyAny, serializer: S) -> PyResult<()> {
-        unimplemented!()
+        use serde::Serialize;
+        let ty = value.get_type().as_ref();
+        let info = Self::resolve(ty, None)?;
+        let info = info.borrow();
+        TypedObject::new(&info.schema, value)
+            .serialize(serializer)
+            .map_err(pyerr)?;
+        Ok(())
     }
 
-    fn resolve<'a>(ty: &'a PyAny, attr: Option<&PyDict>) -> PyResult<&'a PyCell<SchemaInfo>> {
+    pub fn resolve<'a>(ty: &'a PyAny, attr: Option<&PyDict>) -> PyResult<&'a PyCell<SchemaInfo>> {
         ty.getattr(SCHEMA_CACHE)?.extract().or_else(|_| {
             to_schema(ty, attr).and_then(|schema| match &schema {
                 Schema::Class(_) => {
@@ -191,7 +198,7 @@ impl Primitive {
             Self::Float => "float".into(),
             Self::Str => "str".into(),
             Self::Bytes(b) if b.is_byte_array => "bytearray".into(),
-            Self::Bytes(b) => "byte".into(),
+            Self::Bytes(_) => "byte".into(),
         }
     }
 }
@@ -306,6 +313,12 @@ impl Union {
     }
 }
 
+macro_rules! is_type {
+    ($given:expr, $($type:ty),*) => {
+        $(py().get_type::<$type>().eq($given))||*
+    };
+}
+
 #[derive(Debug, Clone, new)]
 pub enum Schema {
     Primitive(Primitive),
@@ -332,5 +345,35 @@ impl Schema {
             Self::Optional(o) => o.name(),
             Self::Union(u) => u.name(),
         }
+    }
+
+    pub fn type_of(&self, value: &PyAny) -> PyResult<bool> {
+        let ty = value.get_type();
+
+        let ok = match self {
+            Schema::Primitive(Primitive::Bool) if is_type!(ty, PyBool) => true,
+            Schema::Primitive(Primitive::Float) if is_type!(ty, PyFloat) => true,
+            Schema::Primitive(Primitive::Int) if is_type!(ty, PyLong) => true,
+            Schema::Primitive(Primitive::Str) if is_type!(ty, PyUnicode) => true,
+            Schema::Primitive(Primitive::Bytes(b))
+                if b.is_byte_array && is_type!(ty, PyByteArray) =>
+            {
+                true
+            }
+            Schema::Primitive(Primitive::Bytes(_)) if is_type!(ty, PyBytes) => true,
+            Schema::Dict(_) if is_type!(ty, PyDict) => true,
+            Schema::Tuple(_) if is_type!(ty, PyTuple) => true,
+            Schema::List(_) if is_type!(ty, PyList) => true,
+            Schema::Set(_) if is_type!(ty, PySet) => true,
+            Schema::Class(c) if ty.eq(c.ty.as_ref(py())) => true,
+            Schema::Enum(e) if ty.eq(e.ty.as_ref(py())) => true,
+            Schema::Optional(o) if o.value.type_of(ty)? => true,
+            Schema::Union(u) => {
+                let v: PyResult<Vec<_>> = u.variants.iter().map(|s| s.type_of(ty)).collect();
+                v?.iter().any(|v| *v)
+            }
+            _ => false,
+        };
+        Ok(ok)
     }
 }

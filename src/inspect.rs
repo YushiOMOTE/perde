@@ -193,16 +193,15 @@ fn to_class(ty: &PyAny, cattr: Option<&PyDict>) -> PyResult<Schema> {
         .collect();
 
     let ty = ty.downcast().map(|v: &PyType| v)?;
-    let origname = ty.name().to_string();
     let name = if let Some(rename) = cattr.rename.as_ref() {
         rename.into()
     } else {
-        origname.clone()
+        ty.name().to_string()
     };
 
     Ok(Schema::Class(Class::new(
         ty.into(),
-        origname,
+        name,
         cattr,
         fields?,
         IndexMap::new(),

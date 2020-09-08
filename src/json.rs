@@ -1,6 +1,6 @@
-use crate::{object::Object, schema::Schema, ser::TypedObject, state::DeserializeState, util::*};
+use crate::{object::Object, schema::Schema, util::*};
 use pyo3::{prelude::*, wrap_pyfunction, wrap_pymodule};
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 
 #[pyfunction]
 pub fn loads_as(ty: &PyAny, s: &str) -> PyResult<PyObject> {

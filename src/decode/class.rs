@@ -1,8 +1,5 @@
 use crate::{schema::*, util::*};
-use pyo3::{
-    prelude::*,
-    types::{PyDict, PyTuple, PyType},
-};
+use pyo3::{prelude::*, types::PyTuple};
 use serde::de::{self, DeserializeSeed, Deserializer, IgnoredAny, MapAccess, Visitor};
 use std::{collections::HashMap, fmt};
 
@@ -97,7 +94,7 @@ impl Class {
                 if s.attr.flatten {
                     match &s.schema {
                         Schema::Class(cls) => return cls.call(map),
-                        Schema::Dict(dict) => {
+                        Schema::Dict(_) => {
                             let map = std::mem::replace(map, HashMap::new());
                             return Ok(map.into_py(py()));
                         }

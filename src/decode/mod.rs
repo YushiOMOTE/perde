@@ -1,7 +1,6 @@
-use crate::{schema::*, util::*};
+use crate::schema::*;
 use pyo3::prelude::*;
-use serde::de::{self, DeserializeSeed, Deserializer, SeqAccess, Visitor};
-use std::fmt;
+use serde::de::{DeserializeSeed, Deserializer};
 
 pub mod class;
 pub mod dict;

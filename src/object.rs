@@ -1,4 +1,4 @@
-use crate::util::*;
+use crate::{schema::Schema, util::*};
 use pyo3::prelude::*;
 
 pub struct Object {
@@ -35,5 +35,16 @@ impl From<Object> for PyObject {
     #[cfg_attr(feature = "perf", flame)]
     fn from(obj: Object) -> Self {
         obj.to_pyobj()
+    }
+}
+
+pub struct TypedObject<'a> {
+    pub schema: &'a Schema,
+    pub object: &'a PyAny,
+}
+
+impl<'a> TypedObject<'a> {
+    pub fn new(schema: &'a Schema, object: &'a PyAny) -> Self {
+        Self { schema, object }
     }
 }

@@ -1,13 +1,10 @@
-use crate::{decode, schema::*, util::*};
-use pyo3::{
-    prelude::*,
-    types::{PyTuple, PyType},
-};
+use crate::{decode, schema::*};
+use pyo3::prelude::*;
 use serde::de::{
-    self, DeserializeSeed, Deserializer, IgnoredAny, IntoDeserializer, MapAccess, SeqAccess,
-    Unexpected, Visitor,
+    self, DeserializeSeed, Deserializer, IntoDeserializer, MapAccess, SeqAccess, Unexpected,
+    Visitor,
 };
-use std::{collections::HashMap, fmt};
+use std::fmt;
 
 struct UnionVisitor<'a>(&'a Union);
 
@@ -21,23 +18,13 @@ macro_rules! find {
     }
 }
 
-macro_rules! findp {
-    ($s:expr, $unx:expr, $($kind:tt),*) => {
-        $s.0.variants.iter().find(|s| match s {
-            $(Schema::$kind(Primitive::) => true,)*
-                _ => false,
-        })
-            .ok_or_else(|| de::Error::invalid_type($unx, &$s))
-    }
-}
-
 impl<'a, 'de> Visitor<'de> for UnionVisitor<'a> {
     type Value = PyObject;
 
     #[cfg_attr(feature = "perf", flame)]
     fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let names: Vec<_> = self.0.variants.iter().map(|v| v.name()).collect();
-        write!(f, "any of {:?}", "")
+        write!(f, "any of {:?}", names)
     }
 
     #[cfg_attr(feature = "perf", flame)]

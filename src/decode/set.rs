@@ -1,6 +1,6 @@
 use crate::{schema::*, util::*};
-use pyo3::{prelude::*, types::PyDict};
-use serde::de::{self, DeserializeSeed, Deserializer, SeqAccess, Visitor};
+use pyo3::prelude::*;
+use serde::de::{DeserializeSeed, Deserializer, SeqAccess, Visitor};
 use std::fmt;
 
 pub struct SetVisitor<'a>(pub &'a Set);

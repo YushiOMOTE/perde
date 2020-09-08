@@ -1,7 +1,7 @@
 use crate::{schema::*, util::*};
-use pyo3::{prelude::*, types::PyDict};
-use serde::de::{self, DeserializeSeed, Deserializer, SeqAccess, Visitor};
-use std::{collections::HashMap, fmt};
+use pyo3::prelude::*;
+use serde::de::{DeserializeSeed, Deserializer, SeqAccess, Visitor};
+use std::fmt;
 
 pub struct ListVisitor<'a>(pub &'a List);
 

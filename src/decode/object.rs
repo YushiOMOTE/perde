@@ -1,5 +1,4 @@
-use crate::{object::Object, util::*};
-use pyo3::prelude::*;
+use crate::object::Object;
 use serde::{
     de::{Deserializer, EnumAccess, Error, MapAccess, SeqAccess, Visitor},
     Deserialize,
