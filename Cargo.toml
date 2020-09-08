@@ -17,6 +17,7 @@ rmp-serde = { version = "0.14", optional = true }
 indexmap = "1.5"
 flame = { version = "0.2", optional = true }
 flamer = { version = "0.3", optional = true }
+bytecount = "0.6"
 
 [lib]
 name = "perde"

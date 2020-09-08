@@ -147,7 +147,8 @@ impl<'de> Visitor<'de> for StrVisitor {
     where
         E: de::Error,
     {
-        Ok(value.to_object(py()))
+        Ok(unsafe { PyObject::from_owned_ptr(py(), crate::unicode::unicode_from_str(value)) })
+        // Ok(value.to_object(py()))
     }
 
     #[cfg_attr(feature = "perf", flame)]

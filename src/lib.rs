@@ -12,6 +12,7 @@ mod inspect;
 mod json;
 mod object;
 mod schema;
+mod unicode;
 mod util;
 
 #[pyfunction(kwargs = "**")]
