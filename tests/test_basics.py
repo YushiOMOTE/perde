@@ -1,18 +1,19 @@
 from dataclasses import dataclass
 from typing import List, Dict, Optional, Union, Tuple, TypeVar
-from parameterized import parameterized
+from typing_inspect import get_origin
 import enum
 import perde
 import pytest
 
 
 def repack(ty, *args, **kwargs):
-    e = ty(*args, **kwargs)
+    oty = get_origin(ty) or ty
+    e = oty(*args, **kwargs)
     v = perde.json.dumps(e)
     print(f'ok: ser: {v}')
     a = perde.json.loads_as(ty, v)
     assert e == a
-    print(f'ok: de: {v}')
+    print(f'ok: de: {a}')
 
 
 @dataclass
