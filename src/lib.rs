@@ -12,6 +12,7 @@ mod inspect;
 mod json;
 mod object;
 mod schema;
+mod types;
 mod unicode;
 mod util;
 

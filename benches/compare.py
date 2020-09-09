@@ -30,9 +30,9 @@ print('---------- de -----------')
 # check = f'''
 # assert json.loads(\'{data}\') == {{"key": 300, "value": "hoge"}}
 # '''
-data = '{"a":10}'
+data = '1'
 check = f'''
-assert json.loads(\'{data}\') == {{"a":10}}
+assert json.loads(\'{data}\') == 1
 '''
 
 res_json = timeit.repeat(f'json.loads(\'{data}\')', setup = f"import json{check}", number = 100000)

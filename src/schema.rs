@@ -1,4 +1,4 @@
-use crate::{inspect::to_schema, object::TypedObject, util::*};
+use crate::{inspect::to_schema, object::TypedObject, types, util::*};
 use derive_new::new;
 use indexmap::IndexMap;
 use pyo3::{prelude::*, types::*};
