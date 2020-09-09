@@ -1,12 +1,17 @@
-use crate::{schema::*, util::*};
+use crate::{
+    schema::*,
+    types::{self, Object},
+    util::*,
+};
 use pyo3::prelude::*;
 use serde::de::{self, DeserializeSeed, Deserializer, SeqAccess, Visitor};
+use smallvec::SmallVec;
 use std::fmt;
 
 pub struct BoolVisitor;
 
 impl<'de> Visitor<'de> for BoolVisitor {
-    type Value = PyObject;
+    type Value = Object;
 
     #[cfg_attr(feature = "perf", flame)]
     fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -18,14 +23,14 @@ impl<'de> Visitor<'de> for BoolVisitor {
     where
         E: de::Error,
     {
-        Ok(value.to_object(py()))
+        types::py_bool(value).map_err(de)
     }
 }
 
 pub struct IntVisitor;
 
 impl<'de> Visitor<'de> for IntVisitor {
-    type Value = PyObject;
+    type Value = Object;
 
     #[cfg_attr(feature = "perf", flame)]
     fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -53,7 +58,7 @@ impl<'de> Visitor<'de> for IntVisitor {
     where
         E: de::Error,
     {
-        Ok(value.to_object(py()))
+        types::py_i64(value).map_err(de)
     }
 
     #[cfg_attr(feature = "perf", flame)]
@@ -85,14 +90,14 @@ impl<'de> Visitor<'de> for IntVisitor {
     where
         E: de::Error,
     {
-        Ok(value.to_object(py()))
+        types::py_u64(value).map_err(de)
     }
 }
 
 pub struct FloatVisitor;
 
 impl<'de> Visitor<'de> for FloatVisitor {
-    type Value = PyObject;
+    type Value = Object;
 
     #[cfg_attr(feature = "perf", flame)]
     fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -112,14 +117,14 @@ impl<'de> Visitor<'de> for FloatVisitor {
     where
         E: de::Error,
     {
-        Ok(value.to_object(py()))
+        types::py_f64(value).map_err(de)
     }
 }
 
 pub struct StrVisitor;
 
 impl<'de> Visitor<'de> for StrVisitor {
-    type Value = PyObject;
+    type Value = Object;
 
     #[cfg_attr(feature = "perf", flame)]
     fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -147,8 +152,7 @@ impl<'de> Visitor<'de> for StrVisitor {
     where
         E: de::Error,
     {
-        Ok(unsafe { PyObject::from_owned_ptr(py(), crate::unicode::unicode_from_str(value)) })
-        // Ok(value.to_object(py()))
+        types::py_str(value).map_err(de)
     }
 
     #[cfg_attr(feature = "perf", flame)]
@@ -160,10 +164,10 @@ impl<'de> Visitor<'de> for StrVisitor {
     }
 }
 
-pub struct BytesVisitor<'a>(pub &'a Bytes);
+pub struct BytesVisitor(pub bool);
 
-impl<'a, 'de> Visitor<'de> for BytesVisitor<'a> {
-    type Value = PyObject;
+impl<'de> Visitor<'de> for BytesVisitor {
+    type Value = Object;
 
     #[cfg_attr(feature = "perf", flame)]
     fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -183,12 +187,11 @@ impl<'a, 'de> Visitor<'de> for BytesVisitor<'a> {
     where
         E: de::Error,
     {
-        self.0
-            .ty
-            .as_ref(py())
-            .call1((value,))
-            .map_err(de)
-            .map(|v| v.into())
+        if self.0 {
+            types::py_bytearray(value).map_err(de)
+        } else {
+            types::py_bytes(value).map_err(de)
+        }
     }
 
     #[cfg_attr(feature = "perf", flame)]
@@ -204,7 +207,7 @@ impl<'a, 'de> Visitor<'de> for BytesVisitor<'a> {
     where
         A: SeqAccess<'de>,
     {
-        let mut bytes = Vec::<u8>::new();
+        let mut bytes = SmallVec::<[_; 64]>::new();
 
         loop {
             bytes.push(match seq.next_element()? {
@@ -218,7 +221,7 @@ impl<'a, 'de> Visitor<'de> for BytesVisitor<'a> {
 }
 
 impl<'a, 'de> DeserializeSeed<'de> for &'a Primitive {
-    type Value = PyObject;
+    type Value = Object;
 
     #[cfg_attr(feature = "perf", flame)]
     fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
@@ -230,7 +233,8 @@ impl<'a, 'de> DeserializeSeed<'de> for &'a Primitive {
             Primitive::Int => deserializer.deserialize_i64(IntVisitor),
             Primitive::Float => deserializer.deserialize_f64(FloatVisitor),
             Primitive::Str => deserializer.deserialize_str(StrVisitor),
-            Primitive::Bytes(bytes) => deserializer.deserialize_bytes(BytesVisitor(&bytes)),
+            Primitive::Bytes => deserializer.deserialize_bytes(BytesVisitor(false)),
+            Primitive::ByteArray => deserializer.deserialize_bytes(BytesVisitor(true)),
         }
     }
 }

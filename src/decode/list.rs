@@ -1,12 +1,17 @@
-use crate::{schema::*, util::*};
+use crate::{
+    schema::*,
+    types::{self, Object},
+    util::*,
+};
 use pyo3::prelude::*;
 use serde::de::{DeserializeSeed, Deserializer, SeqAccess, Visitor};
+use smallvec::SmallVec;
 use std::fmt;
 
 pub struct ListVisitor<'a>(pub &'a List);
 
 impl<'a, 'de> Visitor<'de> for ListVisitor<'a> {
-    type Value = PyObject;
+    type Value = Object;
 
     #[cfg_attr(feature = "perf", flame)]
     fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -18,18 +23,24 @@ impl<'a, 'de> Visitor<'de> for ListVisitor<'a> {
     where
         A: SeqAccess<'de>,
     {
-        let mut items = vec![];
+        let mut items = SmallVec::<[_; 16]>::new();
 
         while let Some(value) = seq.next_element_seed(&*self.0.value)? {
             items.push(value);
         }
 
-        Ok(items.to_object(py()))
+        let mut list = types::List::new(items.len()).map_err(de)?;
+
+        for (i, a) in items.into_iter().enumerate() {
+            list.set(i, a);
+        }
+
+        Ok(list.into_inner())
     }
 }
 
 impl<'a, 'de> DeserializeSeed<'de> for &'a List {
-    type Value = PyObject;
+    type Value = Object;
 
     #[cfg_attr(feature = "perf", flame)]
     fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>

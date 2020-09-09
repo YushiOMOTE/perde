@@ -35,11 +35,11 @@ impl<'a> Serialize for TypedObject<'a> {
                     let v = self.object.extract().map_err(ser)?;
                     s.serialize_f64(v)
                 }
-                Primitive::Bytes(b) if b.is_byte_array => {
+                Primitive::ByteArray => {
                     let v: Vec<u8> = self.object.extract().map_err(ser)?;
                     s.serialize_bytes(&v)
                 }
-                Primitive::Bytes(_) => {
+                Primitive::Bytes => {
                     let v = self.object.extract().map_err(ser)?;
                     s.serialize_bytes(v)
                 }

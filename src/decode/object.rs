@@ -1,4 +1,7 @@
-use crate::object::Object;
+use crate::{
+    types::{self, Object},
+    util::*,
+};
 use serde::{
     de::{Deserializer, EnumAccess, Error, MapAccess, SeqAccess, Visitor},
     Deserialize,
@@ -20,7 +23,7 @@ impl<'de> Visitor<'de> for AnyVisitor {
     where
         E: Error,
     {
-        Ok(Object::new(v))
+        types::py_bool(v).map_err(de)
     }
 
     #[cfg_attr(feature = "perf", flame)]
@@ -28,7 +31,7 @@ impl<'de> Visitor<'de> for AnyVisitor {
     where
         E: Error,
     {
-        Ok(Object::new(v))
+        self.visit_i64(v as i64)
     }
 
     #[cfg_attr(feature = "perf", flame)]
@@ -36,7 +39,7 @@ impl<'de> Visitor<'de> for AnyVisitor {
     where
         E: Error,
     {
-        Ok(Object::new(v))
+        self.visit_i64(v as i64)
     }
 
     #[cfg_attr(feature = "perf", flame)]
@@ -44,7 +47,7 @@ impl<'de> Visitor<'de> for AnyVisitor {
     where
         E: Error,
     {
-        Ok(Object::new(v))
+        self.visit_i64(v as i64)
     }
 
     #[cfg_attr(feature = "perf", flame)]
@@ -52,15 +55,7 @@ impl<'de> Visitor<'de> for AnyVisitor {
     where
         E: Error,
     {
-        Ok(Object::new(v))
-    }
-
-    #[cfg_attr(feature = "perf", flame)]
-    fn visit_i128<E>(self, v: i128) -> Result<Self::Value, E>
-    where
-        E: Error,
-    {
-        Ok(Object::new(v))
+        types::py_i64(v).map_err(de)
     }
 
     #[cfg_attr(feature = "perf", flame)]
@@ -68,7 +63,7 @@ impl<'de> Visitor<'de> for AnyVisitor {
     where
         E: Error,
     {
-        Ok(Object::new(v))
+        self.visit_u64(v as u64)
     }
 
     #[cfg_attr(feature = "perf", flame)]
@@ -76,7 +71,7 @@ impl<'de> Visitor<'de> for AnyVisitor {
     where
         E: Error,
     {
-        Ok(Object::new(v))
+        self.visit_u64(v as u64)
     }
 
     #[cfg_attr(feature = "perf", flame)]
@@ -84,7 +79,7 @@ impl<'de> Visitor<'de> for AnyVisitor {
     where
         E: Error,
     {
-        Ok(Object::new(v))
+        self.visit_u64(v as u64)
     }
 
     #[cfg_attr(feature = "perf", flame)]
@@ -92,15 +87,7 @@ impl<'de> Visitor<'de> for AnyVisitor {
     where
         E: Error,
     {
-        Ok(Object::new(v))
-    }
-
-    #[cfg_attr(feature = "perf", flame)]
-    fn visit_u128<E>(self, v: u128) -> Result<Self::Value, E>
-    where
-        E: Error,
-    {
-        Ok(Object::new(v))
+        types::py_u64(v).map_err(de)
     }
 
     #[cfg_attr(feature = "perf", flame)]
@@ -108,7 +95,7 @@ impl<'de> Visitor<'de> for AnyVisitor {
     where
         E: Error,
     {
-        Ok(Object::new(v))
+        self.visit_f64(v as f64)
     }
 
     #[cfg_attr(feature = "perf", flame)]
@@ -116,7 +103,7 @@ impl<'de> Visitor<'de> for AnyVisitor {
     where
         E: Error,
     {
-        Ok(Object::new(v))
+        types::py_f64(v).map_err(de)
     }
 
     #[cfg_attr(feature = "perf", flame)]
@@ -124,7 +111,7 @@ impl<'de> Visitor<'de> for AnyVisitor {
     where
         E: Error,
     {
-        Ok(Object::new(v.to_string()))
+        self.visit_borrowed_str(&v.to_string())
     }
 
     #[cfg_attr(feature = "perf", flame)]
@@ -132,7 +119,7 @@ impl<'de> Visitor<'de> for AnyVisitor {
     where
         E: Error,
     {
-        Ok(Object::new(v))
+        self.visit_str(v)
     }
 
     #[cfg_attr(feature = "perf", flame)]
@@ -140,7 +127,7 @@ impl<'de> Visitor<'de> for AnyVisitor {
     where
         E: Error,
     {
-        Ok(Object::new(v))
+        types::py_str(v).map_err(de)
     }
 
     #[cfg_attr(feature = "perf", flame)]
@@ -148,7 +135,7 @@ impl<'de> Visitor<'de> for AnyVisitor {
     where
         E: Error,
     {
-        Ok(Object::new(v))
+        self.visit_borrowed_str(&v)
     }
 
     #[cfg_attr(feature = "perf", flame)]
@@ -156,7 +143,7 @@ impl<'de> Visitor<'de> for AnyVisitor {
     where
         E: Error,
     {
-        Ok(Object::new(v))
+        self.visit_borrowed_bytes(v)
     }
 
     #[cfg_attr(feature = "perf", flame)]
@@ -164,7 +151,7 @@ impl<'de> Visitor<'de> for AnyVisitor {
     where
         E: Error,
     {
-        Ok(Object::new(v))
+        types::py_bytes(v).map_err(de)
     }
 
     #[cfg_attr(feature = "perf", flame)]
@@ -172,7 +159,7 @@ impl<'de> Visitor<'de> for AnyVisitor {
     where
         E: Error,
     {
-        Ok(Object::new(v))
+        self.visit_borrowed_bytes(&v)
     }
 
     #[cfg_attr(feature = "perf", flame)]
@@ -180,7 +167,7 @@ impl<'de> Visitor<'de> for AnyVisitor {
     where
         E: Error,
     {
-        Ok(Object::null())
+        types::py_none().map_err(de)
     }
 
     #[cfg_attr(feature = "perf", flame)]
@@ -196,7 +183,7 @@ impl<'de> Visitor<'de> for AnyVisitor {
     where
         E: Error,
     {
-        Ok(Object::null())
+        types::py_none().map_err(de)
     }
 
     #[cfg_attr(feature = "perf", flame)]
@@ -212,14 +199,19 @@ impl<'de> Visitor<'de> for AnyVisitor {
     where
         A: SeqAccess<'de>,
     {
-        let mut args = Vec::new();
+        let mut args: smallvec::SmallVec<[Object; 16]> = smallvec::SmallVec::new();
 
         while let Some(arg) = seq.next_element()? {
             let arg: Object = arg;
-            args.push(arg.to_pyobj());
+            args.push(arg);
         }
 
-        Ok(Object::new(args))
+        let mut list = types::List::new(args.len()).map_err(de)?;
+        for (i, arg) in args.into_iter().enumerate() {
+            list.set(i, arg);
+        }
+
+        Ok(list.into_inner())
     }
 
     #[cfg_attr(feature = "perf", flame)]
@@ -227,15 +219,15 @@ impl<'de> Visitor<'de> for AnyVisitor {
     where
         A: MapAccess<'de>,
     {
-        let mut args = HashMap::new();
+        let mut dict = types::Dict::new().map_err(de)?;
 
         while let Some(k) = map.next_key()? {
-            let k: String = k;
-            let v: Object = map.next_value()?;
-            args.insert(k, v.to_pyobj());
+            let k: &str = k;
+            let v = map.next_value()?;
+            dict.set(types::py_str(&k).map_err(de)?, v).map_err(de)?;
         }
 
-        Ok(Object::new(args))
+        Ok(dict.into_inner())
     }
 
     #[cfg_attr(feature = "perf", flame)]

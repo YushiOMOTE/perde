@@ -1,4 +1,8 @@
-use crate::{decode, schema::*};
+use crate::{
+    decode,
+    schema::*,
+    types::{self, Object},
+};
 use pyo3::prelude::*;
 use serde::de::{
     self, DeserializeSeed, Deserializer, IntoDeserializer, MapAccess, SeqAccess, Unexpected,
@@ -19,7 +23,7 @@ macro_rules! find {
 }
 
 impl<'a, 'de> Visitor<'de> for UnionVisitor<'a> {
-    type Value = PyObject;
+    type Value = Object;
 
     #[cfg_attr(feature = "perf", flame)]
     fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -168,8 +172,11 @@ impl<'a, 'de> Visitor<'de> for UnionVisitor<'a> {
         let schema = find!(self, Unexpected::Bytes(v), Primitive)?;
 
         match schema {
-            Schema::Primitive(Primitive::Bytes(bytes)) => {
-                decode::primitive::BytesVisitor(bytes).visit_borrowed_bytes(v)
+            Schema::Primitive(Primitive::Bytes) => {
+                decode::primitive::BytesVisitor(false).visit_borrowed_bytes(v)
+            }
+            Schema::Primitive(Primitive::ByteArray) => {
+                decode::primitive::BytesVisitor(true).visit_borrowed_bytes(v)
             }
             _ => Err(de::Error::invalid_type(Unexpected::Bytes(v), &self)),
         }
@@ -236,7 +243,7 @@ impl<'a, 'de> Visitor<'de> for UnionVisitor<'a> {
 }
 
 impl<'a, 'de> DeserializeSeed<'de> for &'a Union {
-    type Value = PyObject;
+    type Value = Object;
 
     #[cfg_attr(feature = "perf", flame)]
     fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>

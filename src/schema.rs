@@ -1,8 +1,19 @@
-use crate::{inspect::to_schema, object::TypedObject, types, util::*};
+use crate::{
+    inspect::to_schema,
+    object::TypedObject,
+    types::{self, Object},
+    util::*,
+};
 use derive_new::new;
-use indexmap::IndexMap;
+use pyo3::conversion::AsPyPointer;
 use pyo3::{prelude::*, types::*};
 use std::{borrow::Cow, str::FromStr};
+
+pub type IndexMap<K, V> = indexmap::IndexMap<K, V, fnv::FnvBuildHasher>;
+
+pub fn new_indexmap<K, V>() -> IndexMap<K, V> {
+    IndexMap::with_hasher(fnv::FnvBuildHasher::default())
+}
 
 const SCHEMA_CACHE: &'static str = "__perde_schema__";
 
@@ -139,13 +150,16 @@ pub struct SchemaInfo {
     pub schema: Schema,
 }
 
+unsafe impl Send for SchemaInfo {}
+
 impl Schema {
     pub fn deserialize<'de, D: serde::de::Deserializer<'de>>(
-        ty: &PyAny,
+        ty: &Object,
         deserializer: D,
-    ) -> PyResult<PyObject> {
+    ) -> PyResult<Object> {
         use serde::de::DeserializeSeed;
-        let info = Self::resolve(ty, None)?;
+        let obj = unsafe { PyObject::from_owned_ptr(py(), ty.as_ptr()) };
+        let info = Self::resolve(obj.as_ref(py()), None)?;
         let info = info.borrow();
         info.schema.deserialize(deserializer).map_err(pyerr)
     }
@@ -179,7 +193,6 @@ impl Schema {
 
 #[derive(Debug, Clone, new)]
 pub struct Bytes {
-    pub ty: Py<PyType>,
     pub is_byte_array: bool,
 }
 
@@ -189,7 +202,8 @@ pub enum Primitive {
     Int,
     Float,
     Str,
-    Bytes(Bytes),
+    Bytes,
+    ByteArray,
 }
 
 impl Primitive {
@@ -199,8 +213,8 @@ impl Primitive {
             Self::Int => "int".into(),
             Self::Float => "float".into(),
             Self::Str => "str".into(),
-            Self::Bytes(b) if b.is_byte_array => "bytearray".into(),
-            Self::Bytes(_) => "byte".into(),
+            Self::Bytes => "bytes".into(),
+            Self::ByteArray => "bytearray".into(),
         }
     }
 }
@@ -230,7 +244,6 @@ impl List {
 
 #[derive(Debug, Clone, new)]
 pub struct Set {
-    pub ty: Py<PyType>,
     pub value: Box<Schema>,
 }
 
@@ -253,14 +266,15 @@ impl Tuple {
 
 #[derive(Debug, Clone, new)]
 pub struct Enum {
-    pub ty: Py<PyType>,
+    pub ty: types::Enum,
     pub attr: EnumAttr,
     pub variants: IndexMap<String, VariantSchema>,
 }
 
 impl Enum {
     pub fn name(&self) -> Cow<str> {
-        self.ty.as_ref(py()).name()
+        // self.ty.as_ref(py()).name()
+        "enum".into()
     }
 }
 
@@ -273,7 +287,7 @@ pub struct VariantSchema {
 
 #[derive(Debug, Clone, new)]
 pub struct Class {
-    pub ty: Py<PyType>,
+    pub ty: types::Class,
     pub name: String,
     pub attr: ClassAttr,
     pub fields: IndexMap<String, FieldSchema>,
@@ -282,13 +296,15 @@ pub struct Class {
 
 impl Class {
     pub fn name(&self) -> Cow<str> {
-        self.ty.as_ref(py()).name()
+        // self.ty.as_ref(py()).name()
+        "class".into()
     }
 }
 
 #[derive(Debug, Clone, new)]
 pub struct FieldSchema {
     pub name: String,
+    pub pos: usize,
     pub attr: FieldAttr,
     pub schema: Schema,
 }
@@ -357,18 +373,14 @@ impl Schema {
             Schema::Primitive(Primitive::Float) if is_type!(ty, PyFloat) => true,
             Schema::Primitive(Primitive::Int) if is_type!(ty, PyLong) => true,
             Schema::Primitive(Primitive::Str) if is_type!(ty, PyUnicode) => true,
-            Schema::Primitive(Primitive::Bytes(b))
-                if b.is_byte_array && is_type!(ty, PyByteArray) =>
-            {
-                true
-            }
-            Schema::Primitive(Primitive::Bytes(_)) if is_type!(ty, PyBytes) => true,
+            Schema::Primitive(Primitive::ByteArray) if is_type!(ty, PyByteArray) => true,
+            Schema::Primitive(Primitive::Bytes) if is_type!(ty, PyBytes) => true,
             Schema::Dict(_) if is_type!(ty, PyDict) => true,
             Schema::Tuple(_) if is_type!(ty, PyTuple) => true,
             Schema::List(_) if is_type!(ty, PyList) => true,
             Schema::Set(_) if is_type!(ty, PySet) => true,
-            Schema::Class(c) if ty.eq(c.ty.as_ref(py())) => true,
-            Schema::Enum(e) if ty.eq(e.ty.as_ref(py())) => true,
+            Schema::Class(c) if c.ty.is_typeof(ty.as_ptr()) => true,
+            Schema::Enum(e) if e.ty.is_typeof(ty.as_ptr()) => true,
             Schema::Optional(o) if o.value.type_of(ty)? => true,
             Schema::Union(u) => {
                 let v: PyResult<Vec<_>> = u.variants.iter().map(|s| s.type_of(ty)).collect();

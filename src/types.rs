@@ -5,37 +5,112 @@ use std::ffi::CString;
 use std::os::raw::c_char;
 use std::ptr::NonNull;
 
-pub struct Object(NonNull<PyObject>);
-
-impl Object {
-    fn new(p: *mut PyObject) -> PyResult<Self> {
-        match NonNull::new(p) {
-            Some(p) => Ok(Self(p)),
-            None => Err(PyErr::fetch(py())),
-        }
-    }
-
-    fn as_ptr(&self) -> *mut PyObject {
-        self.0.as_ptr()
-    }
-}
-
 macro_rules! obj {
     ($p:expr) => {
         Object::new(unsafe { $p })
     };
 }
 
+macro_rules! obj_ref {
+    ($p:expr) => {
+        ObjectRef::new(unsafe { $p })
+    };
+}
+
+macro_rules! obj_clone {
+    ($p:expr) => {
+        Object::new_clone(unsafe { $p })
+    };
+}
+
+#[derive(Debug, Clone)]
+pub struct ObjectRef(NonNull<PyObject>);
+
+impl ObjectRef {
+    pub fn new(p: *mut PyObject) -> PyResult<Self> {
+        match NonNull::new(p) {
+            Some(p) => Ok(Self(p)),
+            None => Err(PyErr::fetch(py())),
+        }
+    }
+
+    pub fn as_ptr(&self) -> *mut PyObject {
+        self.0.as_ptr()
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct Args(ObjectRef);
+
+impl Args {
+    pub fn new(args: *mut PyObject) -> PyResult<Self> {
+        Ok(Self(ObjectRef::new(args)?))
+    }
+
+    pub fn get(&self, index: usize) -> PyResult<ObjectRef> {
+        obj_ref!(PyTuple_GET_ITEM(self.0.as_ptr(), index as Py_ssize_t))
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct Object(NonNull<PyObject>);
+
+impl Object {
+    pub fn new(p: *mut PyObject) -> PyResult<Self> {
+        match NonNull::new(p) {
+            Some(p) => Ok(Self(p)),
+            None => Err(PyErr::fetch(py())),
+        }
+    }
+
+    pub fn new_clone(p: *mut PyObject) -> PyResult<Self> {
+        let o = Self::new(p)?;
+        o.incref();
+        Ok(o)
+    }
+
+    pub fn as_ptr(&self) -> *mut PyObject {
+        self.0.as_ptr()
+    }
+
+    pub fn into_ptr(self) -> *mut PyObject {
+        let ptr = self.0.as_ptr();
+        std::mem::forget(self);
+        ptr
+    }
+
+    fn incref(&self) {
+        unsafe { Py_INCREF(self.0.as_ptr()) }
+    }
+
+    fn decref(&self) {
+        unsafe { Py_DECREF(self.0.as_ptr()) }
+    }
+}
+
+impl Drop for Object {
+    fn drop(&mut self) {
+        self.decref()
+    }
+}
+
 pub fn py_none() -> PyResult<Object> {
-    obj!(Py_None())
+    obj_clone!(Py_None())
 }
 
 pub fn py_true() -> PyResult<Object> {
-    obj!(Py_True())
+    obj_clone!(Py_True())
 }
 
 pub fn py_false() -> PyResult<Object> {
-    obj!(Py_False())
+    obj_clone!(Py_False())
+}
+
+pub fn py_bool(b: bool) -> PyResult<Object> {
+    match b {
+        true => py_true(),
+        false => py_false(),
+    }
 }
 
 pub fn py_i64(value: i64) -> PyResult<Object> {
@@ -51,10 +126,11 @@ pub fn py_f64(value: f64) -> PyResult<Object> {
 }
 
 pub fn py_str(value: &str) -> PyResult<Object> {
-    obj!(PyUnicode_FromStringAndSize(
-        value.as_ptr() as *const c_char,
-        value.len() as Py_ssize_t
-    ))
+    obj!(crate::unicode::unicode_from_str(value))
+    // obj!(PyUnicode_FromStringAndSize(
+    //     value.as_ptr() as *const c_char,
+    //     value.len() as Py_ssize_t
+    // ))
 }
 
 pub fn py_bytes(value: &[u8]) -> PyResult<Object> {
@@ -71,6 +147,7 @@ pub fn py_bytearray(value: &[u8]) -> PyResult<Object> {
     ))
 }
 
+#[derive(Debug, Clone)]
 pub struct List(Object);
 
 impl List {
@@ -80,7 +157,8 @@ impl List {
 
     pub fn set(&mut self, index: usize, obj: Object) {
         unsafe {
-            PyList_SET_ITEM(self.0.as_ptr(), index as Py_ssize_t, obj.as_ptr());
+            // This API steals the pointer, so use `into_ptr`.
+            PyList_SET_ITEM(self.0.as_ptr(), index as Py_ssize_t, obj.into_ptr());
         }
     }
 
@@ -89,15 +167,17 @@ impl List {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct Set(Object);
 
 impl Set {
-    pub fn new(len: usize) -> PyResult<Self> {
+    pub fn new() -> PyResult<Self> {
         Ok(Self(obj!(PySet_New(std::ptr::null_mut()))?))
     }
 
     pub fn set(&mut self, obj: Object) -> PyResult<()> {
         unsafe {
+            // This API doesn't steal.
             if PySet_Add(self.0.as_ptr(), obj.as_ptr()) == -1 {
                 return Err(PyErr::fetch(py()));
             }
@@ -110,20 +190,20 @@ impl Set {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct Dict(Object);
 
 impl Dict {
-    pub fn new(len: usize) -> PyResult<Self> {
+    pub fn new() -> PyResult<Self> {
         Ok(Self(obj!(PyDict_New())?))
     }
 
     pub fn set(&mut self, key: Object, value: Object) -> PyResult<()> {
         unsafe {
+            // This API doesn't steal.
             if PyDict_SetItem(self.0.as_ptr(), key.as_ptr(), value.as_ptr()) == 1 {
                 return Err(PyErr::fetch(py()));
             }
-            Py_DECREF(key.as_ptr());
-            Py_DECREF(value.as_ptr());
         }
         Ok(())
     }
@@ -133,6 +213,7 @@ impl Dict {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct Tuple(Object);
 
 impl Tuple {
@@ -142,7 +223,8 @@ impl Tuple {
 
     pub fn set(&mut self, index: usize, obj: Object) {
         unsafe {
-            PyTuple_SET_ITEM(self.0.as_ptr(), index as Py_ssize_t, obj.as_ptr());
+            // This API steals the pointer, so use `into_ptr`.
+            PyTuple_SET_ITEM(self.0.as_ptr(), index as Py_ssize_t, obj.into_ptr());
         }
     }
 
@@ -151,6 +233,7 @@ impl Tuple {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct Class(Object);
 
 impl Class {
@@ -160,15 +243,17 @@ impl Class {
 
     pub fn construct(&self, args: Tuple) -> PyResult<Object> {
         let p = args.into_inner();
+        // This API doesn't steal.
         let r = obj!(PyObject_Call(
             self.0.as_ptr(),
             p.as_ptr(),
             std::ptr::null_mut()
         ))?;
-        unsafe {
-            Py_DECREF(p.as_ptr());
-        }
         Ok(r)
+    }
+
+    pub fn is_typeof(&self, p: *mut PyObject) -> bool {
+        p == self.0.as_ptr()
     }
 
     pub fn into_inner(self) -> Object {
@@ -176,6 +261,7 @@ impl Class {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct Enum(Object);
 
 impl Enum {
@@ -185,7 +271,12 @@ impl Enum {
 
     pub fn value(&self, name: &str) -> PyResult<Object> {
         let s = CString::new(name).map_err(pyerr)?;
+        // This API does return a new reference.
         obj!(PyObject_GetAttrString(self.0.as_ptr(), s.as_ptr()))
+    }
+
+    pub fn is_typeof(&self, p: *mut PyObject) -> bool {
+        p == self.0.as_ptr()
     }
 
     pub fn into_inner(self) -> Object {

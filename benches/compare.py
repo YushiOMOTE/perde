@@ -10,8 +10,8 @@ class C:
     key: int
     value: str
 
-perde.json.loads_as(C, '{"key": 3, "value": "hha"}')
-perde.json.loads_as(C, '{"key": 3, "value": "hha"}')
+print(perde.json.loads_as(C, '{"key": 3, "value": "hha"}'))
+# perde.json.loads_as(C, '{"key": 3, "value": "hha"}')
 
 print('---------- de -----------')
 
@@ -26,14 +26,26 @@ print('---------- de -----------')
 # json.loads_as(C, \'{"key": 300, "value": "hoge"}\')
 # ''', number = 100000)
 
-# data = '{"key": 300, "value": "hoge"}'
-# check = f'''
-# assert json.loads(\'{data}\') == {{"key": 300, "value": "hoge"}}
-# '''
-data = '1'
+res_perde_as = timeit.repeat('json.loads_as(C, \'{"key": 3, "value": "hoge"}\')', setup = '''
+from perde import json
+from dataclasses import dataclass
+
+@dataclass
+class C:
+    key: int
+    value: str
+json.loads_as(C, \'{"key": 300, "value": "hoge"}\')
+''', number = 100000)
+
+data = '{"key": 300, "value": "hoge"}'
 check = f'''
-assert json.loads(\'{data}\') == 1
+# assert json.loads(\'{data}\') == {{"key": 300, "value": "hoge"}}
 '''
+
+# data = '{"a": [1,2,3,4,5,6,7,8,9]}'
+# check = f'''
+# assert json.loads(\'{data}\') == {{"a": [1,2,3,4,5,6,7,8,9]}}
+# '''
 
 res_json = timeit.repeat(f'json.loads(\'{data}\')', setup = f"import json{check}", number = 100000)
 res_ujson = timeit.repeat(f'json.loads(\'{data}\')', setup = f"import ujson as json{check}", number = 100000)
@@ -41,7 +53,7 @@ res_perde = timeit.repeat(f'json.loads(\'{data}\')', setup = f"from perde import
 res_orjson = timeit.repeat(f'json.loads(\'{data}\')', setup = f"import orjson as json{check}", number = 100000)
 
 print(f'json      = {res_json}')
-# print(f'perde as  = {res_perde_as}')
+print(f'perde as  = {res_perde_as}')
 print(f'perde     = {res_perde}')
 print(f'ujson     = {res_ujson}')
 print(f'orjson    = {res_orjson}')

@@ -1,4 +1,8 @@
-use crate::{schema::*, util::*};
+use crate::{
+    schema::*,
+    types::{self, Object},
+    util::*,
+};
 use pyo3::prelude::*;
 use serde::de::{self, DeserializeSeed, Deserializer, Visitor};
 use std::fmt;
@@ -6,7 +10,7 @@ use std::fmt;
 pub struct OptionVisitor<'a>(pub &'a Optional);
 
 impl<'a, 'de> Visitor<'de> for OptionVisitor<'a> {
-    type Value = PyObject;
+    type Value = Object;
 
     #[cfg_attr(feature = "perf", flame)]
     fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -18,7 +22,7 @@ impl<'a, 'de> Visitor<'de> for OptionVisitor<'a> {
     where
         E: de::Error,
     {
-        Ok(().to_object(py()))
+        types::py_none().map_err(de)
     }
 
     #[cfg_attr(feature = "perf", flame)]
@@ -31,7 +35,7 @@ impl<'a, 'de> Visitor<'de> for OptionVisitor<'a> {
 }
 
 impl<'a, 'de> DeserializeSeed<'de> for &'a Optional {
-    type Value = PyObject;
+    type Value = Object;
 
     #[cfg_attr(feature = "perf", flame)]
     fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>

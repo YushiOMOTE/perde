@@ -1,4 +1,8 @@
-use crate::{schema::*, util::*};
+use crate::{
+    schema::*,
+    types::{self, Object},
+    util::*,
+};
 use pyo3::prelude::*;
 use serde::de::{self, DeserializeSeed, Deserializer, Visitor};
 use std::fmt;
@@ -12,7 +16,7 @@ impl<'a> EnumVisitor<'a> {
     }
 
     #[cfg_attr(feature = "perf", flame)]
-    fn get<E>(&self, s: &str) -> Result<PyObject, E>
+    fn get<E>(&self, s: &str) -> Result<Object, E>
     where
         E: de::Error,
     {
@@ -26,19 +30,12 @@ impl<'a> EnumVisitor<'a> {
                     s
                 ))
             })
-            .and_then(|_| {
-                self.0
-                    .ty
-                    .as_ref(py())
-                    .getattr(s)
-                    .map_err(de)
-                    .map(|v| v.into())
-            })
+            .and_then(|_| self.0.ty.value(s).map_err(de).map(|v| v.into()))
     }
 }
 
 impl<'a, 'de> Visitor<'de> for EnumVisitor<'a> {
-    type Value = PyObject;
+    type Value = Object;
 
     #[cfg_attr(feature = "perf", flame)]
     fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -79,7 +76,7 @@ impl<'a, 'de> Visitor<'de> for EnumVisitor<'a> {
 }
 
 impl<'a, 'de> DeserializeSeed<'de> for &'a Enum {
-    type Value = PyObject;
+    type Value = Object;
 
     #[cfg_attr(feature = "perf", flame)]
     fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>

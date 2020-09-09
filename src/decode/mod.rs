@@ -1,4 +1,4 @@
-use crate::schema::*;
+use crate::{schema::*, types::Object};
 use pyo3::prelude::*;
 use serde::de::{DeserializeSeed, Deserializer};
 
@@ -14,7 +14,7 @@ pub mod tuple;
 pub mod union;
 
 impl<'a, 'de> DeserializeSeed<'de> for &'a Schema {
-    type Value = PyObject;
+    type Value = Object;
 
     #[cfg_attr(feature = "perf", flame)]
     fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>

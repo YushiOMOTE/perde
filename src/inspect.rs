@@ -1,5 +1,9 @@
-use crate::{schema::*, util::*};
-use indexmap::IndexMap;
+use crate::{
+    schema::*,
+    types::{self, Object},
+    util::*,
+};
+use pyo3::conversion::AsPyPointer;
 use pyo3::{
     prelude::*,
     types::{
@@ -148,10 +152,7 @@ fn to_primitive(ty: &PyAny) -> PyResult<Schema> {
     if is_type!(ty, PyUnicode) {
         Ok(Schema::Primitive(Primitive::Str))
     } else if is_type!(ty, PyBytes) {
-        Ok(Schema::Primitive(Primitive::Bytes(Bytes::new(
-            ty.into(),
-            false,
-        ))))
+        Ok(Schema::Primitive(Primitive::Bytes))
     } else if is_type!(ty, PyBool) {
         Ok(Schema::Primitive(Primitive::Bool))
     } else if is_type!(ty, PyLong) {
@@ -159,10 +160,7 @@ fn to_primitive(ty: &PyAny) -> PyResult<Schema> {
     } else if is_type!(ty, PyFloat) {
         Ok(Schema::Primitive(Primitive::Float))
     } else if is_type!(ty, PyByteArray) {
-        Ok(Schema::Primitive(Primitive::Bytes(Bytes::new(
-            ty.into(),
-            true,
-        ))))
+        Ok(Schema::Primitive(Primitive::ByteArray))
     } else {
         Err(pyerr(format!("unsupported type object `{}`", ty.name())))
     }
@@ -175,7 +173,8 @@ fn to_class(ty: &PyAny, cattr: Option<&PyDict>) -> PyResult<Schema> {
         .unwrap_or_default();
     let fields: PyResult<IndexMap<_, _>> = fields(ty)?
         .into_iter()
-        .map(|v| {
+        .enumerate()
+        .map(|(pos, v)| {
             let name: &str = v.getattr("name")?.extract()?;
             let ty = v.getattr("type")?;
             let metadata = v.getattr("metadata")?;
@@ -197,7 +196,7 @@ fn to_class(ty: &PyAny, cattr: Option<&PyDict>) -> PyResult<Schema> {
                 name
             };
 
-            Ok((name, FieldSchema::new(origname, attr, schema)))
+            Ok((name, FieldSchema::new(origname, pos, attr, schema)))
         })
         .collect();
 
@@ -208,12 +207,14 @@ fn to_class(ty: &PyAny, cattr: Option<&PyDict>) -> PyResult<Schema> {
         ty.name().to_string()
     };
 
+    let ty = types::Class::new(Object::new_clone(ty.as_ptr())?);
+
     Ok(Schema::Class(Class::new(
-        ty.into(),
+        ty,
         name,
         cattr,
         fields?,
-        IndexMap::new(),
+        new_indexmap(),
     )))
 }
 
@@ -264,10 +265,7 @@ fn to_generic(ty: &PyAny) -> PyResult<Schema> {
             let arg = args
                 .get(0)
                 .ok_or_else(|| pyerr("`Set` is missing type parameter"))?;
-            Ok(Schema::Set(Set::new(
-                origty.into(),
-                Box::new(to_schema(arg, None)?),
-            )))
+            Ok(Schema::Set(Set::new(Box::new(to_schema(arg, None)?))))
         } else {
             Err(pyerr(format!("Unsupported type `{}`", origty.name())))
         }
@@ -294,9 +292,195 @@ fn to_enum(ty: &PyAny, cattr: Option<&PyDict>) -> PyResult<Schema> {
 
     let attr = cattr.map(|v| EnumAttr::parse(v)).transpose()?;
 
+    let ty = types::Enum::new(Object::new_clone(ty.as_ptr())?);
+
     Ok(Schema::Enum(Enum::new(
-        ty.downcast::<PyType>()?.into(),
+        ty,
         attr.unwrap_or_default(),
         variants?,
     )))
+}
+
+///
+
+pub mod new_version {
+    use super::new_deps::*;
+    use crate::schema::*;
+    use pyo3::{ffi::*, PyResult};
+
+    macro_rules! is {
+        ($e:expr, $t:expr) => {
+            unsafe { $e as *mut PyTypeObject == &mut $t }
+        };
+    }
+
+    pub fn to_schema(p: *mut PyObject) -> PyResult<Schema> {
+        if is!(p, PyBool_Type) {
+            Ok(Schema::Primitive(Primitive::Bool))
+        } else if is!(p, PyUnicode_Type) {
+            Ok(Schema::Primitive(Primitive::Str))
+        } else if is!(p, PyLong_Type) {
+            Ok(Schema::Primitive(Primitive::Int))
+        } else if is!(p, PyFloat_Type) {
+            Ok(Schema::Primitive(Primitive::Float))
+        } else if is!(p, PyBytes_Type) {
+            Ok(Schema::Primitive(Primitive::Bytes))
+        } else if is!(p, PyByteArray_Type) {
+            Ok(Schema::Primitive(Primitive::ByteArray))
+        } else if is_dataclass(p)? {
+            unimplemented!()
+        } else {
+            unimplemented!()
+        }
+    }
+}
+
+pub mod new_deps {
+    use crate::util::*;
+    use pyo3::{ffi::*, types::PyModule, AsPyPointer, PyResult};
+
+    pub struct LoadedObjects {
+        is_dataclass: pyo3::PyObject,
+        fields: pyo3::PyObject,
+        get_origin: pyo3::PyObject,
+        get_args: pyo3::PyObject,
+        is_tuple_type: pyo3::PyObject,
+        is_union_type: pyo3::PyObject,
+        is_optional_type: pyo3::PyObject,
+        enum_meta: pyo3::PyObject,
+    }
+
+    macro_rules! getattr {
+        ($module:expr, $name:expr) => {
+            $module
+                .getattr($name)
+                .map(|p| p.into())
+                .map_err(|_| concat!("couldn't find function `", $name, "`"))
+        };
+    }
+
+    macro_rules! objects {
+        () => {
+            OBJECTS.as_ref().map_err(pyerr)
+        };
+    }
+
+    macro_rules! callfunc {
+        ($name:ident, $arg:expr) => {
+            objects!().and_then(move |o| {
+                let tuple = PyTuple_New(1);
+                PyTuple_SetItem(tuple, 0, $arg);
+                let res = PyObject_Call(o.$name.as_ptr(), tuple, std::ptr::null_mut());
+                Py_DECREF(tuple);
+                Ok(res)
+            })
+        };
+    }
+
+    macro_rules! is_true {
+        ($v:expr) => {{
+            let v = $v;
+            let r = PyObject_IsTrue(v) != 0;
+            Py_DECREF(v);
+            r
+        }};
+    }
+
+    macro_rules! is_none {
+        ($v:expr) => {{
+            let v = $v;
+            let r = v == Py_None();
+            Py_DECREF(v);
+            r
+        }};
+    }
+
+    lazy_static::lazy_static! {
+        static ref OBJECTS: Result<LoadedObjects, &'static str> = {
+            let dataclasses = PyModule::import(py(), "dataclasses")
+                .map_err(|_| "couldn't import `dataclasses`")?;
+            let typing_inspect = PyModule::import(py(), "typing_inspect")
+                .map_err(|_| "couldn't import `typing_inspect`")?;
+            let enum_ = PyModule::import(py(), "enum")
+                .map_err(|_| "couldn't import `enum`")?;
+
+            let is_dataclass = getattr!(dataclasses, "is_dataclass")?;
+            let fields = getattr!(dataclasses, "fields")?;
+            let get_origin = getattr!(typing_inspect, "get_origin")?;
+            let get_args = getattr!(typing_inspect, "get_args")?;
+            let is_tuple_type = getattr!(typing_inspect, "is_tuple_type")?;
+            let is_union_type = getattr!(typing_inspect, "is_union_type")?;
+            let is_optional_type = getattr!(typing_inspect, "is_optional_type")?;
+            let enum_meta = getattr!(enum_, "EnumMeta")?;
+
+            Ok(LoadedObjects {
+                is_dataclass,
+                fields,
+                get_origin,
+                get_args,
+                is_union_type,
+                is_tuple_type,
+                is_optional_type,
+                enum_meta,
+            })
+        };
+    }
+
+    pub fn is_dataclass(ty: *mut PyObject) -> PyResult<bool> {
+        unsafe { Ok(is_true!(callfunc!(is_dataclass, ty)?)) }
+    }
+
+    pub fn get_origin(ty: *mut PyObject) -> PyResult<*mut PyObject> {
+        unsafe { callfunc!(get_origin, ty) }
+    }
+
+    pub fn get_args(ty: *mut PyObject) -> PyResult<*mut PyObject> {
+        unsafe { callfunc!(get_args, ty) }
+    }
+
+    pub fn is_generic(ty: *mut PyObject) -> PyResult<bool> {
+        unsafe { Ok(!is_none!(get_origin(ty)?)) }
+    }
+
+    pub fn is_union_type(ty: *mut PyObject) -> PyResult<bool> {
+        unsafe { Ok(is_true!(callfunc!(is_union_type, ty)?)) }
+    }
+
+    pub fn is_tuple_type(ty: *mut PyObject) -> PyResult<bool> {
+        unsafe { Ok(is_true!(callfunc!(is_tuple_type, ty)?)) }
+    }
+
+    pub fn is_optional_type(ty: *mut PyObject) -> PyResult<bool> {
+        unsafe { Ok(is_true!(callfunc!(is_optional_type, ty)?)) }
+    }
+
+    pub fn is_enum(ty: *mut PyObject) -> PyResult<bool> {
+        unsafe { Ok((*ty).ob_type == objects!()?.enum_meta.as_ptr() as *mut PyTypeObject) }
+    }
+
+    pub fn fields(ty: *mut PyObject) -> PyResult<*mut PyObject> {
+        unsafe { callfunc!(fields, ty) }
+    }
+
+    // pub fn is_generic(ty: *mut PyObject) -> PyResult<bool> {
+    //     let ty = any!(ty);
+    //     Ok(!get_origin(ty)?.is_none()
+    //         || is_union_type(ty)?
+    //         || is_optional_type(ty)?
+    //         || is_tuple_type(ty)?)
+    // }
+
+    // pub fn is_enum(ty: *mut PyObject) -> PyResult<bool> {
+    //     let ty = any!(ty);
+    //     builtins(py())?
+    //         .call1("issubclass", (ty, enum_class(py())?))
+    //         .and_then(|v| v.extract())
+    // }
+
+    // pub fn fields(ty: *mut PyObject) -> PyResult<Vec<&PyAny>> {
+    //     let ty = any!(ty);
+    //     dataclasses(py())?
+    //         .call1("fields", (ty,))
+    //         .and_then(|v| v.extract())
+    // }
 }

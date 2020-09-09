@@ -1,4 +1,9 @@
-use crate::{schema::*, util::*};
+use crate::{
+    schema::*,
+    types::{self, Object},
+    util::*,
+};
+use pyo3::conversion::AsPyPointer;
 use pyo3::{prelude::*, types::PyTuple};
 use serde::de::{self, DeserializeSeed, Deserializer, IgnoredAny, MapAccess, Visitor};
 use std::{collections::HashMap, fmt};
@@ -6,7 +11,7 @@ use std::{collections::HashMap, fmt};
 pub struct ClassVisitor<'a>(pub &'a Class);
 
 impl<'a, 'de> Visitor<'de> for ClassVisitor<'a> {
-    type Value = PyObject;
+    type Value = Object;
 
     #[cfg_attr(feature = "perf", flame)]
     fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -18,26 +23,26 @@ impl<'a, 'de> Visitor<'de> for ClassVisitor<'a> {
     where
         M: MapAccess<'de>,
     {
-        let mut args = HashMap::new();
+        let mut tuple = types::Tuple::new(self.0.fields.len()).map_err(de)?;
 
         while let Some(key) = access.next_key()? {
             let key: &str = key;
 
             if let Some(s) = self.0.field(key)? {
-                let value: PyObject = access.next_value_seed(&s.schema)?;
+                let value: Object = access.next_value_seed(&s.schema)?;
 
-                args.insert(key, value);
+                tuple.set(s.pos, value);
             } else {
                 let _: IgnoredAny = access.next_value()?;
             }
         }
 
-        self.0.call(&mut args)
+        self.0.ty.construct(tuple).map_err(de)
     }
 }
 
 impl<'a, 'de> DeserializeSeed<'de> for &'a Class {
-    type Value = PyObject;
+    type Value = Object;
 
     #[cfg_attr(feature = "perf", flame)]
     fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
@@ -70,11 +75,7 @@ impl Class {
             })
             .unwrap_or_else(|| {
                 if self.attr.deny_unknown_fields {
-                    Err(pyerr(format!(
-                        "the field `{}` in `{}` type is missing",
-                        name,
-                        self.ty.as_ref(py()).name()
-                    )))
+                    Err(pyerr(format!("the field `{}` is missing", name,)))
                 } else {
                     Ok(None)
                 }
@@ -83,7 +84,7 @@ impl Class {
     }
 
     #[cfg_attr(feature = "perf", flame)]
-    pub fn call<'a, E>(&self, map: &mut HashMap<&'a str, PyObject>) -> Result<PyObject, E>
+    pub fn call<'a, E>(&self, map: &mut HashMap<&'a str, Object>) -> Result<Object, E>
     where
         E: de::Error,
     {
@@ -96,7 +97,12 @@ impl Class {
                         Schema::Class(cls) => return cls.call(map),
                         Schema::Dict(_) => {
                             let map = std::mem::replace(map, HashMap::new());
-                            return Ok(map.into_py(py()));
+
+                            let mut dict = types::Dict::new().map_err(de)?;
+                            for (k, v) in map {
+                                dict.set(types::py_str(&k).map_err(de)?, v).map_err(de)?;
+                            }
+                            return Ok(dict.into_inner());
                         }
                         _ => {
                             return Err(de::Error::custom(
@@ -116,9 +122,11 @@ impl Class {
                             || s.attr.skip_deserializing
                         {
                             if let Some(d) = s.attr.default.as_ref() {
-                                return Ok(d.as_ref(py()).into());
+                                unimplemented!()
+                            // return Ok(d.as_ref(py()).as_ptr());
                             } else if let Some(d) = s.attr.default_factory.as_ref() {
-                                return d.as_ref(py()).call0().map(|v| v.into()).map_err(de);
+                                // return d.as_ref(py()).call0().map(|v| v.into()).map_err(de);
+                                unimplemented!()
                             }
                         }
                         Err(de::Error::custom(format!("missing field \"{}\"", k)))
@@ -127,41 +135,18 @@ impl Class {
             })
             .collect();
 
-        self.fastcall(args?)
+        self.construct(args?)
     }
 
     #[cfg_attr(feature = "perf", flame)]
-    pub fn fastcall<E>(&self, args: Vec<PyObject>) -> Result<PyObject, E>
+    pub fn construct<E>(&self, args: Vec<Object>) -> Result<Object, E>
     where
         E: de::Error,
     {
-        macro_rules! to_tuple {
-            ($args:expr, $($t:tt),*) => {{
-                let mut args = $args.into_iter();
-                $(let $t = args.next().unwrap();)*
-                self.ty
-                    .as_ref(py())
-                    .call1(($($t,)*))
-                    .map(|v| v.into())
-            }}
+        let mut tuple = types::Tuple::new(args.len()).map_err(de)?;
+        for (i, arg) in args.into_iter().enumerate() {
+            tuple.set(i, arg);
         }
-
-        match args.len() {
-            0 => self.ty.as_ref(py()).call0().map(|v| v.into()),
-            1 => to_tuple!(args, a),
-            2 => to_tuple!(args, a, b),
-            3 => to_tuple!(args, a, b, c),
-            4 => to_tuple!(args, a, b, c, d),
-            5 => to_tuple!(args, a, b, c, d, e),
-            6 => to_tuple!(args, a, b, c, d, e, f),
-            7 => to_tuple!(args, a, b, c, d, e, f, g),
-            8 => to_tuple!(args, a, b, c, d, e, f, g, h),
-            9 => to_tuple!(args, a, b, c, d, e, f, g, h, i),
-            _ => {
-                let args = PyTuple::new(py(), args);
-                self.ty.as_ref(py()).call1(args).map(|v| v.into())
-            }
-        }
-        .map_err(de)
+        self.ty.construct(tuple).map_err(de)
     }
 }
