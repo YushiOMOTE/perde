@@ -1,5 +1,11 @@
 use pyo3::{exceptions, prelude::*};
 
+pub type IndexMap<K, V> = indexmap::IndexMap<K, V, fnv::FnvBuildHasher>;
+
+pub fn new_indexmap<K, V>() -> IndexMap<K, V> {
+    IndexMap::with_hasher(fnv::FnvBuildHasher::default())
+}
+
 pub fn py<'a>() -> Python<'a> {
     unsafe { Python::assume_gil_acquired() }
 }

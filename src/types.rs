@@ -5,21 +5,21 @@ use std::ffi::CString;
 use std::os::raw::c_char;
 use std::ptr::NonNull;
 
-macro_rules! obj {
+macro_rules! objnew {
     ($p:expr) => {
-        Object::new(unsafe { $p })
+        $crate::types::Object::new(unsafe { $p })
     };
 }
 
-macro_rules! obj_ref {
+macro_rules! objref {
     ($p:expr) => {
-        ObjectRef::new(unsafe { $p })
+        $crate::types::ObjectRef::new(unsafe { $p })
     };
 }
 
-macro_rules! obj_clone {
+macro_rules! objclone {
     ($p:expr) => {
-        Object::new_clone(unsafe { $p })
+        $crate::types::Object::new_clone(unsafe { $p })
     };
 }
 
@@ -31,6 +31,30 @@ impl ObjectRef {
         match NonNull::new(p) {
             Some(p) => Ok(Self(p)),
             None => Err(PyErr::fetch(py())),
+        }
+    }
+
+    pub fn typeref(&self) -> PyResult<ObjectRef> {
+        Self::new(unsafe { (*self.as_ptr()).ob_type as *mut PyObject })
+    }
+
+    pub fn is_typeof(&self, p: *mut PyObject) -> bool {
+        unsafe { (*self.as_ptr()).ob_type as *mut PyObject == p }
+    }
+
+    pub fn name(&self) -> &str {
+        unsafe {
+            std::ffi::CStr::from_ptr((*(self.as_ptr() as *mut PyTypeObject)).tp_name)
+                .to_str()
+                .unwrap_or("<unknown>")
+        }
+    }
+
+    pub fn typename(&self) -> &str {
+        unsafe {
+            std::ffi::CStr::from_ptr((*(*self.as_ptr()).ob_type).tp_name)
+                .to_str()
+                .unwrap_or("<unknown>")
         }
     }
 
@@ -48,12 +72,21 @@ impl Args {
     }
 
     pub fn get(&self, index: usize) -> PyResult<ObjectRef> {
-        obj_ref!(PyTuple_GET_ITEM(self.0.as_ptr(), index as Py_ssize_t))
+        objref!(PyTuple_GET_ITEM(self.0.as_ptr(), index as Py_ssize_t))
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct Object(NonNull<PyObject>);
+
+impl Clone for Object {
+    fn clone(&self) -> Self {
+        unsafe {
+            Py_INCREF(self.0.as_ptr());
+        }
+        Self(self.0)
+    }
+}
 
 impl Object {
     pub fn new(p: *mut PyObject) -> PyResult<Self> {
@@ -79,6 +112,30 @@ impl Object {
         ptr
     }
 
+    pub fn typeref(&self) -> PyResult<ObjectRef> {
+        ObjectRef::new(unsafe { (*self.as_ptr()).ob_type as *mut PyObject })
+    }
+
+    pub fn is_typeof(&self, p: *mut PyObject) -> bool {
+        unsafe { (*self.as_ptr()).ob_type as *mut PyObject == p }
+    }
+
+    pub fn name(&self) -> &str {
+        unsafe {
+            std::ffi::CStr::from_ptr((*(self.as_ptr() as *mut PyTypeObject)).tp_name)
+                .to_str()
+                .unwrap_or("<unknown>")
+        }
+    }
+
+    pub fn typename(&self) -> &str {
+        unsafe {
+            std::ffi::CStr::from_ptr((*(*self.as_ptr()).ob_type).tp_name)
+                .to_str()
+                .unwrap_or("<unknown>")
+        }
+    }
+
     fn incref(&self) {
         unsafe { Py_INCREF(self.0.as_ptr()) }
     }
@@ -94,16 +151,26 @@ impl Drop for Object {
     }
 }
 
+pub fn as_str(p: &Object) -> PyResult<&str> {
+    let mut len: Py_ssize_t = 0;
+    let mut p = unsafe { PyUnicode_AsUTF8AndSize(p.as_ptr(), &mut len) };
+    if p.is_null() {
+        Err(pyerr("object is not a string"))
+    } else {
+        Ok(unsafe { std::ffi::CStr::from_ptr(p).to_str().unwrap() })
+    }
+}
+
 pub fn py_none() -> PyResult<Object> {
-    obj_clone!(Py_None())
+    objclone!(Py_None())
 }
 
 pub fn py_true() -> PyResult<Object> {
-    obj_clone!(Py_True())
+    objclone!(Py_True())
 }
 
 pub fn py_false() -> PyResult<Object> {
-    obj_clone!(Py_False())
+    objclone!(Py_False())
 }
 
 pub fn py_bool(b: bool) -> PyResult<Object> {
@@ -114,34 +181,34 @@ pub fn py_bool(b: bool) -> PyResult<Object> {
 }
 
 pub fn py_i64(value: i64) -> PyResult<Object> {
-    obj!(PyLong_FromLongLong(value))
+    objnew!(PyLong_FromLongLong(value))
 }
 
 pub fn py_u64(value: u64) -> PyResult<Object> {
-    obj!(PyLong_FromUnsignedLongLong(value))
+    objnew!(PyLong_FromUnsignedLongLong(value))
 }
 
 pub fn py_f64(value: f64) -> PyResult<Object> {
-    obj!(PyFloat_FromDouble(value))
+    objnew!(PyFloat_FromDouble(value))
 }
 
 pub fn py_str(value: &str) -> PyResult<Object> {
-    obj!(crate::unicode::unicode_from_str(value))
-    // obj!(PyUnicode_FromStringAndSize(
+    objnew!(crate::unicode::unicode_from_str(value))
+    // objnew!(PyUnicode_FromStringAndSize(
     //     value.as_ptr() as *const c_char,
     //     value.len() as Py_ssize_t
     // ))
 }
 
 pub fn py_bytes(value: &[u8]) -> PyResult<Object> {
-    obj!(PyBytes_FromStringAndSize(
+    objnew!(PyBytes_FromStringAndSize(
         value.as_ptr() as *const c_char,
         value.len() as Py_ssize_t
     ))
 }
 
 pub fn py_bytearray(value: &[u8]) -> PyResult<Object> {
-    obj!(PyByteArray_FromStringAndSize(
+    objnew!(PyByteArray_FromStringAndSize(
         value.as_ptr() as *const c_char,
         value.len() as Py_ssize_t
     ))
@@ -152,7 +219,7 @@ pub struct List(Object);
 
 impl List {
     pub fn new(len: usize) -> PyResult<Self> {
-        Ok(Self(obj!(PyList_New(len as Py_ssize_t))?))
+        Ok(Self(objnew!(PyList_New(len as Py_ssize_t))?))
     }
 
     pub fn set(&mut self, index: usize, obj: Object) {
@@ -172,7 +239,7 @@ pub struct Set(Object);
 
 impl Set {
     pub fn new() -> PyResult<Self> {
-        Ok(Self(obj!(PySet_New(std::ptr::null_mut()))?))
+        Ok(Self(objnew!(PySet_New(std::ptr::null_mut()))?))
     }
 
     pub fn set(&mut self, obj: Object) -> PyResult<()> {
@@ -195,7 +262,7 @@ pub struct Dict(Object);
 
 impl Dict {
     pub fn new() -> PyResult<Self> {
-        Ok(Self(obj!(PyDict_New())?))
+        Ok(Self(objnew!(PyDict_New())?))
     }
 
     pub fn set(&mut self, key: Object, value: Object) -> PyResult<()> {
@@ -218,7 +285,7 @@ pub struct Tuple(Object);
 
 impl Tuple {
     pub fn new(len: usize) -> PyResult<Self> {
-        Ok(Self(obj!(PyTuple_New(len as Py_ssize_t))?))
+        Ok(Self(objnew!(PyTuple_New(len as Py_ssize_t))?))
     }
 
     pub fn set(&mut self, index: usize, obj: Object) {
@@ -244,7 +311,7 @@ impl Class {
     pub fn construct(&self, args: Tuple) -> PyResult<Object> {
         let p = args.into_inner();
         // This API doesn't steal.
-        let r = obj!(PyObject_Call(
+        let r = objnew!(PyObject_Call(
             self.0.as_ptr(),
             p.as_ptr(),
             std::ptr::null_mut()
@@ -272,7 +339,7 @@ impl Enum {
     pub fn value(&self, name: &str) -> PyResult<Object> {
         let s = CString::new(name).map_err(pyerr)?;
         // This API does return a new reference.
-        obj!(PyObject_GetAttrString(self.0.as_ptr(), s.as_ptr()))
+        objnew!(PyObject_GetAttrString(self.0.as_ptr(), s.as_ptr()))
     }
 
     pub fn is_typeof(&self, p: *mut PyObject) -> bool {

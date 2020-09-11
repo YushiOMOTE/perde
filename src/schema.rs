@@ -9,12 +9,6 @@ use pyo3::conversion::AsPyPointer;
 use pyo3::{prelude::*, types::*};
 use std::{borrow::Cow, str::FromStr};
 
-pub type IndexMap<K, V> = indexmap::IndexMap<K, V, fnv::FnvBuildHasher>;
-
-pub fn new_indexmap<K, V>() -> IndexMap<K, V> {
-    IndexMap::with_hasher(fnv::FnvBuildHasher::default())
-}
-
 const SCHEMA_CACHE: &'static str = "__perde_schema__";
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -179,14 +173,15 @@ impl Schema {
         ty.getattr(SCHEMA_CACHE)
             .and_then(|v| v.extract())
             .or_else(|_| {
-                to_schema(ty, attr).and_then(|schema| match &schema {
-                    Schema::Class(_) => {
-                        let schema = PyCell::new(py(), SchemaInfo::new(schema))?;
-                        ty.setattr(SCHEMA_CACHE, schema)?;
-                        Ok(schema)
-                    }
-                    _ => PyCell::new(py(), SchemaInfo::new(schema)),
-                })
+                unimplemented!()
+                // to_schema(ty, attr).and_then(|schema| match &schema {
+                //     Schema::Class(_) => {
+                //         let schema = PyCell::new(py(), SchemaInfo::new(schema))?;
+                //         ty.setattr(SCHEMA_CACHE, schema)?;
+                //         Ok(schema)
+                //     }
+                //     _ => PyCell::new(py(), SchemaInfo::new(schema)),
+                // })
             })
     }
 }
@@ -266,7 +261,6 @@ impl Tuple {
 
 #[derive(Debug, Clone, new)]
 pub struct Enum {
-    pub ty: types::Enum,
     pub attr: EnumAttr,
     pub variants: IndexMap<String, VariantSchema>,
 }
@@ -283,6 +277,7 @@ pub struct VariantSchema {
     pub name: String,
     pub attr: VariantAttr,
     pub schema: Schema,
+    pub value: Object,
 }
 
 #[derive(Debug, Clone, new)]
@@ -380,7 +375,7 @@ impl Schema {
             Schema::List(_) if is_type!(ty, PyList) => true,
             Schema::Set(_) if is_type!(ty, PySet) => true,
             Schema::Class(c) if c.ty.is_typeof(ty.as_ptr()) => true,
-            Schema::Enum(e) if e.ty.is_typeof(ty.as_ptr()) => true,
+            Schema::Enum(e) if unimplemented!() => true,
             Schema::Optional(o) if o.value.type_of(ty)? => true,
             Schema::Union(u) => {
                 let v: PyResult<Vec<_>> = u.variants.iter().map(|s| s.type_of(ty)).collect();

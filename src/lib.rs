@@ -5,6 +5,8 @@ use pyo3::{prelude::*, types::PyDict, wrap_pyfunction};
 #[macro_use]
 extern crate flamer;
 
+#[macro_use]
+mod types;
 mod decode;
 mod encode;
 mod inspect;
@@ -12,7 +14,6 @@ mod inspect;
 mod json;
 mod object;
 mod schema;
-mod types;
 mod unicode;
 mod util;
 

@@ -23,6 +23,7 @@ impl<'a> EnumVisitor<'a> {
         self.0
             .variants
             .get(s)
+            .map(|v| v.value.clone())
             .ok_or_else(|| {
                 de::Error::custom(format!(
                     "the enum value must be any of {:?}: got `{}`",
@@ -30,7 +31,6 @@ impl<'a> EnumVisitor<'a> {
                     s
                 ))
             })
-            .and_then(|_| self.0.ty.value(s).map_err(de).map(|v| v.into()))
     }
 }
 
