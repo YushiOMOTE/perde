@@ -82,7 +82,12 @@ fn maybe_dataclass(p: ObjectRef) -> PyResult<Option<Schema>> {
         let ty = field.get_attr("type\0")?;
 
         let s = name.as_str()?;
-        let mem = FieldSchema::new(s.into(), i as usize, FieldAttr::default(), to_schema(*ty)?);
+        let mem = FieldSchema::new(
+            s.into(),
+            i as usize,
+            FieldAttr::default(),
+            to_schema(ty.as_ref())?,
+        );
         members.insert(s.to_string(), mem);
     }
 
@@ -111,11 +116,10 @@ fn maybe_enum(p: ObjectRef) -> PyResult<Option<Schema>> {
             let value = item.get_attr("value\0")?;
 
             let name = name.as_str()?;
-            let schema = to_schema(value.typeref()?)?;
 
             Ok((
                 name.to_string(),
-                VariantSchema::new(name.into(), VariantAttr::default(), schema, value),
+                VariantSchema::new(name.into(), VariantAttr::default(), value),
             ))
         })
         .collect();
@@ -143,6 +147,7 @@ fn maybe_option(args: TupleRef) -> PyResult<Schema> {
 
 fn to_union(p: ObjectRef) -> PyResult<Schema> {
     let args = get_args(p)?;
+    let args = args.as_ref();
     let iter = args.iter();
 
     if iter.len() == 2 {
@@ -155,6 +160,7 @@ fn to_union(p: ObjectRef) -> PyResult<Schema> {
 
 fn to_tuple(p: ObjectRef) -> PyResult<Schema> {
     let args = get_args(p)?;
+    let args = args.as_ref();
     let iter = args.iter();
 
     let args: PyResult<_> = iter.map(|arg| to_schema(arg)).collect();
@@ -163,6 +169,7 @@ fn to_tuple(p: ObjectRef) -> PyResult<Schema> {
 
 fn to_dict(p: ObjectRef) -> PyResult<Schema> {
     let args = get_args(p)?;
+    let args = args.as_ref();
     let key = to_schema(args.get(0)?)?;
     let value = to_schema(args.get(1)?)?;
     Ok(Schema::Dict(Dict::new(Box::new(key), Box::new(value))))
@@ -170,18 +177,20 @@ fn to_dict(p: ObjectRef) -> PyResult<Schema> {
 
 fn to_list(p: ObjectRef) -> PyResult<Schema> {
     let args = get_args(p)?;
+    let args = args.as_ref();
     let value = to_schema(args.get(0)?)?;
     Ok(Schema::List(List::new(Box::new(value))))
 }
 
 fn to_set(p: ObjectRef) -> PyResult<Schema> {
     let args = get_args(p)?;
+    let args = args.as_ref();
     let value = to_schema(args.get(1)?)?;
     Ok(Schema::Set(Set::new(Box::new(value))))
 }
 
-fn get_args(p: ObjectRef) -> PyResult<TupleRef> {
-    Ok(types::Tuple::from(p.get_attr("__args__\0")?).as_ref())
+fn get_args(p: ObjectRef) -> PyResult<types::Tuple> {
+    Ok(types::Tuple::from(p.get_attr("__args__\0")?))
 }
 
 fn maybe_generic(p: ObjectRef) -> PyResult<Option<Schema>> {

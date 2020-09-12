@@ -275,7 +275,6 @@ impl Enum {
 pub struct VariantSchema {
     pub name: String,
     pub attr: VariantAttr,
-    pub schema: Schema,
     pub value: Object,
 }
 

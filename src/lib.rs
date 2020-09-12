@@ -7,15 +7,19 @@ extern crate flamer;
 
 #[macro_use]
 mod types;
+mod util;
+
+mod inspect;
+mod schema;
+
 // mod decode;
 // mod encode;
-mod inspect;
+
 // #[cfg(feature = "json")]
 // mod json;
 // mod object;
-mod schema;
+
 // mod unicode;
-mod util;
 
 // #[pyfunction(kwargs = "**")]
 // pub fn resolve(ty: &PyAny, kwargs: Option<&PyDict>) -> PyResult<()> {

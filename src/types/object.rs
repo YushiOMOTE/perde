@@ -5,7 +5,12 @@ use pyo3::{
     ffi::*,
     PyErr, PyResult,
 };
-use std::{ops::Deref, os::raw::c_char, ptr::NonNull};
+use std::{
+    marker::PhantomData,
+    ops::{Deref, DerefMut},
+    os::raw::c_char,
+    ptr::NonNull,
+};
 
 macro_rules! objnew {
     ($p:expr) => {
@@ -15,7 +20,7 @@ macro_rules! objnew {
 
 macro_rules! objref {
     ($p:expr) => {
-        $crate::types::ObjectRef::new(unsafe { $p })
+        unsafe { $crate::types::ObjectRef::new($p) }
     };
 }
 
@@ -23,18 +28,6 @@ macro_rules! objclone {
     ($p:expr) => {
         $crate::types::Object::new_clone(unsafe { $p })
     };
-}
-
-pub fn obj_new(p: *mut PyObject) -> PyResult<Object> {
-    Object::new(p)
-}
-
-pub fn obj_ref(p: *mut PyObject) -> PyResult<ObjectRef> {
-    ObjectRef::new(p)
-}
-
-pub fn obj_clone(p: &mut PyObject) -> PyResult<Object> {
-    Object::new_clone(p)
 }
 
 pub fn obj_none() -> PyResult<Object> {
@@ -94,9 +87,9 @@ pub fn obj_none_type() -> *mut PyObject {
 }
 
 #[derive(Debug, Clone, Copy)]
-pub struct ObjectRef(NonNull<PyObject>);
+pub struct ObjectPtr(NonNull<PyObject>);
 
-impl ObjectRef {
+impl ObjectPtr {
     pub fn new(p: *mut PyObject) -> PyResult<Self> {
         match NonNull::new(p) {
             Some(p) => Ok(Self(p)),
@@ -106,10 +99,6 @@ impl ObjectRef {
 
     pub fn is(&self, p: *mut PyObject) -> bool {
         self.0.as_ptr() == p
-    }
-
-    pub fn typeref(&self) -> PyResult<ObjectRef> {
-        Self::new(unsafe { (*self.as_ptr()).ob_type as *mut PyObject })
     }
 
     pub fn is_typeof(&self, p: *mut PyObject) -> bool {
@@ -160,9 +149,32 @@ impl ObjectRef {
     pub fn get_iter(&self) -> PyResult<ObjectIter> {
         Ok(ObjectIter(objnew!(PyObject_GetIter(self.as_ptr()))?))
     }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct ObjectRef<'a>(ObjectPtr, PhantomData<&'a ()>);
+
+impl<'a> ObjectRef<'a> {
+    pub unsafe fn new(p: *mut PyObject) -> PyResult<Self> {
+        Ok(Self(ObjectPtr::new(p)?, PhantomData))
+    }
 
     pub fn to_owned(&self) -> Object {
-        Object::new(self.as_ptr()).unwrap()
+        Object::new_clone(self.as_ptr()).unwrap()
+    }
+}
+
+impl<'a> Deref for ObjectRef<'a> {
+    type Target = ObjectPtr;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl<'a> DerefMut for ObjectRef<'a> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
     }
 }
 
@@ -183,21 +195,17 @@ impl Iterator for ObjectIter {
 }
 
 #[derive(Debug)]
-pub struct Object(ObjectRef);
+pub struct Object(ObjectPtr);
 
 impl Object {
     pub fn new(p: *mut PyObject) -> PyResult<Self> {
-        Ok(Self(ObjectRef::new(p)?))
+        Ok(Self(ObjectPtr::new(p)?))
     }
 
     pub fn new_clone(p: *mut PyObject) -> PyResult<Self> {
         let o = Self::new(p)?;
         o.incref();
         Ok(o)
-    }
-
-    pub fn as_ptr(&self) -> *mut PyObject {
-        self.0.as_ptr()
     }
 
     pub fn into_ptr(self) -> *mut PyObject {
@@ -210,6 +218,10 @@ impl Object {
         objnew!(PyObject_CallObject(self.0.as_ptr(), tuple.as_ptr()))
     }
 
+    pub fn as_ref<'a>(&'a self) -> ObjectRef<'a> {
+        unsafe { ObjectRef::<'a>::new(self.0.as_ptr()).unwrap() }
+    }
+
     fn incref(&self) {
         unsafe { Py_INCREF(self.0.as_ptr()) }
     }
@@ -220,10 +232,16 @@ impl Object {
 }
 
 impl Deref for Object {
-    type Target = ObjectRef;
+    type Target = ObjectPtr;
 
-    fn deref(&self) -> &ObjectRef {
+    fn deref(&self) -> &Self::Target {
         &self.0
+    }
+}
+
+impl DerefMut for Object {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
     }
 }
 
