@@ -137,13 +137,8 @@ impl EnumAttr {
 }
 
 impl Schema {
-    pub fn deserialize<'de, D: serde::de::Deserializer<'de>>(
-        ty: ObjectRef,
-        deserializer: D,
-    ) -> PyResult<Object> {
-        use serde::de::DeserializeSeed;
-        let schema = resolve_schema(ty)?;
-        schema.deserialize(deserializer).map_err(pyerr)
+    pub fn resolve<'a>(ty: ObjectRef<'a>) -> PyResult<&'a Self> {
+        resolve_schema(ty)
     }
 
     pub fn serialize<'a, S: serde::ser::Serializer>(value: &PyAny, serializer: S) -> PyResult<()> {

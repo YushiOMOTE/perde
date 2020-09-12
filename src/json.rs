@@ -1,6 +1,6 @@
 use crate::{
     schema::Schema,
-    types::{self, Object, Tuple},
+    types::{self, Object, TupleRef},
     util::*,
 };
 use pyo3::{ffi::*, prelude::*, wrap_pyfunction, wrap_pymodule};
@@ -11,15 +11,19 @@ pub unsafe extern "C" fn loads_as(
     _self: *mut pyo3::ffi::PyObject,
     args: *mut pyo3::ffi::PyObject,
 ) -> *mut pyo3::ffi::PyObject {
-    let args = objnew!(args).unwrap();
-    let args = Tuple::from(args);
+    let args = TupleRef::from_args(args).unwrap();
 
     let mut size = 0;
-    let p = crate::unicode::read_utf8_from_str(args.getref(1).unwrap().as_ptr(), &mut size);
+    let p = crate::unicode::read_utf8_from_str(args.get(1).unwrap().as_ptr(), &mut size);
     let s = unsafe { std::slice::from_raw_parts(p, size as usize) };
     let mut deserializer = serde_json::Deserializer::from_slice(s);
 
-    let obj = Schema::deserialize(args.getref(0).unwrap(), &mut deserializer).unwrap();
+    use serde::de::DeserializeSeed;
+    let schema = Schema::resolve(args.get(0).unwrap()).unwrap();
+    let obj = schema
+        .deserialize(&mut deserializer)
+        .map_err(pyerr)
+        .unwrap();
 
     #[cfg(feature = "perf")]
     {

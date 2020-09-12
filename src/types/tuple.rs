@@ -9,6 +9,10 @@ impl<'a> TupleRef<'a> {
         Self(args)
     }
 
+    pub fn from_args(args: *mut PyObject) -> PyResult<Self> {
+        Ok(Self(unsafe { ObjectRef::new(args)? }))
+    }
+
     pub fn len(&self) -> usize {
         unsafe { PyTuple_Size(self.0.as_ptr()) as usize }
     }
