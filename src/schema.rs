@@ -1,14 +1,12 @@
 use crate::{
-    inspect::to_schema,
-    types::{self, Object},
+    inspect::resolve_schema,
+    types::{self, Object, ObjectRef},
     util::*,
 };
 use derive_new::new;
 use pyo3::conversion::AsPyPointer;
 use pyo3::{prelude::*, types::*};
-use std::{borrow::Cow, str::FromStr};
-
-const SCHEMA_CACHE: &'static str = "__perde_schema__";
+use std::str::FromStr;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum StrCase {
@@ -137,25 +135,15 @@ impl EnumAttr {
     }
 }
 
-#[pyclass]
-#[derive(Debug, Clone, new)]
-pub struct SchemaInfo {
-    pub schema: Schema,
-}
-
-unsafe impl Send for SchemaInfo {}
-
 impl Schema {
-    // pub fn deserialize<'de, D: serde::de::Deserializer<'de>>(
-    //     ty: &Object,
-    //     deserializer: D,
-    // ) -> PyResult<Object> {
-    //     use serde::de::DeserializeSeed;
-    //     let obj = unsafe { PyObject::from_owned_ptr(py(), ty.as_ptr()) };
-    //     let info = Self::resolve(obj.as_ref(py()), None)?;
-    //     let info = info.borrow();
-    //     info.schema.deserialize(deserializer).map_err(pyerr)
-    // }
+    pub fn deserialize<'de, D: serde::de::Deserializer<'de>>(
+        ty: ObjectRef,
+        deserializer: D,
+    ) -> PyResult<Object> {
+        use serde::de::DeserializeSeed;
+        let schema = resolve_schema(ty)?;
+        schema.deserialize(deserializer).map_err(pyerr)
+    }
 
     // pub fn serialize<S: serde::ser::Serializer>(value: &PyAny, serializer: S) -> PyResult<()> {
     //     use serde::Serialize;
@@ -167,22 +155,6 @@ impl Schema {
     //         .map_err(pyerr)?;
     //     Ok(())
     // }
-
-    pub fn resolve<'a>(ty: &'a PyAny, attr: Option<&PyDict>) -> PyResult<&'a PyCell<SchemaInfo>> {
-        ty.getattr(SCHEMA_CACHE)
-            .and_then(|v| v.extract())
-            .or_else(|_| {
-                unimplemented!()
-                // to_schema(ty, attr).and_then(|schema| match &schema {
-                //     Schema::Class(_) => {
-                //         let schema = PyCell::new(py(), SchemaInfo::new(schema))?;
-                //         ty.setattr(SCHEMA_CACHE, schema)?;
-                //         Ok(schema)
-                //     }
-                //     _ => PyCell::new(py(), SchemaInfo::new(schema)),
-                // })
-            })
-    }
 }
 
 #[derive(Debug, Clone, new)]
@@ -201,7 +173,7 @@ pub enum Primitive {
 }
 
 impl Primitive {
-    pub fn name(&self) -> Cow<str> {
+    pub fn name(&self) -> &str {
         match self {
             Self::Bool => "bool".into(),
             Self::Int => "int".into(),
@@ -220,8 +192,8 @@ pub struct Dict {
 }
 
 impl Dict {
-    pub fn name(&self) -> Cow<str> {
-        "dict".into()
+    pub fn name(&self) -> &str {
+        "dict"
     }
 }
 
@@ -231,8 +203,8 @@ pub struct List {
 }
 
 impl List {
-    pub fn name(&self) -> Cow<str> {
-        "list".into()
+    pub fn name(&self) -> &str {
+        "list"
     }
 }
 
@@ -242,8 +214,8 @@ pub struct Set {
 }
 
 impl Set {
-    pub fn name(&self) -> Cow<str> {
-        "set".into()
+    pub fn name(&self) -> &str {
+        "set"
     }
 }
 
@@ -253,8 +225,8 @@ pub struct Tuple {
 }
 
 impl Tuple {
-    pub fn name(&self) -> Cow<str> {
-        "tuple".into()
+    pub fn name(&self) -> &str {
+        "tuple"
     }
 }
 
@@ -265,9 +237,8 @@ pub struct Enum {
 }
 
 impl Enum {
-    pub fn name(&self) -> Cow<str> {
-        // self.ty.as_ref(py()).name()
-        "enum".into()
+    pub fn name(&self) -> &str {
+        "enum"
     }
 }
 
@@ -288,9 +259,8 @@ pub struct Class {
 }
 
 impl Class {
-    pub fn name(&self) -> Cow<str> {
-        // self.ty.as_ref(py()).name()
-        "class".into()
+    pub fn name(&self) -> &str {
+        self.ty.name()
     }
 }
 
@@ -308,8 +278,8 @@ pub struct Optional {
 }
 
 impl Optional {
-    pub fn name(&self) -> Cow<str> {
-        "optional".into()
+    pub fn name(&self) -> &str {
+        "optional"
     }
 }
 
@@ -319,8 +289,8 @@ pub struct Union {
 }
 
 impl Union {
-    pub fn name(&self) -> Cow<str> {
-        "union".into()
+    pub fn name(&self) -> &str {
+        "union"
     }
 }
 
@@ -344,7 +314,7 @@ pub enum Schema {
 }
 
 impl Schema {
-    pub fn name(&self) -> Cow<str> {
+    pub fn name(&self) -> &str {
         match self {
             Self::Primitive(p) => p.name(),
             Self::Dict(d) => d.name(),

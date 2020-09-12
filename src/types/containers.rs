@@ -80,6 +80,10 @@ impl Class {
         self.0.call(args)
     }
 
+    pub fn name(&self) -> &str {
+        self.0.name()
+    }
+
     pub fn is_typeof(&self, p: *mut PyObject) -> bool {
         p == self.0.as_ptr()
     }

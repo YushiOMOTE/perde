@@ -23,6 +23,44 @@ fn convert_stringcase(s: &str, case: Option<StrCase>) -> String {
     }
 }
 
+const SCHEMA_CACHE: &'static str = "__perde_schema__\0";
+
+static mut BOOL: Schema = Schema::Primitive(Primitive::Bool);
+static mut INT: Schema = Schema::Primitive(Primitive::Int);
+static mut STR: Schema = Schema::Primitive(Primitive::Str);
+static mut FLOAT: Schema = Schema::Primitive(Primitive::Float);
+static mut BYTES: Schema = Schema::Primitive(Primitive::Bytes);
+static mut BYTEARRAY: Schema = Schema::Primitive(Primitive::ByteArray);
+
+pub fn resolve_schema<'a>(p: ObjectRef<'a>) -> PyResult<&'a Schema> {
+    match p.load_item(SCHEMA_CACHE) {
+        Ok(p) => return Ok(p),
+        _ => {}
+    }
+
+    if p.is_bool() {
+        Ok(unsafe { &BOOL })
+    } else if p.is_str() {
+        Ok(unsafe { &INT })
+    } else if p.is_int() {
+        Ok(unsafe { &STR })
+    } else if p.is_float() {
+        Ok(unsafe { &FLOAT })
+    } else if p.is_bytes() {
+        Ok(unsafe { &BYTES })
+    } else if p.is_bytearray() {
+        Ok(unsafe { &BYTEARRAY })
+    } else if let Some(s) = maybe_dataclass(p)? {
+        p.store_item(SCHEMA_CACHE, s)
+    } else if let Some(s) = maybe_generic(p)? {
+        p.store_item(SCHEMA_CACHE, s)
+    } else if let Some(s) = maybe_enum(p)? {
+        p.store_item(SCHEMA_CACHE, s)
+    } else {
+        Err(pyerr("unsupported type"))
+    }
+}
+
 pub fn to_schema(p: ObjectRef) -> PyResult<Schema> {
     if p.is_bool() {
         Ok(Schema::Primitive(Primitive::Bool))

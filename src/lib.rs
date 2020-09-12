@@ -12,7 +12,7 @@ mod util;
 mod inspect;
 mod schema;
 
-// mod decode;
+mod decode;
 // mod encode;
 
 // #[cfg(feature = "json")]

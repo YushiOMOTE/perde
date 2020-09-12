@@ -207,6 +207,44 @@ impl<'a> ObjectRef<'a> {
     pub fn to_owned(&self) -> Object {
         Object::new_clone(self.as_ptr()).unwrap()
     }
+
+    pub fn store_item<T>(&self, s: &str, item: T) -> PyResult<&'a T> {
+        extern "C" fn destructor(p: *mut PyObject) {
+            let p = unsafe { PyCapsule_GetPointer(p, std::ptr::null_mut()) };
+            let _b = unsafe { Box::from_raw(p) };
+        }
+
+        let p = Box::new(item);
+        let p = Box::leak(p);
+
+        let obj = Object::new(unsafe {
+            PyCapsule_New(
+                p as *mut _ as *mut std::ffi::c_void,
+                std::ptr::null_mut(),
+                Some(destructor),
+            )
+        })?;
+
+        if unsafe {
+            PyObject_SetAttrString(self.0.as_ptr(), s.as_ptr() as *mut c_char, obj.as_ptr()) != 0
+        } {
+            Err(PyErr::fetch(py()))
+        } else {
+            Ok(p)
+        }
+    }
+
+    pub fn load_item<T>(&self, s: &str) -> PyResult<&'a T> {
+        let obj = self.get_attr(s)?;
+
+        let p = unsafe { PyCapsule_GetPointer(obj.as_ptr(), std::ptr::null_mut()) };
+
+        if p.is_null() {
+            Err(PyErr::fetch(py()))
+        } else {
+            Ok(unsafe { &*(p as *mut T) })
+        }
+    }
 }
 
 impl<'a> Deref for ObjectRef<'a> {
