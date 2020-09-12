@@ -1,5 +1,6 @@
 use crate::{
     inspect::resolve_schema,
+    object::TypedObject,
     types::{self, Object, ObjectRef},
     util::*,
 };
@@ -145,16 +146,15 @@ impl Schema {
         schema.deserialize(deserializer).map_err(pyerr)
     }
 
-    // pub fn serialize<S: serde::ser::Serializer>(value: &PyAny, serializer: S) -> PyResult<()> {
-    //     use serde::Serialize;
-    //     let ty = value.get_type().as_ref();
-    //     let info = Self::resolve(ty, None)?;
-    //     let info = info.borrow();
-    //     TypedObject::new(&info.schema, value)
-    //         .serialize(serializer)
-    //         .map_err(pyerr)?;
-    //     Ok(())
-    // }
+    pub fn serialize<'a, S: serde::ser::Serializer>(value: &PyAny, serializer: S) -> PyResult<()> {
+        use serde::Serialize;
+        let ty = value.get_type().as_ref();
+        let schema = resolve_schema(unsafe { ObjectRef::new(ty.as_ptr())? })?;
+        TypedObject::new(schema, value)
+            .serialize(serializer)
+            .map_err(pyerr)?;
+        Ok(())
+    }
 }
 
 #[derive(Debug, Clone, new)]

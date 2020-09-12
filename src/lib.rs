@@ -13,11 +13,11 @@ mod inspect;
 mod schema;
 
 mod decode;
-// mod encode;
+mod encode;
 
 #[cfg(feature = "json")]
 mod json;
-// mod object;
+mod object;
 
 mod unicode;
 

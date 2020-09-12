@@ -30,21 +30,21 @@ pub unsafe extern "C" fn loads_as(
     obj.into_ptr()
 }
 
-// #[pyfunction]
-// pub fn dumps(v: &PyAny) -> PyResult<String> {
-//     let buf = vec![];
-//     let mut serializer = serde_json::Serializer::new(buf);
-//     Schema::serialize(v, &mut serializer)?;
-//     let buf = serializer.into_inner();
+#[pyfunction]
+pub fn dumps(v: &PyAny) -> PyResult<String> {
+    let buf = vec![];
+    let mut serializer = serde_json::Serializer::new(buf);
+    Schema::serialize(v, &mut serializer)?;
+    let buf = serializer.into_inner();
 
-//     #[cfg(feature = "perf")]
-//     {
-//         flame::dump_html(&mut std::fs::File::create("flame-graph.html").unwrap()).unwrap();
-//         flame::clear();
-//     }
+    #[cfg(feature = "perf")]
+    {
+        flame::dump_html(&mut std::fs::File::create("flame-graph.html").unwrap()).unwrap();
+        flame::clear();
+    }
 
-//     Ok(String::from_utf8(buf)?)
-// }
+    Ok(String::from_utf8(buf)?)
+}
 
 pub unsafe extern "C" fn loads(
     _self: *mut pyo3::ffi::PyObject,
@@ -64,7 +64,7 @@ pub unsafe extern "C" fn loads(
 pub fn json(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
     use pyo3::AsPyPointer;
 
-    // m.add_wrapped(wrap_pyfunction!(dumps))?;
+    m.add_wrapped(wrap_pyfunction!(dumps))?;
 
     let def = pyo3::ffi::PyMethodDef {
         ml_name: "loads\0".as_ptr() as *const c_char,
