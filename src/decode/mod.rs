@@ -31,6 +31,7 @@ impl<'a, 'de> DeserializeSeed<'de> for &'a Schema {
             Schema::Enum(e) => e.deserialize(deserializer),
             Schema::Optional(o) => o.deserialize(deserializer),
             Schema::Union(u) => u.deserialize(deserializer),
+            Schema::Any(a) => a.deserialize(deserializer),
         }
     }
 }

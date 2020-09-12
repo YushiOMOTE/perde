@@ -1,9 +1,10 @@
 use crate::{
+    schema::Any,
     types::{self, Object},
     util::*,
 };
 use serde::{
-    de::{Deserializer, EnumAccess, Error, MapAccess, SeqAccess, Visitor},
+    de::{DeserializeSeed, Deserializer, EnumAccess, Error, MapAccess, SeqAccess, Visitor},
     Deserialize,
 };
 use std::{collections::HashMap, fmt};
@@ -247,5 +248,17 @@ impl<'de> Deserialize<'de> for Object {
         D: Deserializer<'de>,
     {
         de.deserialize_any(AnyVisitor)
+    }
+}
+
+impl<'a, 'de> DeserializeSeed<'de> for &'a Any {
+    type Value = Object;
+
+    #[cfg_attr(feature = "perf", flame)]
+    fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        deserializer.deserialize_any(AnyVisitor)
     }
 }

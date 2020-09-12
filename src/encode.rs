@@ -120,6 +120,7 @@ impl<'a> Serialize for TypedObject<'a> {
                 let v = TypedObject::new(schema, v);
                 v.serialize(s)
             }
+            Schema::Any(a) => unimplemented!(),
         }
     }
 }

@@ -31,6 +31,10 @@ static mut STR: Schema = Schema::Primitive(Primitive::Str);
 static mut FLOAT: Schema = Schema::Primitive(Primitive::Float);
 static mut BYTES: Schema = Schema::Primitive(Primitive::Bytes);
 static mut BYTEARRAY: Schema = Schema::Primitive(Primitive::ByteArray);
+// static mut DICT: Schema = Schema::Dict(Dict::new(
+//     Box::new(Schema::Any(Any::new())),
+//     Box::new(Schema::Any(Any::new())),
+// ));
 
 pub fn resolve_schema<'a>(p: ObjectRef<'a>) -> PyResult<&'a Schema> {
     match p.load_item(SCHEMA_CACHE) {
@@ -214,11 +218,15 @@ fn get_args(p: ObjectRef) -> PyResult<types::Tuple> {
 }
 
 fn maybe_generic(p: ObjectRef) -> PyResult<Option<Schema>> {
+    println!("MAYBE ORIGIN! {}", p.name());
+
     if !p.is_instance(static_objects()?.generic_alias.as_ptr()) {
         return Ok(None);
     }
 
     let origin = p.get_attr("__origin__\0")?;
+
+    println!("ORIGIN!");
 
     let s = if origin.is(static_objects()?.union.as_ptr()) {
         to_union(p)?

@@ -301,6 +301,9 @@ macro_rules! is_type {
 }
 
 #[derive(Debug, Clone, new)]
+pub struct Any;
+
+#[derive(Debug, Clone, new)]
 pub enum Schema {
     Primitive(Primitive),
     Dict(Dict),
@@ -311,6 +314,7 @@ pub enum Schema {
     Enum(Enum),
     Optional(Optional),
     Union(Union),
+    Any(Any),
 }
 
 impl Schema {
@@ -325,6 +329,7 @@ impl Schema {
             Self::Enum(e) => e.name(),
             Self::Optional(o) => o.name(),
             Self::Union(u) => u.name(),
+            Self::Any(_) => "any",
         }
     }
 
@@ -349,6 +354,7 @@ impl Schema {
                 let v: PyResult<Vec<_>> = u.variants.iter().map(|s| s.type_of(ty)).collect();
                 v?.iter().any(|v| *v)
             }
+            Schema::Any(_) => true,
             _ => false,
         };
         Ok(ok)
