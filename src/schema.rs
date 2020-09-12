@@ -360,3 +360,37 @@ impl Schema {
         Ok(ok)
     }
 }
+
+pub struct StaticSchema {
+    pub boolean: Schema,
+    pub int: Schema,
+    pub string: Schema,
+    pub float: Schema,
+    pub bytes: Schema,
+    pub bytearray: Schema,
+    pub dict: Schema,
+    pub list: Schema,
+    pub set: Schema,
+}
+
+pub fn static_schema() -> &'static StaticSchema {
+    &STATIC_SCHEMA
+}
+
+lazy_static::lazy_static! {
+    static ref STATIC_SCHEMA: StaticSchema = {
+        StaticSchema {
+            boolean: Schema::Primitive(Primitive::Bool),
+            int: Schema::Primitive(Primitive::Int),
+            string: Schema::Primitive(Primitive::Str),
+            float: Schema::Primitive(Primitive::Float),
+            bytes: Schema::Primitive(Primitive::Bytes),
+            bytearray: Schema::Primitive(Primitive::ByteArray),
+            dict: Schema::Dict(Dict::new(Box::new(Schema::Any(Any::new())), Box::new(Schema::Any(Any::new())))),
+            list: Schema::List(List::new(Box::new(Schema::Any(Any::new())))),
+            set: Schema::Set(Set::new(Box::new(Schema::Any(Any::new())))),
+        }
+    };
+}
+
+unsafe impl Sync for StaticSchema {}

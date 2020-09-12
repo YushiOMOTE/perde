@@ -25,17 +25,6 @@ fn convert_stringcase(s: &str, case: Option<StrCase>) -> String {
 
 const SCHEMA_CACHE: &'static str = "__perde_schema__\0";
 
-static mut BOOL: Schema = Schema::Primitive(Primitive::Bool);
-static mut INT: Schema = Schema::Primitive(Primitive::Int);
-static mut STR: Schema = Schema::Primitive(Primitive::Str);
-static mut FLOAT: Schema = Schema::Primitive(Primitive::Float);
-static mut BYTES: Schema = Schema::Primitive(Primitive::Bytes);
-static mut BYTEARRAY: Schema = Schema::Primitive(Primitive::ByteArray);
-// static mut DICT: Schema = Schema::Dict(Dict::new(
-//     Box::new(Schema::Any(Any::new())),
-//     Box::new(Schema::Any(Any::new())),
-// ));
-
 pub fn resolve_schema<'a>(p: ObjectRef<'a>) -> PyResult<&'a Schema> {
     match p.load_item(SCHEMA_CACHE) {
         Ok(p) => return Ok(p),
@@ -43,17 +32,23 @@ pub fn resolve_schema<'a>(p: ObjectRef<'a>) -> PyResult<&'a Schema> {
     }
 
     if p.is_bool() {
-        Ok(unsafe { &BOOL })
+        Ok(&static_schema().boolean)
     } else if p.is_str() {
-        Ok(unsafe { &STR })
+        Ok(&static_schema().string)
     } else if p.is_int() {
-        Ok(unsafe { &INT })
+        Ok(&static_schema().int)
     } else if p.is_float() {
-        Ok(unsafe { &FLOAT })
+        Ok(&static_schema().float)
     } else if p.is_bytes() {
-        Ok(unsafe { &BYTES })
+        Ok(&static_schema().bytes)
     } else if p.is_bytearray() {
-        Ok(unsafe { &BYTEARRAY })
+        Ok(&static_schema().bytearray)
+    } else if p.is_dict() {
+        Ok(&static_schema().dict)
+    } else if p.is_list() {
+        Ok(&static_schema().list)
+    } else if p.is_set() {
+        Ok(&static_schema().set)
     } else if let Some(s) = maybe_dataclass(p)? {
         p.store_item(SCHEMA_CACHE, s)
     } else if let Some(s) = maybe_generic(p)? {
@@ -218,15 +213,11 @@ fn get_args(p: ObjectRef) -> PyResult<types::Tuple> {
 }
 
 fn maybe_generic(p: ObjectRef) -> PyResult<Option<Schema>> {
-    println!("MAYBE ORIGIN! {}", p.name());
-
     if !p.is_instance(static_objects()?.generic_alias.as_ptr()) {
         return Ok(None);
     }
 
     let origin = p.get_attr("__origin__\0")?;
-
-    println!("ORIGIN!");
 
     let s = if origin.is(static_objects()?.union.as_ptr()) {
         to_union(p)?

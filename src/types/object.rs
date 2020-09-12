@@ -357,9 +357,6 @@ impl From<pyo3::PyObject> for StaticObject {
     }
 }
 
-unsafe impl Send for StaticObject {}
-unsafe impl Sync for StaticObject {}
-
 pub struct StaticObjects {
     pub fields: StaticObject,
     pub generic_alias: StaticObject,
@@ -367,6 +364,8 @@ pub struct StaticObjects {
     pub tuple: StaticObject,
     pub enum_meta: StaticObject,
 }
+
+unsafe impl Sync for StaticObject {}
 
 pub fn static_objects() -> PyResult<&'static StaticObjects> {
     STATIC_OBJECTS.as_ref().map_err(|e| pyerr(e))
