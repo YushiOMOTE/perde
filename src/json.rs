@@ -46,20 +46,19 @@ pub unsafe extern "C" fn loads_as(
 //     Ok(String::from_utf8(buf)?)
 // }
 
-// pub unsafe extern "C" fn loads(
-//     _self: *mut pyo3::ffi::PyObject,
-//     obj: *mut pyo3::ffi::PyObject,
-// ) -> *mut pyo3::ffi::PyObject {
-//     use pyo3::AsPyPointer;
-//     let mut size = 0;
-//     let p = crate::unicode::read_utf8_from_str(obj, &mut size);
-//     let s = unsafe { std::slice::from_raw_parts(p, size as usize) };
-//     let mut deserializer = serde_json::Deserializer::from_slice(s);
-//     Object::deserialize(&mut deserializer)
-//         .map_err(pyerr)
-//         .map(|v| v.into_ptr())
-//         .unwrap_or_else(|_| std::ptr::null_mut())
-// }
+pub unsafe extern "C" fn loads(
+    _self: *mut pyo3::ffi::PyObject,
+    obj: *mut pyo3::ffi::PyObject,
+) -> *mut pyo3::ffi::PyObject {
+    let mut size = 0;
+    let p = crate::unicode::read_utf8_from_str(obj, &mut size);
+    let s = unsafe { std::slice::from_raw_parts(p, size as usize) };
+    let mut deserializer = serde_json::Deserializer::from_slice(s);
+    Object::deserialize(&mut deserializer)
+        .map_err(pyerr)
+        .map(|v| v.into_ptr())
+        .unwrap_or_else(|_| std::ptr::null_mut())
+}
 
 #[pymodule]
 pub fn json(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
@@ -67,19 +66,19 @@ pub fn json(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
 
     // m.add_wrapped(wrap_pyfunction!(dumps))?;
 
-    // let def = pyo3::ffi::PyMethodDef {
-    //     ml_name: "loads\0".as_ptr() as *const c_char,
-    //     ml_meth: Some(loads),
-    //     ml_flags: pyo3::ffi::METH_O,
-    //     ml_doc: "".as_ptr() as *const c_char,
-    // };
-    // unsafe {
-    //     pyo3::ffi::PyModule_AddObject(
-    //         m.as_ptr(),
-    //         "loads\0".as_ptr() as *const c_char,
-    //         pyo3::ffi::PyCFunction_New(Box::into_raw(Box::new(def)), std::ptr::null_mut()),
-    //     )
-    // };
+    let def = pyo3::ffi::PyMethodDef {
+        ml_name: "loads\0".as_ptr() as *const c_char,
+        ml_meth: Some(loads),
+        ml_flags: pyo3::ffi::METH_O,
+        ml_doc: "".as_ptr() as *const c_char,
+    };
+    unsafe {
+        pyo3::ffi::PyModule_AddObject(
+            m.as_ptr(),
+            "loads\0".as_ptr() as *const c_char,
+            pyo3::ffi::PyCFunction_New(Box::into_raw(Box::new(def)), std::ptr::null_mut()),
+        )
+    };
 
     let def = pyo3::ffi::PyMethodDef {
         ml_name: "loads_as\0".as_ptr() as *const c_char,

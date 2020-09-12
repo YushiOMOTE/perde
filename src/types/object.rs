@@ -109,7 +109,7 @@ impl ObjectPtr {
         }
     }
 
-    pub fn as_c_str(&self) -> PyResult<&str> {
+    pub fn as_str(&self) -> PyResult<&str> {
         let mut len: Py_ssize_t = 0;
         let mut p = unsafe { PyUnicode_AsUTF8AndSize(self.as_ptr(), &mut len) };
 
@@ -120,15 +120,6 @@ impl ObjectPtr {
                 let slice = std::slice::from_raw_parts(p as *const u8, len as usize);
                 Ok(std::str::from_utf8(slice).unwrap())
             }
-        }
-    }
-
-    pub fn as_str(&self) -> PyResult<&str> {
-        let s = self.as_c_str()?;
-        if s.len() == 0 {
-            Ok(s)
-        } else {
-            Ok(&s[0..s.len() - 1])
         }
     }
 
