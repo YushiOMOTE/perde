@@ -15,11 +15,11 @@ mod schema;
 mod decode;
 // mod encode;
 
-// #[cfg(feature = "json")]
-// mod json;
+#[cfg(feature = "json")]
+mod json;
 // mod object;
 
-// mod unicode;
+mod unicode;
 
 // #[pyfunction(kwargs = "**")]
 // pub fn resolve(ty: &PyAny, kwargs: Option<&PyDict>) -> PyResult<()> {
