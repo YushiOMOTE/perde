@@ -27,12 +27,12 @@ mod unicode;
 //     Ok(())
 // }
 
-// #[pymodule]
-// fn perde(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
-//     #[cfg(feature = "json")]
-//     json::import(m)?;
+#[pymodule]
+fn perde(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
+    #[cfg(feature = "json")]
+    json::import(m)?;
 
-//     m.add_wrapped(wrap_pyfunction!(resolve))?;
+    // m.add_wrapped(wrap_pyfunction!(resolve))?;
 
-//     Ok(())
-// }
+    Ok(())
+}
