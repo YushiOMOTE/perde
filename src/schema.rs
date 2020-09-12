@@ -1,6 +1,5 @@
 use crate::{
     inspect::to_schema,
-    object::TypedObject,
     types::{self, Object},
     util::*,
 };
@@ -147,27 +146,27 @@ pub struct SchemaInfo {
 unsafe impl Send for SchemaInfo {}
 
 impl Schema {
-    pub fn deserialize<'de, D: serde::de::Deserializer<'de>>(
-        ty: &Object,
-        deserializer: D,
-    ) -> PyResult<Object> {
-        use serde::de::DeserializeSeed;
-        let obj = unsafe { PyObject::from_owned_ptr(py(), ty.as_ptr()) };
-        let info = Self::resolve(obj.as_ref(py()), None)?;
-        let info = info.borrow();
-        info.schema.deserialize(deserializer).map_err(pyerr)
-    }
+    // pub fn deserialize<'de, D: serde::de::Deserializer<'de>>(
+    //     ty: &Object,
+    //     deserializer: D,
+    // ) -> PyResult<Object> {
+    //     use serde::de::DeserializeSeed;
+    //     let obj = unsafe { PyObject::from_owned_ptr(py(), ty.as_ptr()) };
+    //     let info = Self::resolve(obj.as_ref(py()), None)?;
+    //     let info = info.borrow();
+    //     info.schema.deserialize(deserializer).map_err(pyerr)
+    // }
 
-    pub fn serialize<S: serde::ser::Serializer>(value: &PyAny, serializer: S) -> PyResult<()> {
-        use serde::Serialize;
-        let ty = value.get_type().as_ref();
-        let info = Self::resolve(ty, None)?;
-        let info = info.borrow();
-        TypedObject::new(&info.schema, value)
-            .serialize(serializer)
-            .map_err(pyerr)?;
-        Ok(())
-    }
+    // pub fn serialize<S: serde::ser::Serializer>(value: &PyAny, serializer: S) -> PyResult<()> {
+    //     use serde::Serialize;
+    //     let ty = value.get_type().as_ref();
+    //     let info = Self::resolve(ty, None)?;
+    //     let info = info.borrow();
+    //     TypedObject::new(&info.schema, value)
+    //         .serialize(serializer)
+    //         .map_err(pyerr)?;
+    //     Ok(())
+    // }
 
     pub fn resolve<'a>(ty: &'a PyAny, attr: Option<&PyDict>) -> PyResult<&'a PyCell<SchemaInfo>> {
         ty.getattr(SCHEMA_CACHE)
