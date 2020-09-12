@@ -14,7 +14,7 @@ impl<'a> TupleRef<'a> {
     }
 
     pub fn get(&self, index: usize) -> PyResult<ObjectRef<'a>> {
-        objref!(PyTuple_GET_ITEM(self.0.as_ptr(), index as Py_ssize_t))
+        unsafe { ObjectRef::new(PyTuple_GET_ITEM(self.0.as_ptr(), index as Py_ssize_t)) }
     }
 
     pub fn iter(&self) -> TupleRefIter<'a> {
@@ -61,16 +61,9 @@ impl Tuple {
         Ok(Self(objnew!(PyTuple_New(len as Py_ssize_t))?))
     }
 
-    pub fn new1(a1: ObjectRef) -> PyResult<Self> {
+    pub fn one(a1: ObjectRef) -> PyResult<Self> {
         let mut t = Self::new(1)?;
         t.setref(0, a1);
-        Ok(t)
-    }
-
-    pub fn new2(a1: ObjectRef, a2: ObjectRef) -> PyResult<Self> {
-        let mut t = Self::new(2)?;
-        t.setref(0, a1);
-        t.setref(1, a2);
         Ok(t)
     }
 
@@ -88,7 +81,7 @@ impl Tuple {
     }
 
     pub fn getref<'a>(&'a self, index: usize) -> PyResult<ObjectRef<'a>> {
-        objref!(PyTuple_GetItem(self.0.as_ptr(), index as Py_ssize_t))
+        unsafe { ObjectRef::new(PyTuple_GetItem(self.0.as_ptr(), index as Py_ssize_t)) }
     }
 
     pub fn len(&self) -> usize {

@@ -1,9 +1,9 @@
 use crate::{
     schema::*,
-    types::{self, obj_none_type, Object, ObjectRef, StaticObject, TupleRef},
+    types::{self, static_objects, Object, ObjectRef, StaticObject, TupleRef},
     util::*,
 };
-use pyo3::{conversion::AsPyPointer, ffi::*, types::PyModule, PyResult};
+use pyo3::{prelude::*, types::PyModule};
 use std::os::raw::c_char;
 
 #[cfg_attr(feature = "perf", flame)]
@@ -23,36 +23,18 @@ fn convert_stringcase(s: &str, case: Option<StrCase>) -> String {
     }
 }
 
-macro_rules! ptr {
-    ($p:expr) => {
-        unsafe { &mut $p as *mut _ as *mut PyObject }
-    };
-}
-
-macro_rules! is {
-    ($e:expr, $t:expr) => {
-        unsafe { $e as *mut PyTypeObject == &mut $t }
-    };
-}
-
-macro_rules! eq {
-    ($e:expr, $t:expr) => {
-        unsafe { $e as *mut PyObject == $t as *mut PyObject }
-    };
-}
-
 pub fn to_schema(p: ObjectRef) -> PyResult<Schema> {
-    if p.is(ptr!(PyBool_Type)) {
+    if p.is_bool() {
         Ok(Schema::Primitive(Primitive::Bool))
-    } else if p.is(ptr!(PyUnicode_Type)) {
+    } else if p.is_str() {
         Ok(Schema::Primitive(Primitive::Str))
-    } else if p.is(ptr!(PyLong_Type)) {
+    } else if p.is_int() {
         Ok(Schema::Primitive(Primitive::Int))
-    } else if p.is(ptr!(PyFloat_Type)) {
+    } else if p.is_float() {
         Ok(Schema::Primitive(Primitive::Float))
-    } else if p.is(ptr!(PyBytes_Type)) {
+    } else if p.is_bytes() {
         Ok(Schema::Primitive(Primitive::Bytes))
-    } else if p.is(ptr!(PyByteArray_Type)) {
+    } else if p.is_bytearray() {
         Ok(Schema::Primitive(Primitive::ByteArray))
     } else if let Some(s) = maybe_dataclass(p)? {
         Ok(s)
@@ -70,7 +52,7 @@ fn maybe_dataclass(p: ObjectRef) -> PyResult<Option<Schema>> {
         return Ok(None);
     }
 
-    let arg = types::Tuple::new1(p)?;
+    let arg = types::Tuple::one(p)?;
     let fields = static_objects()?.fields.call(arg)?;
     let fields = types::Tuple::from(fields);
 
@@ -91,7 +73,7 @@ fn maybe_dataclass(p: ObjectRef) -> PyResult<Option<Schema>> {
         members.insert(s.to_string(), mem);
     }
 
-    let name = p.typename();
+    let name = p.name();
     let class = types::Class::new(p.to_owned());
 
     Ok(Some(Schema::Class(Class::new(
@@ -104,7 +86,7 @@ fn maybe_dataclass(p: ObjectRef) -> PyResult<Option<Schema>> {
 }
 
 fn maybe_enum(p: ObjectRef) -> PyResult<Option<Schema>> {
-    if !p.is_typeof(static_objects()?.enum_meta.as_ptr()) {
+    if !p.is_instance(static_objects()?.enum_meta.as_ptr()) {
         return Ok(None);
     }
 
@@ -133,10 +115,10 @@ fn maybe_enum(p: ObjectRef) -> PyResult<Option<Schema>> {
 fn maybe_option(args: TupleRef) -> PyResult<Schema> {
     let t1 = args.get(0)?;
     let t2 = args.get(1)?;
-    let s = if t1.is(obj_none_type()) {
+    let s = if t1.is_none_type() {
         let t = to_schema(t2)?;
         Schema::Optional(Optional::new(Box::new(t)))
-    } else if t2.is(obj_none_type()) {
+    } else if t2.is_none_type() {
         let t = to_schema(t1)?;
         Schema::Optional(Optional::new(Box::new(t)))
     } else {
@@ -194,7 +176,7 @@ fn get_args(p: ObjectRef) -> PyResult<types::Tuple> {
 }
 
 fn maybe_generic(p: ObjectRef) -> PyResult<Option<Schema>> {
-    if !p.is_typeof(static_objects()?.generic_alias.as_ptr()) {
+    if !p.is_instance(static_objects()?.generic_alias.as_ptr()) {
         return Ok(None);
     }
 
@@ -204,63 +186,17 @@ fn maybe_generic(p: ObjectRef) -> PyResult<Option<Schema>> {
         to_union(p)?
     } else if origin.is(static_objects()?.tuple.as_ptr()) {
         to_tuple(p)?
-    } else if origin.is(ptr!(PyDict_Type)) {
+    } else if origin.is_dict() {
         to_dict(p)?
-    } else if origin.is(ptr!(PySet_Type)) {
+    } else if origin.is_set() {
         to_set(p)?
-    } else if origin.is(ptr!(PyList_Type)) {
+    } else if origin.is_list() {
         to_list(p)?
-    } else if origin.is(ptr!(PyFrozenSet_Type)) {
+    } else if origin.is_fronzen_set() {
         unimplemented!()
     } else {
         return Ok(None);
     };
 
     Ok(Some(s))
-}
-
-pub struct StaticObjects {
-    fields: StaticObject,
-    generic_alias: StaticObject,
-    union: StaticObject,
-    tuple: StaticObject,
-    enum_meta: StaticObject,
-}
-
-fn static_objects() -> PyResult<&'static StaticObjects> {
-    STATIC_OBJECTS.as_ref().map_err(|e| pyerr(e))
-}
-
-macro_rules! getattr {
-    ($module:expr, $name:expr) => {
-        $module
-            .getattr($name)
-            .map(|p| pyo3::PyObject::from(p).into())
-            .map_err(|_| concat!("couldn't find function `", $name, "`"))
-    };
-}
-
-lazy_static::lazy_static! {
-    static ref STATIC_OBJECTS: Result<StaticObjects, &'static str> = {
-        let dataclasses = PyModule::import(py(), "dataclasses")
-            .map_err(|_| "couldn't import `dataclasses`")?;
-        let typing = PyModule::import(py(), "typing")
-            .map_err(|_| "couldn't import `typing`")?;
-        let enum_ = PyModule::import(py(), "enum")
-            .map_err(|_| "couldn't import `enum`")?;
-
-        let fields = getattr!(dataclasses, "fields")?;
-        let generic_alias = getattr!(typing, "_GenericAlias")?;
-        let union = getattr!(typing, "Union")?;
-        let tuple = getattr!(typing, "Tuple")?;
-        let enum_meta = getattr!(enum_, "EnumMeta")?;
-
-        Ok(StaticObjects {
-            fields,
-            generic_alias,
-            union,
-            tuple,
-            enum_meta,
-        })
-    };
 }
