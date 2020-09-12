@@ -41,9 +41,9 @@ pub fn resolve_schema<'a>(p: ObjectRef<'a>) -> PyResult<&'a Schema> {
     if p.is_bool() {
         Ok(unsafe { &BOOL })
     } else if p.is_str() {
-        Ok(unsafe { &INT })
-    } else if p.is_int() {
         Ok(unsafe { &STR })
+    } else if p.is_int() {
+        Ok(unsafe { &INT })
     } else if p.is_float() {
         Ok(unsafe { &FLOAT })
     } else if p.is_bytes() {
