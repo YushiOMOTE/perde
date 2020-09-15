@@ -1,6 +1,5 @@
 use crate::{
     inspect::resolve_schema,
-    object::TypedObject,
     types::{self, Object, ObjectRef},
     util::*,
 };
@@ -139,19 +138,6 @@ impl EnumAttr {
 impl Schema {
     pub fn resolve<'a>(ty: ObjectRef<'a>, kw: *mut PyObject) -> PyResult<&'a Self> {
         resolve_schema(ty, kw)
-    }
-
-    pub fn serialize<'a, S: serde::ser::Serializer>(value: &PyAny, serializer: S) -> PyResult<()> {
-        use serde::Serialize;
-        let ty = value.get_type().as_ref();
-        let schema = resolve_schema(
-            unsafe { ObjectRef::new(ty.as_ptr())? },
-            std::ptr::null_mut(),
-        )?;
-        TypedObject::new(schema, value)
-            .serialize(serializer)
-            .map_err(pyerr)?;
-        Ok(())
     }
 }
 

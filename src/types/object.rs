@@ -222,6 +222,10 @@ impl ObjectPtr {
         Ok(ObjectIter(objnew!(PyObject_GetIter(self.as_ptr()))?))
     }
 
+    pub fn is_none(&self) -> bool {
+        unsafe { self.0.as_ptr() == Py_None() }
+    }
+
     pub fn is_none_type(&self) -> bool {
         is_type!(self.0.as_ptr(), (*Py_None()).ob_type)
     }
@@ -314,6 +318,86 @@ impl<'a> ObjectRef<'a> {
             Err(PyErr::fetch(py()))
         } else {
             Ok(unsafe { &*(p as *mut T) })
+        }
+    }
+
+    pub fn as_bool(self) -> PyResult<bool> {
+        if self.is(unsafe { Py_True() }) {
+            Ok(true)
+        } else if self.is(unsafe { Py_False() }) {
+            Ok(false)
+        } else {
+            Err(pyerr("object is not boolean type"))
+        }
+    }
+
+    pub fn as_i64(self) -> PyResult<i64> {
+        let p = unsafe { PyLong_AsLongLong(self.as_ptr()) };
+        if unsafe { !PyErr_Occurred().is_null() } {
+            Err(pyerr("object is not integer type"))
+        } else {
+            Ok(p)
+        }
+    }
+
+    pub fn as_u64(self) -> PyResult<u64> {
+        let p = unsafe { PyLong_AsLongLong(self.as_ptr()) };
+        if unsafe { !PyErr_Occurred().is_null() } {
+            Err(pyerr("object is not integer type"))
+        } else {
+            Ok(p as u64)
+        }
+    }
+
+    pub fn as_f64(self) -> PyResult<f64> {
+        let p = unsafe { PyFloat_AsDouble(self.as_ptr()) };
+        if unsafe { !PyErr_Occurred().is_null() } {
+            Err(pyerr("object is not double float"))
+        } else {
+            Ok(p)
+        }
+    }
+
+    pub fn as_str(self) -> PyResult<&'a str> {
+        let mut len: Py_ssize_t = 0;
+        let mut p = unsafe { PyUnicode_AsUTF8AndSize(self.as_ptr(), &mut len) };
+
+        if p.is_null() {
+            Err(pyerr("object is not a string"))
+        } else {
+            unsafe {
+                let slice = std::slice::from_raw_parts(p as *const u8, len as usize);
+                Ok(std::str::from_utf8(slice).unwrap())
+            }
+        }
+    }
+
+    pub fn as_bytes(self) -> PyResult<&'a [u8]> {
+        let mut len: Py_ssize_t = 0;
+        let mut buf: *mut c_char = std::ptr::null_mut();
+        let p = unsafe { PyBytes_AsStringAndSize(self.as_ptr(), &mut buf, &mut len) };
+
+        if p == -1 {
+            Err(pyerr("object is not bytes"))
+        } else {
+            unsafe {
+                let slice = std::slice::from_raw_parts(buf as *const u8, len as usize);
+                Ok(slice)
+            }
+        }
+    }
+
+    pub fn as_bytearray(self) -> PyResult<&'a [u8]> {
+        let p = unsafe { PyByteArray_AsString(self.as_ptr()) };
+        let len = unsafe { PyByteArray_Size(self.as_ptr()) };
+
+        if p.is_null() {
+            Err(pyerr("object is not bytearray"))
+        } else {
+            unsafe {
+                let slice = std::slice::from_raw_parts(p as *const u8, len as usize);
+                Ok(slice)
+            }
         }
     }
 }

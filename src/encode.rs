@@ -1,8 +1,9 @@
 use crate::{
-    object::TypedObject,
     schema::{Class, Enum, Primitive, Schema, Union},
+    types::{DictRef, ListRef, ObjectRef, SetRef, TupleRef},
     util::*,
 };
+use derive_new::new;
 use pyo3::{
     prelude::*,
     types::{PyDict, PyList, PySet, PyTuple},
@@ -12,178 +13,91 @@ use serde::{
     Serialize,
 };
 
-impl<'a> Serialize for TypedObject<'a> {
+#[derive(new, Clone, Debug)]
+pub struct WithSchema<'a> {
+    pub schema: &'a Schema,
+    pub object: ObjectRef<'a>,
+}
+
+impl<'a> Serialize for WithSchema<'a> {
     fn serialize<S>(&self, s: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
         match self.schema {
-            Schema::Primitive(p) => match p {
-                Primitive::Bool => {
-                    let v = self.object.extract().map_err(ser)?;
-                    s.serialize_bool(v)
-                }
-                Primitive::Int => {
-                    let v = self.object.extract().map_err(ser)?;
-                    s.serialize_i64(v)
-                }
-                Primitive::Str => {
-                    let v = self.object.extract().map_err(ser)?;
-                    s.serialize_str(v)
-                }
-                Primitive::Float => {
-                    let v = self.object.extract().map_err(ser)?;
-                    s.serialize_f64(v)
-                }
-                Primitive::ByteArray => {
-                    let v: Vec<u8> = self.object.extract().map_err(ser)?;
-                    s.serialize_bytes(&v)
-                }
-                Primitive::Bytes => {
-                    let v = self.object.extract().map_err(ser)?;
-                    s.serialize_bytes(v)
-                }
-            },
+            Schema::Primitive(Primitive::Bool) => {
+                s.serialize_bool(self.object.as_bool().map_err(ser)?)
+            }
+            Schema::Primitive(Primitive::Int) => {
+                s.serialize_i64(self.object.as_i64().map_err(ser)?)
+            }
+            Schema::Primitive(Primitive::Str) => {
+                s.serialize_str(self.object.as_str().map_err(ser)?)
+            }
+            Schema::Primitive(Primitive::Float) => {
+                s.serialize_f64(self.object.as_f64().map_err(ser)?)
+            }
+            Schema::Primitive(Primitive::ByteArray) => {
+                s.serialize_bytes(self.object.as_bytearray().map_err(ser)?)
+            }
+            Schema::Primitive(Primitive::Bytes) => {
+                s.serialize_bytes(self.object.as_bytes().map_err(ser)?)
+            }
             Schema::List(l) => {
-                let list: &PyList = self.object.extract().map_err(ser)?;
-                let mut seq = s.serialize_seq(Some(list.len()))?;
-                for v in list {
-                    let object = TypedObject::new(&l.value, v);
-                    seq.serialize_element(&object)?;
+                let list = ListRef::new(self.object);
+                let len = list.len();
+                let mut seq = s.serialize_seq(Some(len))?;
+                for i in 0..len {
+                    let obj = list.get(i).unwrap();
+                    let w = WithSchema::new(&l.value, obj);
+                    seq.serialize_element(&w)?;
                 }
                 seq.end()
             }
             Schema::Set(l) => {
-                let set: &PySet = self.object.extract().map_err(ser)?;
-                let mut seq = s.serialize_seq(Some(set.len()))?;
-                for v in set {
-                    let object = TypedObject::new(&l.value, v);
-                    seq.serialize_element(&object)?;
+                let set = SetRef::new(self.object);
+                let len = set.len();
+                let mut seq = s.serialize_seq(Some(len))?;
+                for i in 0..len {
+                    let obj = set.get(i).unwrap();
+                    let w = WithSchema::new(&l.value, obj);
+                    seq.serialize_element(&w)?;
                 }
                 seq.end()
             }
             Schema::Tuple(t) => {
-                let tuple: &PyTuple = self.object.extract().map_err(ser)?;
-                let mut seq = s.serialize_seq(Some(tuple.len()))?;
-
-                if t.args.len() != tuple.len() {
-                    return Err(S::Error::custom(format!(
-                        "tuple expects {} args but got {}",
-                        t.args.len(),
-                        tuple.len()
-                    )));
-                }
-
-                for (obj, schema) in tuple.into_iter().zip(t.args.iter()) {
-                    let object = TypedObject::new(schema, obj);
-                    seq.serialize_element(&object)?;
+                let tuple = TupleRef::new(self.object);
+                let iter = tuple.iter();
+                let len = iter.len();
+                let mut seq = s.serialize_seq(Some(len))?;
+                for (obj, schema) in iter.zip(t.args.iter()) {
+                    let w = WithSchema::new(schema, obj);
+                    seq.serialize_element(&w)?;
                 }
                 seq.end()
             }
             Schema::Dict(d) => {
-                let dict: &PyDict = self.object.extract().map_err(ser)?;
+                let dict = DictRef::new(self.object);
                 let mut map = s.serialize_map(Some(dict.len()))?;
-                for (k, v) in dict {
-                    let k = TypedObject::new(&*d.key, k);
-                    let v = TypedObject::new(&*d.value, v);
+                for (k, v) in dict.iter() {
+                    let k = WithSchema::new(&d.key, k);
+                    let v = WithSchema::new(&d.value, v);
                     map.serialize_entry(&k, &v)?;
                 }
                 map.end()
             }
-            Schema::Class(c) => {
-                let v: &PyAny = self.object.extract().map_err(ser)?;
-                let mems = c.retrieve_members(v)?;
-                let mut map = s.serialize_map(Some(mems.len()))?;
-                for (k, t) in mems {
-                    map.serialize_entry(&k, &t)?;
-                }
-                map.end()
-            }
-            Schema::Enum(e) => {
-                let v: &PyAny = self.object.extract().map_err(ser)?;
-                let name = e.verify_variant(v)?;
-                name.serialize(s)
-            }
+            Schema::Class(c) => unimplemented!(),
+            Schema::Enum(e) => unimplemented!(),
             Schema::Optional(o) => {
-                let some: Option<&PyAny> = self.object.extract().map_err(ser)?;
-                match some {
-                    Some(v) => {
-                        let v = TypedObject::new(&o.value, v);
-                        s.serialize_some(&v)
-                    }
-                    None => s.serialize_none(),
+                if self.object.is_none() {
+                    s.serialize_none()
+                } else {
+                    let w = WithSchema::new(&o.value, self.object);
+                    s.serialize_some(&w)
                 }
             }
-            Schema::Union(u) => {
-                let v: &PyAny = self.object.extract().map_err(ser)?;
-                let schema = u.find_union_variant(v)?;
-                let v = TypedObject::new(schema, v);
-                v.serialize(s)
-            }
+            Schema::Union(u) => unimplemented!(),
             Schema::Any(a) => unimplemented!(),
         }
-    }
-}
-
-impl Class {
-    #[cfg_attr(feature = "perf", flame)]
-    pub fn retrieve_members<'a, E>(
-        &'a self,
-        value: &'a PyAny,
-    ) -> Result<Vec<(&'a str, TypedObject<'a>)>, E>
-    where
-        E: ser::Error,
-    {
-        self.fields.iter().try_fold(vec![], |mut mems, (k, f)| {
-            if f.attr.flatten {
-                match &f.schema {
-                    Schema::Class(c) => {
-                        let v = value.getattr(&f.name).map_err(ser)?;
-                        mems.extend(c.retrieve_members(v)?);
-                    }
-                    _ => {
-                        return Err(ser::Error::custom(format!(
-                            "found flatten attribute to non-map type"
-                        )))
-                    }
-                }
-            } else {
-                let v = value.getattr(&f.name).map_err(ser)?;
-                mems.push((k.as_ref(), TypedObject::new(&f.schema, v)))
-            }
-            Ok(mems)
-        })
-    }
-}
-
-impl Enum {
-    #[cfg_attr(feature = "perf", flame)]
-    pub fn verify_variant<'a, E>(&self, value: &'a PyAny) -> Result<&'a str, E>
-    where
-        E: ser::Error,
-    {
-        let name: &str = value
-            .getattr("name")
-            .and_then(|v| v.extract())
-            .map_err(ser)?;
-        self.variants
-            .get(name)
-            .ok_or_else(|| ser::Error::custom(format!("unknown variant `{}`", name)))?;
-        Ok(name)
-    }
-}
-
-impl Union {
-    #[cfg_attr(feature = "perf", flame)]
-    pub fn find_union_variant<'a, E>(&'a self, value: &'a PyAny) -> Result<&'a Schema, E>
-    where
-        E: ser::Error,
-    {
-        self.variants
-            .iter()
-            .find(|s| s.type_of(value).unwrap_or(false))
-            .ok_or_else(|| {
-                ser::Error::custom(format!("unknown variant `{}`", value.get_type().name()))
-            })
     }
 }

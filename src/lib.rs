@@ -18,7 +18,6 @@ mod encode;
 
 #[cfg(feature = "json")]
 mod json;
-mod object;
 
 mod unicode;
 
