@@ -53,7 +53,7 @@ DICTS_SK = [
     Entry(Dict[str, bytes], [{"v": b"aaaa", "z": b""}, {"p": b"v"}, {}]),
 ]
 
-@pytest.mark.parametrize("t1,v1", expand(PRIMITIVES + LISTS + DICTS_SK))
+@pytest.mark.parametrize("t1,v1", expand(PRIMITIVES))
 def test_primitives(t1, v1):
     repack(t1, v1)
 

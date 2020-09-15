@@ -25,7 +25,7 @@ fn convert_stringcase(s: &str, case: Option<StrCase>) -> String {
 
 const SCHEMA_CACHE: &'static str = "__perde_schema__\0";
 
-pub fn resolve_schema<'a>(p: ObjectRef<'a>) -> PyResult<&'a Schema> {
+pub fn resolve_schema<'a>(p: ObjectRef<'a>, attr: *mut PyObject) -> PyResult<&'a Schema> {
     match p.load_item(SCHEMA_CACHE) {
         Ok(p) => return Ok(p),
         _ => {}
@@ -49,7 +49,7 @@ pub fn resolve_schema<'a>(p: ObjectRef<'a>) -> PyResult<&'a Schema> {
         Ok(&static_schema().list)
     } else if p.is_set() {
         Ok(&static_schema().set)
-    } else if let Some(s) = maybe_dataclass(p)? {
+    } else if let Some(s) = maybe_dataclass(p, attr)? {
         p.store_item(SCHEMA_CACHE, s)
     } else if let Some(s) = maybe_generic(p)? {
         p.store_item(SCHEMA_CACHE, s)
@@ -73,7 +73,7 @@ pub fn to_schema(p: ObjectRef) -> PyResult<Schema> {
         Ok(Schema::Primitive(Primitive::Bytes))
     } else if p.is_bytearray() {
         Ok(Schema::Primitive(Primitive::ByteArray))
-    } else if let Some(s) = maybe_dataclass(p)? {
+    } else if let Some(s) = maybe_dataclass(p, std::ptr::null_mut())? {
         Ok(s)
     } else if let Some(s) = maybe_generic(p)? {
         Ok(s)
@@ -84,7 +84,7 @@ pub fn to_schema(p: ObjectRef) -> PyResult<Schema> {
     }
 }
 
-fn maybe_dataclass(p: ObjectRef) -> PyResult<Option<Schema>> {
+fn maybe_dataclass(p: ObjectRef, attr: *mut PyObject) -> PyResult<Option<Schema>> {
     if !p.has_attr("__dataclass_fields__\0") {
         return Ok(None);
     }
