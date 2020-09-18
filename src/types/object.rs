@@ -29,34 +29,98 @@ macro_rules! is_type {
     };
 }
 
-#[derive(Debug, Clone, Copy)]
-pub struct ObjectPtr(NonNull<PyObject>);
+#[derive(Debug)]
+#[repr(transparent)]
+pub struct ObjectRef(NonNull<PyObject>);
 
-impl ObjectPtr {
-    pub fn new(p: *mut PyObject) -> Result<Self> {
+impl ObjectRef {
+    pub fn new<'a>(p: *mut PyObject) -> Result<&'a Self> {
         match NonNull::new(p) {
-            Some(p) => Ok(Self(p)),
+            Some(p) => unsafe { Ok(std::mem::transmute::<&ObjectRef, &ObjectRef>(&Self(p))) },
             None => Err(anyhow!("failed to create an object")),
         }
     }
 
-    pub fn is(&self, p: *mut PyObject) -> bool {
-        self.0.as_ptr() == p
+    pub fn to_owned(&self) -> Object {
+        Object::new_clone(self.as_ptr()).unwrap()
     }
 
-    pub fn is_instance(&self, p: *mut PyObject) -> bool {
-        unsafe { (*self.as_ptr()).ob_type as *mut PyObject == p }
-    }
+    pub fn store_item<'a, T>(&self, s: &str, item: T) -> Result<&'a T> {
+        extern "C" fn destructor(p: *mut PyObject) {
+            let p = unsafe { PyCapsule_GetPointer(p, std::ptr::null_mut()) };
+            let _b = unsafe { Box::from_raw(p) };
+        }
 
-    pub fn name(&self) -> &str {
-        unsafe {
-            std::ffi::CStr::from_ptr((*(self.as_ptr() as *mut PyTypeObject)).tp_name)
-                .to_str()
-                .unwrap_or("<unknown>")
+        let p = Box::new(item);
+        let p = Box::leak(p);
+
+        let obj = Object::new(unsafe {
+            PyCapsule_New(
+                p as *mut _ as *mut std::ffi::c_void,
+                std::ptr::null_mut(),
+                Some(destructor),
+            )
+        })?;
+
+        if unsafe {
+            PyObject_SetAttrString(self.0.as_ptr(), s.as_ptr() as *mut c_char, obj.as_ptr()) != 0
+        } {
+            bail!("cannot set attribute `{}`", s)
+        } else {
+            Ok(p)
         }
     }
 
-    pub fn as_str(&self) -> Result<&str> {
+    pub fn load_item<'a, T>(&self, s: &str) -> Result<&'a T> {
+        let obj = self.get_attr(s)?;
+
+        let p = unsafe { PyCapsule_GetPointer(obj.as_ptr(), std::ptr::null_mut()) };
+
+        if p.is_null() {
+            bail!("cannot get capsule pointer")
+        } else {
+            Ok(unsafe { &*(p as *mut T) })
+        }
+    }
+
+    pub fn as_bool(&self) -> Result<bool> {
+        if self.is(unsafe { Py_True() }) {
+            Ok(true)
+        } else if self.is(unsafe { Py_False() }) {
+            Ok(false)
+        } else {
+            bail!("object is not boolean type")
+        }
+    }
+
+    pub fn as_i64(&self) -> Result<i64> {
+        let p = unsafe { PyLong_AsLongLong(self.as_ptr()) };
+        if unsafe { !PyErr_Occurred().is_null() } {
+            bail!("object is not integer type")
+        } else {
+            Ok(p)
+        }
+    }
+
+    pub fn as_u64(&self) -> Result<u64> {
+        let p = unsafe { PyLong_AsLongLong(self.as_ptr()) };
+        if unsafe { !PyErr_Occurred().is_null() } {
+            bail!("object is not integer type")
+        } else {
+            Ok(p as u64)
+        }
+    }
+
+    pub fn as_f64(&self) -> Result<f64> {
+        let p = unsafe { PyFloat_AsDouble(self.as_ptr()) };
+        if unsafe { !PyErr_Occurred().is_null() } {
+            bail!("object is not double float")
+        } else {
+            Ok(p)
+        }
+    }
+
+    pub fn as_str<'a>(&'a self) -> Result<&'a str> {
         let mut len: Py_ssize_t = 0;
         let mut p = unsafe { PyUnicode_AsUTF8AndSize(self.as_ptr(), &mut len) };
 
@@ -70,23 +134,33 @@ impl ObjectPtr {
         }
     }
 
-    pub fn as_ptr(&self) -> *mut PyObject {
-        self.0.as_ptr()
+    pub fn as_bytes<'a>(&'a self) -> Result<&'a [u8]> {
+        let mut len: Py_ssize_t = 0;
+        let mut buf: *mut c_char = std::ptr::null_mut();
+        let p = unsafe { PyBytes_AsStringAndSize(self.as_ptr(), &mut buf, &mut len) };
+
+        if p == -1 {
+            bail!("object is not bytes")
+        } else {
+            unsafe {
+                let slice = std::slice::from_raw_parts(buf as *const u8, len as usize);
+                Ok(slice)
+            }
+        }
     }
 
-    pub fn has_attr(&self, s: &str) -> bool {
-        unsafe { PyObject_HasAttrString(self.0.as_ptr(), s.as_ptr() as *mut c_char) != 0 }
-    }
+    pub fn as_bytearray<'a>(&'a self) -> Result<&'a [u8]> {
+        let p = unsafe { PyByteArray_AsString(self.as_ptr()) };
+        let len = unsafe { PyByteArray_Size(self.as_ptr()) };
 
-    pub fn get_attr(&self, s: &str) -> Result<Object> {
-        objnew!(PyObject_GetAttrString(
-            self.0.as_ptr(),
-            s.as_ptr() as *mut c_char
-        ))
-    }
-
-    pub fn get_iter(&self) -> Result<ObjectIter> {
-        Ok(ObjectIter(objnew!(PyObject_GetIter(self.as_ptr()))?))
+        if p.is_null() {
+            bail!("object is not bytearray")
+        } else {
+            unsafe {
+                let slice = std::slice::from_raw_parts(p as *const u8, len as usize);
+                Ok(slice)
+            }
+        }
     }
 
     pub fn is_none(&self) -> bool {
@@ -136,150 +210,40 @@ impl ObjectPtr {
     pub fn is_fronzen_set(&self) -> bool {
         is_type!(self.0.as_ptr(), PyFrozenSet_Type)
     }
-}
 
-#[derive(Debug, Clone, Copy)]
-pub struct ObjectRef<'a>(ObjectPtr, PhantomData<&'a ()>);
-
-impl<'a> ObjectRef<'a> {
-    pub unsafe fn new(p: *mut PyObject) -> Result<Self> {
-        Ok(Self(ObjectPtr::new(p)?, PhantomData))
+    pub fn is(&self, p: *mut PyObject) -> bool {
+        self.0.as_ptr() == p
     }
 
-    pub fn to_owned(&self) -> Object {
-        Object::new_clone(self.as_ptr()).unwrap()
+    pub fn is_instance(&self, p: *mut PyObject) -> bool {
+        unsafe { (*self.as_ptr()).ob_type as *mut PyObject == p }
     }
 
-    pub fn store_item<T>(&self, s: &str, item: T) -> Result<&'a T> {
-        extern "C" fn destructor(p: *mut PyObject) {
-            let p = unsafe { PyCapsule_GetPointer(p, std::ptr::null_mut()) };
-            let _b = unsafe { Box::from_raw(p) };
-        }
-
-        let p = Box::new(item);
-        let p = Box::leak(p);
-
-        let obj = Object::new(unsafe {
-            PyCapsule_New(
-                p as *mut _ as *mut std::ffi::c_void,
-                std::ptr::null_mut(),
-                Some(destructor),
-            )
-        })?;
-
-        if unsafe {
-            PyObject_SetAttrString(self.0.as_ptr(), s.as_ptr() as *mut c_char, obj.as_ptr()) != 0
-        } {
-            bail!("cannot set attribute `{}`", s)
-        } else {
-            Ok(p)
+    pub fn name(&self) -> &str {
+        unsafe {
+            std::ffi::CStr::from_ptr((*(self.as_ptr() as *mut PyTypeObject)).tp_name)
+                .to_str()
+                .unwrap_or("<unknown>")
         }
     }
 
-    pub fn load_item<T>(&self, s: &str) -> Result<&'a T> {
-        let obj = self.get_attr(s)?;
-
-        let p = unsafe { PyCapsule_GetPointer(obj.as_ptr(), std::ptr::null_mut()) };
-
-        if p.is_null() {
-            bail!("cannot get capsule pointer")
-        } else {
-            Ok(unsafe { &*(p as *mut T) })
-        }
+    pub fn as_ptr(&self) -> *mut PyObject {
+        self.0.as_ptr()
     }
 
-    pub fn as_bool(self) -> Result<bool> {
-        if self.is(unsafe { Py_True() }) {
-            Ok(true)
-        } else if self.is(unsafe { Py_False() }) {
-            Ok(false)
-        } else {
-            bail!("object is not boolean type")
-        }
+    pub fn has_attr(&self, s: &str) -> bool {
+        unsafe { PyObject_HasAttrString(self.0.as_ptr(), s.as_ptr() as *mut c_char) != 0 }
     }
 
-    pub fn as_i64(self) -> Result<i64> {
-        let p = unsafe { PyLong_AsLongLong(self.as_ptr()) };
-        if unsafe { !PyErr_Occurred().is_null() } {
-            bail!("object is not integer type")
-        } else {
-            Ok(p)
-        }
+    pub fn get_attr(&self, s: &str) -> Result<Object> {
+        objnew!(PyObject_GetAttrString(
+            self.0.as_ptr(),
+            s.as_ptr() as *mut c_char
+        ))
     }
 
-    pub fn as_u64(self) -> Result<u64> {
-        let p = unsafe { PyLong_AsLongLong(self.as_ptr()) };
-        if unsafe { !PyErr_Occurred().is_null() } {
-            bail!("object is not integer type")
-        } else {
-            Ok(p as u64)
-        }
-    }
-
-    pub fn as_f64(self) -> Result<f64> {
-        let p = unsafe { PyFloat_AsDouble(self.as_ptr()) };
-        if unsafe { !PyErr_Occurred().is_null() } {
-            bail!("object is not double float")
-        } else {
-            Ok(p)
-        }
-    }
-
-    pub fn as_str(self) -> Result<&'a str> {
-        let mut len: Py_ssize_t = 0;
-        let mut p = unsafe { PyUnicode_AsUTF8AndSize(self.as_ptr(), &mut len) };
-
-        if p.is_null() {
-            bail!("object is not a string")
-        } else {
-            unsafe {
-                let slice = std::slice::from_raw_parts(p as *const u8, len as usize);
-                Ok(std::str::from_utf8(slice).unwrap())
-            }
-        }
-    }
-
-    pub fn as_bytes(self) -> Result<&'a [u8]> {
-        let mut len: Py_ssize_t = 0;
-        let mut buf: *mut c_char = std::ptr::null_mut();
-        let p = unsafe { PyBytes_AsStringAndSize(self.as_ptr(), &mut buf, &mut len) };
-
-        if p == -1 {
-            bail!("object is not bytes")
-        } else {
-            unsafe {
-                let slice = std::slice::from_raw_parts(buf as *const u8, len as usize);
-                Ok(slice)
-            }
-        }
-    }
-
-    pub fn as_bytearray(self) -> Result<&'a [u8]> {
-        let p = unsafe { PyByteArray_AsString(self.as_ptr()) };
-        let len = unsafe { PyByteArray_Size(self.as_ptr()) };
-
-        if p.is_null() {
-            bail!("object is not bytearray")
-        } else {
-            unsafe {
-                let slice = std::slice::from_raw_parts(p as *const u8, len as usize);
-                Ok(slice)
-            }
-        }
-    }
-}
-
-impl<'a> Deref for ObjectRef<'a> {
-    type Target = ObjectPtr;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl<'a> DerefMut for ObjectRef<'a> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
+    pub fn get_iter(&self) -> Result<ObjectIter> {
+        Ok(ObjectIter(objnew!(PyObject_GetIter(self.as_ptr()))?))
     }
 }
 
@@ -300,11 +264,14 @@ impl Iterator for ObjectIter {
 }
 
 #[derive(Debug)]
-pub struct Object(ObjectPtr);
+pub struct Object(ObjectRef);
 
 impl Object {
     pub fn new(p: *mut PyObject) -> Result<Self> {
-        Ok(Self(ObjectPtr::new(p)?))
+        match NonNull::new(p) {
+            Some(p) => Ok(Self(ObjectRef(p))),
+            None => Err(anyhow!("failed to create an object")),
+        }
     }
 
     pub fn new_clone(p: *mut PyObject) -> Result<Self> {
@@ -365,10 +332,6 @@ impl Object {
         objnew!(PyObject_CallObject(self.0.as_ptr(), tuple.as_ptr()))
     }
 
-    pub fn as_ref<'a>(&'a self) -> ObjectRef<'a> {
-        unsafe { ObjectRef::<'a>::new(self.0.as_ptr()).unwrap() }
-    }
-
     fn incref(&self) {
         unsafe { Py_INCREF(self.0.as_ptr()) }
     }
@@ -379,7 +342,7 @@ impl Object {
 }
 
 impl Deref for Object {
-    type Target = ObjectPtr;
+    type Target = ObjectRef;
 
     fn deref(&self) -> &Self::Target {
         &self.0
@@ -397,7 +360,7 @@ impl Clone for Object {
         unsafe {
             Py_INCREF(self.0.as_ptr());
         }
-        Self(self.0)
+        self.0.to_owned()
     }
 }
 

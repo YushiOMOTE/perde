@@ -3,10 +3,10 @@ use anyhow::Result;
 use pyo3::{conversion::AsPyPointer, ffi::*};
 
 #[derive(Debug, Clone)]
-pub struct TupleRef<'a>(ObjectRef<'a>);
+pub struct TupleRef<'a>(&'a ObjectRef);
 
 impl<'a> TupleRef<'a> {
-    pub fn new(args: ObjectRef<'a>) -> Self {
+    pub fn new(args: &'a ObjectRef) -> Self {
         Self(args)
     }
 
@@ -18,7 +18,7 @@ impl<'a> TupleRef<'a> {
         unsafe { PyTuple_Size(self.0.as_ptr()) as usize }
     }
 
-    pub fn get(&self, index: usize) -> Result<ObjectRef<'a>> {
+    pub fn get(&self, index: usize) -> Result<&'a ObjectRef> {
         unsafe { ObjectRef::new(PyTuple_GET_ITEM(self.0.as_ptr(), index as Py_ssize_t)) }
     }
 
@@ -45,7 +45,7 @@ impl<'a> TupleRefIter<'a> {
 }
 
 impl<'a> Iterator for TupleRefIter<'a> {
-    type Item = ObjectRef<'a>;
+    type Item = &'a ObjectRef;
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.index >= self.len {
@@ -85,7 +85,7 @@ impl Tuple {
         }
     }
 
-    pub fn getref<'a>(&'a self, index: usize) -> Result<ObjectRef<'a>> {
+    pub fn getref<'a>(&'a self, index: usize) -> Result<&'a ObjectRef> {
         unsafe { ObjectRef::new(PyTuple_GetItem(self.0.as_ptr(), index as Py_ssize_t)) }
     }
 
@@ -98,7 +98,7 @@ impl Tuple {
     }
 
     pub fn as_ref(&self) -> TupleRef {
-        TupleRef::new(self.0.as_ref())
+        TupleRef::new(&self.0)
     }
 
     pub fn into_inner(self) -> Object {
