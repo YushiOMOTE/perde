@@ -1,7 +1,7 @@
 use crate::{
     encode::WithSchema,
     schema::Schema,
-    types::{self, Object, ObjectRef, TupleRef, _PyCFunctionFastWithKeywords, obj_str},
+    types::{self, Object, ObjectRef, TupleRef, _PyCFunctionFastWithKeywords},
     util::*,
 };
 use pyo3::{ffi::*, prelude::*, wrap_pyfunction, wrap_pymodule};
@@ -61,7 +61,7 @@ pub unsafe extern "C" fn dumps(
         flame::clear();
     }
 
-    obj_str(&String::from_utf8(buf).unwrap())
+    Object::new_str(&String::from_utf8(buf).unwrap())
         .unwrap()
         .into_ptr()
 }

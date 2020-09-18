@@ -24,7 +24,7 @@ impl<'de> Visitor<'de> for AnyVisitor {
     where
         E: Error,
     {
-        types::obj_bool(v).map_err(de)
+        Ok(Object::new_bool(v))
     }
 
     #[cfg_attr(feature = "perf", flame)]
@@ -56,7 +56,7 @@ impl<'de> Visitor<'de> for AnyVisitor {
     where
         E: Error,
     {
-        types::obj_i64(v).map_err(de)
+        Object::new_i64(v).map_err(de)
     }
 
     #[cfg_attr(feature = "perf", flame)]
@@ -88,7 +88,7 @@ impl<'de> Visitor<'de> for AnyVisitor {
     where
         E: Error,
     {
-        types::obj_u64(v).map_err(de)
+        Object::new_u64(v).map_err(de)
     }
 
     #[cfg_attr(feature = "perf", flame)]
@@ -104,7 +104,7 @@ impl<'de> Visitor<'de> for AnyVisitor {
     where
         E: Error,
     {
-        types::obj_f64(v).map_err(de)
+        Object::new_f64(v).map_err(de)
     }
 
     #[cfg_attr(feature = "perf", flame)]
@@ -128,7 +128,7 @@ impl<'de> Visitor<'de> for AnyVisitor {
     where
         E: Error,
     {
-        types::obj_str(v).map_err(de)
+        Object::new_str(v).map_err(de)
     }
 
     #[cfg_attr(feature = "perf", flame)]
@@ -152,7 +152,7 @@ impl<'de> Visitor<'de> for AnyVisitor {
     where
         E: Error,
     {
-        types::obj_bytes(v).map_err(de)
+        Object::new_bytes(v).map_err(de)
     }
 
     #[cfg_attr(feature = "perf", flame)]
@@ -168,7 +168,7 @@ impl<'de> Visitor<'de> for AnyVisitor {
     where
         E: Error,
     {
-        types::obj_none().map_err(de)
+        Ok(Object::new_none())
     }
 
     #[cfg_attr(feature = "perf", flame)]
@@ -184,7 +184,7 @@ impl<'de> Visitor<'de> for AnyVisitor {
     where
         E: Error,
     {
-        types::obj_none().map_err(de)
+        Ok(Object::new_none())
     }
 
     #[cfg_attr(feature = "perf", flame)]
@@ -225,7 +225,7 @@ impl<'de> Visitor<'de> for AnyVisitor {
         while let Some(k) = map.next_key()? {
             let k: &str = k;
             let v = map.next_value()?;
-            dict.set(types::obj_str(&k).map_err(de)?, v).map_err(de)?;
+            dict.set(Object::new_str(&k).map_err(de)?, v).map_err(de)?;
         }
 
         Ok(dict.into_inner())

@@ -23,7 +23,7 @@ impl<'de> Visitor<'de> for BoolVisitor {
     where
         E: de::Error,
     {
-        types::obj_bool(value).map_err(de)
+        Ok(Object::new_bool(value))
     }
 }
 
@@ -58,7 +58,7 @@ impl<'de> Visitor<'de> for IntVisitor {
     where
         E: de::Error,
     {
-        types::obj_i64(value).map_err(de)
+        Object::new_i64(value).map_err(de)
     }
 
     #[cfg_attr(feature = "perf", flame)]
@@ -90,7 +90,7 @@ impl<'de> Visitor<'de> for IntVisitor {
     where
         E: de::Error,
     {
-        types::obj_u64(value).map_err(de)
+        Object::new_u64(value).map_err(de)
     }
 }
 
@@ -117,7 +117,7 @@ impl<'de> Visitor<'de> for FloatVisitor {
     where
         E: de::Error,
     {
-        types::obj_f64(value).map_err(de)
+        Object::new_f64(value).map_err(de)
     }
 }
 
@@ -152,7 +152,7 @@ impl<'de> Visitor<'de> for StrVisitor {
     where
         E: de::Error,
     {
-        types::obj_str(value).map_err(de)
+        Object::new_str(value).map_err(de)
     }
 
     #[cfg_attr(feature = "perf", flame)]
@@ -188,9 +188,9 @@ impl<'de> Visitor<'de> for BytesVisitor {
         E: de::Error,
     {
         if self.0 {
-            types::obj_bytearray(value).map_err(de)
+            Object::new_bytearray(value).map_err(de)
         } else {
-            types::obj_bytes(value).map_err(de)
+            Object::new_bytes(value).map_err(de)
         }
     }
 

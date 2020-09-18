@@ -30,138 +30,6 @@ macro_rules! is_type {
     };
 }
 
-pub fn obj_as_bool(obj: ObjectRef) -> PyResult<bool> {
-    if obj.is(unsafe { Py_True() }) {
-        Ok(true)
-    } else if obj.is(unsafe { Py_False() }) {
-        Ok(false)
-    } else {
-        Err(pyerr("object is not boolean type"))
-    }
-}
-
-pub fn obj_as_i64(obj: ObjectRef) -> PyResult<i64> {
-    let p = unsafe { PyLong_AsLongLong(obj.as_ptr()) };
-    if unsafe { !PyErr_Occurred().is_null() } {
-        Err(pyerr("object is not integer type"))
-    } else {
-        Ok(p)
-    }
-}
-
-pub fn obj_as_u64(obj: ObjectRef) -> PyResult<u64> {
-    let p = unsafe { PyLong_AsLongLong(obj.as_ptr()) };
-    if unsafe { !PyErr_Occurred().is_null() } {
-        Err(pyerr("object is not integer type"))
-    } else {
-        Ok(p as u64)
-    }
-}
-
-pub fn obj_as_f64(obj: ObjectRef) -> PyResult<f64> {
-    let p = unsafe { PyFloat_AsDouble(obj.as_ptr()) };
-    if unsafe { !PyErr_Occurred().is_null() } {
-        Err(pyerr("object is not double float"))
-    } else {
-        Ok(p)
-    }
-}
-
-pub fn obj_as_str<'a>(obj: ObjectRef<'a>) -> PyResult<&'a str> {
-    let mut len: Py_ssize_t = 0;
-    let mut p = unsafe { PyUnicode_AsUTF8AndSize(obj.as_ptr(), &mut len) };
-
-    if p.is_null() {
-        Err(pyerr("object is not a string"))
-    } else {
-        unsafe {
-            let slice = std::slice::from_raw_parts(p as *const u8, len as usize);
-            Ok(std::str::from_utf8(slice).unwrap())
-        }
-    }
-}
-
-pub fn obj_as_bytes<'a>(obj: ObjectRef<'a>) -> PyResult<&[u8]> {
-    let mut len: Py_ssize_t = 0;
-    let mut buf: *mut c_char = std::ptr::null_mut();
-    let p = unsafe { PyBytes_AsStringAndSize(obj.as_ptr(), &mut buf, &mut len) };
-
-    if p == -1 {
-        Err(pyerr("object is not bytes"))
-    } else {
-        unsafe {
-            let slice = std::slice::from_raw_parts(buf as *const u8, len as usize);
-            Ok(slice)
-        }
-    }
-}
-
-pub fn obj_as_bytearray<'a>(obj: ObjectRef<'a>) -> PyResult<&[u8]> {
-    let p = unsafe { PyByteArray_AsString(obj.as_ptr()) };
-    let len = unsafe { PyByteArray_Size(obj.as_ptr()) };
-
-    if p.is_null() {
-        Err(pyerr("object is not bytearray"))
-    } else {
-        unsafe {
-            let slice = std::slice::from_raw_parts(p as *const u8, len as usize);
-            Ok(slice)
-        }
-    }
-}
-
-pub fn obj_none() -> PyResult<Object> {
-    objclone!(Py_None())
-}
-
-pub fn obj_true() -> PyResult<Object> {
-    objclone!(Py_True())
-}
-
-pub fn obj_false() -> PyResult<Object> {
-    objclone!(Py_False())
-}
-
-pub fn obj_bool(b: bool) -> PyResult<Object> {
-    match b {
-        true => obj_true(),
-        false => obj_false(),
-    }
-}
-
-pub fn obj_i64(value: i64) -> PyResult<Object> {
-    objnew!(PyLong_FromLongLong(value))
-}
-
-pub fn obj_u64(value: u64) -> PyResult<Object> {
-    objnew!(PyLong_FromUnsignedLongLong(value))
-}
-
-pub fn obj_f64(value: f64) -> PyResult<Object> {
-    objnew!(PyFloat_FromDouble(value))
-}
-
-pub fn obj_str(value: &str) -> PyResult<Object> {
-    objnew!(PyUnicode_FromStringAndSize(
-        value.as_ptr() as *const c_char,
-        value.len() as Py_ssize_t
-    ))
-}
-
-pub fn obj_bytes(value: &[u8]) -> PyResult<Object> {
-    objnew!(PyBytes_FromStringAndSize(
-        value.as_ptr() as *const c_char,
-        value.len() as Py_ssize_t
-    ))
-}
-
-pub fn obj_bytearray(value: &[u8]) -> PyResult<Object> {
-    objnew!(PyByteArray_FromStringAndSize(
-        value.as_ptr() as *const c_char,
-        value.len() as Py_ssize_t
-    ))
-}
-
 #[derive(Debug, Clone, Copy)]
 pub struct ObjectPtr(NonNull<PyObject>);
 
@@ -444,6 +312,48 @@ impl Object {
         let o = Self::new(p)?;
         o.incref();
         Ok(o)
+    }
+
+    pub fn new_none() -> Object {
+        Self::new_clone(unsafe { Py_None() }).unwrap()
+    }
+
+    pub fn new_bool(b: bool) -> Object {
+        let ptr = match b {
+            true => unsafe { Py_True() },
+            false => unsafe { Py_False() },
+        };
+        Self::new_clone(ptr).unwrap()
+    }
+
+    pub fn new_i64(v: i64) -> PyResult<Object> {
+        Self::new(unsafe { PyLong_FromLongLong(v) })
+    }
+
+    pub fn new_u64(v: u64) -> PyResult<Object> {
+        Self::new(unsafe { PyLong_FromUnsignedLongLong(v) })
+    }
+
+    pub fn new_f64(v: f64) -> PyResult<Object> {
+        Self::new(unsafe { PyFloat_FromDouble(v) })
+    }
+
+    pub fn new_str(v: &str) -> PyResult<Object> {
+        Self::new(unsafe {
+            PyUnicode_FromStringAndSize(v.as_ptr() as *const c_char, v.len() as Py_ssize_t)
+        })
+    }
+
+    pub fn new_bytes(v: &[u8]) -> PyResult<Object> {
+        Self::new(unsafe {
+            PyBytes_FromStringAndSize(v.as_ptr() as *const c_char, v.len() as Py_ssize_t)
+        })
+    }
+
+    pub fn new_bytearray(v: &[u8]) -> PyResult<Object> {
+        Self::new(unsafe {
+            PyByteArray_FromStringAndSize(v.as_ptr() as *const c_char, v.len() as Py_ssize_t)
+        })
     }
 
     pub fn into_ptr(self) -> *mut PyObject {

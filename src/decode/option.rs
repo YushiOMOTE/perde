@@ -22,7 +22,7 @@ impl<'a, 'de> Visitor<'de> for OptionVisitor<'a> {
     where
         E: de::Error,
     {
-        types::obj_none().map_err(de)
+        Ok(Object::new_none())
     }
 
     #[cfg_attr(feature = "perf", flame)]

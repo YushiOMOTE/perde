@@ -100,7 +100,7 @@ impl Class {
 
                             let mut dict = types::Dict::new().map_err(de)?;
                             for (k, v) in map {
-                                dict.set(types::obj_str(&k).map_err(de)?, v).map_err(de)?;
+                                dict.set(Object::new_str(&k).map_err(de)?, v).map_err(de)?;
                             }
                             return Ok(dict.into_inner());
                         }
