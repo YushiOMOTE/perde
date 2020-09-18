@@ -1,6 +1,6 @@
 use super::{Object, ObjectRef, Tuple};
-use crate::util::*;
-use pyo3::{conversion::AsPyPointer, ffi::*, PyErr, PyResult};
+use anyhow::{bail, Result};
+use pyo3::{conversion::AsPyPointer, ffi::*};
 use std::os::raw::c_char;
 
 #[derive(Debug, Clone)]
@@ -29,7 +29,7 @@ impl<'a> ListRef<'a> {
 pub struct List(Object);
 
 impl List {
-    pub fn new(len: usize) -> PyResult<Self> {
+    pub fn new(len: usize) -> Result<Self> {
         Ok(Self(objnew!(PyList_New(len as Py_ssize_t))?))
     }
 
@@ -66,15 +66,15 @@ impl<'a> SetRef<'a> {
 pub struct Set(Object);
 
 impl Set {
-    pub fn new() -> PyResult<Self> {
+    pub fn new() -> Result<Self> {
         Ok(Self(objnew!(PySet_New(std::ptr::null_mut()))?))
     }
 
-    pub fn set(&mut self, obj: Object) -> PyResult<()> {
+    pub fn set(&mut self, obj: Object) -> Result<()> {
         unsafe {
             // This API doesn't steal.
             if PySet_Add(self.0.as_ptr(), obj.as_ptr()) != 0 {
-                return Err(PyErr::fetch(py()));
+                bail!("cannot add an item to a set")
             }
         }
         Ok(())
@@ -134,15 +134,15 @@ impl<'a> Iterator for DictRefIter<'a> {
 pub struct Dict(Object);
 
 impl Dict {
-    pub fn new() -> PyResult<Self> {
+    pub fn new() -> Result<Self> {
         Ok(Self(objnew!(PyDict_New())?))
     }
 
-    pub fn set(&mut self, key: Object, value: Object) -> PyResult<()> {
+    pub fn set(&mut self, key: Object, value: Object) -> Result<()> {
         unsafe {
             // This API doesn't steal.
             if PyDict_SetItem(self.0.as_ptr(), key.as_ptr(), value.as_ptr()) != 0 {
-                return Err(PyErr::fetch(py()));
+                bail!("cannot set an item to dictionary")
             }
         }
         Ok(())
@@ -161,7 +161,7 @@ impl<'a> ClassRef<'a> {
         Self(obj)
     }
 
-    pub fn get(&self, name: &str) -> PyResult<Object> {
+    pub fn get(&self, name: &str) -> Result<Object> {
         Object::new(unsafe {
             PyObject_GetAttrString(self.0.as_ptr(), name.as_ptr() as *const c_char)
         })
@@ -176,7 +176,7 @@ impl Class {
         Self(obj)
     }
 
-    pub fn construct(&self, args: Tuple) -> PyResult<Object> {
+    pub fn construct(&self, args: Tuple) -> Result<Object> {
         self.0.call(args)
     }
 
@@ -201,7 +201,7 @@ impl Enum {
         Self(obj)
     }
 
-    pub fn value(&self, name: &str) -> PyResult<Object> {
+    pub fn value(&self, name: &str) -> Result<Object> {
         self.0.get_attr(name)
     }
 

@@ -1,5 +1,6 @@
 use super::{Object, ObjectRef};
-use pyo3::{conversion::AsPyPointer, ffi::*, PyResult};
+use anyhow::Result;
+use pyo3::{conversion::AsPyPointer, ffi::*};
 
 #[derive(Debug, Clone)]
 pub struct TupleRef<'a>(ObjectRef<'a>);
@@ -9,7 +10,7 @@ impl<'a> TupleRef<'a> {
         Self(args)
     }
 
-    pub fn from_args(args: *mut PyObject) -> PyResult<Self> {
+    pub fn from_args(args: *mut PyObject) -> Result<Self> {
         Ok(Self(unsafe { ObjectRef::new(args)? }))
     }
 
@@ -17,7 +18,7 @@ impl<'a> TupleRef<'a> {
         unsafe { PyTuple_Size(self.0.as_ptr()) as usize }
     }
 
-    pub fn get(&self, index: usize) -> PyResult<ObjectRef<'a>> {
+    pub fn get(&self, index: usize) -> Result<ObjectRef<'a>> {
         unsafe { ObjectRef::new(PyTuple_GET_ITEM(self.0.as_ptr(), index as Py_ssize_t)) }
     }
 
@@ -61,11 +62,11 @@ impl<'a> Iterator for TupleRefIter<'a> {
 pub struct Tuple(Object);
 
 impl Tuple {
-    pub fn new(len: usize) -> PyResult<Self> {
+    pub fn new(len: usize) -> Result<Self> {
         Ok(Self(objnew!(PyTuple_New(len as Py_ssize_t))?))
     }
 
-    pub fn one(a1: ObjectRef) -> PyResult<Self> {
+    pub fn one(a1: ObjectRef) -> Result<Self> {
         let mut t = Self::new(1)?;
         t.setref(0, a1);
         Ok(t)
@@ -84,7 +85,7 @@ impl Tuple {
         }
     }
 
-    pub fn getref<'a>(&'a self, index: usize) -> PyResult<ObjectRef<'a>> {
+    pub fn getref<'a>(&'a self, index: usize) -> Result<ObjectRef<'a>> {
         unsafe { ObjectRef::new(PyTuple_GetItem(self.0.as_ptr(), index as Py_ssize_t)) }
     }
 

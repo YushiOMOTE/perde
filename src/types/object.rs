@@ -1,9 +1,8 @@
 use super::Tuple;
-use crate::util::*;
+use anyhow::{anyhow, bail, Context, Result};
 use pyo3::{
     conversion::{AsPyPointer, IntoPyPointer},
     ffi::*,
-    PyErr, PyResult,
 };
 use std::{
     marker::PhantomData,
@@ -34,10 +33,10 @@ macro_rules! is_type {
 pub struct ObjectPtr(NonNull<PyObject>);
 
 impl ObjectPtr {
-    pub fn new(p: *mut PyObject) -> PyResult<Self> {
+    pub fn new(p: *mut PyObject) -> Result<Self> {
         match NonNull::new(p) {
             Some(p) => Ok(Self(p)),
-            None => Err(PyErr::fetch(py())),
+            None => Err(anyhow!("failed to create an object")),
         }
     }
 
@@ -57,12 +56,12 @@ impl ObjectPtr {
         }
     }
 
-    pub fn as_str(&self) -> PyResult<&str> {
+    pub fn as_str(&self) -> Result<&str> {
         let mut len: Py_ssize_t = 0;
         let mut p = unsafe { PyUnicode_AsUTF8AndSize(self.as_ptr(), &mut len) };
 
         if p.is_null() {
-            Err(pyerr("object is not a string"))
+            bail!("object is not a string")
         } else {
             unsafe {
                 let slice = std::slice::from_raw_parts(p as *const u8, len as usize);
@@ -79,14 +78,14 @@ impl ObjectPtr {
         unsafe { PyObject_HasAttrString(self.0.as_ptr(), s.as_ptr() as *mut c_char) != 0 }
     }
 
-    pub fn get_attr(&self, s: &str) -> PyResult<Object> {
+    pub fn get_attr(&self, s: &str) -> Result<Object> {
         objnew!(PyObject_GetAttrString(
             self.0.as_ptr(),
             s.as_ptr() as *mut c_char
         ))
     }
 
-    pub fn get_iter(&self) -> PyResult<ObjectIter> {
+    pub fn get_iter(&self) -> Result<ObjectIter> {
         Ok(ObjectIter(objnew!(PyObject_GetIter(self.as_ptr()))?))
     }
 
@@ -143,7 +142,7 @@ impl ObjectPtr {
 pub struct ObjectRef<'a>(ObjectPtr, PhantomData<&'a ()>);
 
 impl<'a> ObjectRef<'a> {
-    pub unsafe fn new(p: *mut PyObject) -> PyResult<Self> {
+    pub unsafe fn new(p: *mut PyObject) -> Result<Self> {
         Ok(Self(ObjectPtr::new(p)?, PhantomData))
     }
 
@@ -151,7 +150,7 @@ impl<'a> ObjectRef<'a> {
         Object::new_clone(self.as_ptr()).unwrap()
     }
 
-    pub fn store_item<T>(&self, s: &str, item: T) -> PyResult<&'a T> {
+    pub fn store_item<T>(&self, s: &str, item: T) -> Result<&'a T> {
         extern "C" fn destructor(p: *mut PyObject) {
             let p = unsafe { PyCapsule_GetPointer(p, std::ptr::null_mut()) };
             let _b = unsafe { Box::from_raw(p) };
@@ -171,67 +170,67 @@ impl<'a> ObjectRef<'a> {
         if unsafe {
             PyObject_SetAttrString(self.0.as_ptr(), s.as_ptr() as *mut c_char, obj.as_ptr()) != 0
         } {
-            Err(PyErr::fetch(py()))
+            bail!("cannot set attribute `{}`", s)
         } else {
             Ok(p)
         }
     }
 
-    pub fn load_item<T>(&self, s: &str) -> PyResult<&'a T> {
+    pub fn load_item<T>(&self, s: &str) -> Result<&'a T> {
         let obj = self.get_attr(s)?;
 
         let p = unsafe { PyCapsule_GetPointer(obj.as_ptr(), std::ptr::null_mut()) };
 
         if p.is_null() {
-            Err(PyErr::fetch(py()))
+            bail!("cannot get capsule pointer")
         } else {
             Ok(unsafe { &*(p as *mut T) })
         }
     }
 
-    pub fn as_bool(self) -> PyResult<bool> {
+    pub fn as_bool(self) -> Result<bool> {
         if self.is(unsafe { Py_True() }) {
             Ok(true)
         } else if self.is(unsafe { Py_False() }) {
             Ok(false)
         } else {
-            Err(pyerr("object is not boolean type"))
+            bail!("object is not boolean type")
         }
     }
 
-    pub fn as_i64(self) -> PyResult<i64> {
+    pub fn as_i64(self) -> Result<i64> {
         let p = unsafe { PyLong_AsLongLong(self.as_ptr()) };
         if unsafe { !PyErr_Occurred().is_null() } {
-            Err(pyerr("object is not integer type"))
+            bail!("object is not integer type")
         } else {
             Ok(p)
         }
     }
 
-    pub fn as_u64(self) -> PyResult<u64> {
+    pub fn as_u64(self) -> Result<u64> {
         let p = unsafe { PyLong_AsLongLong(self.as_ptr()) };
         if unsafe { !PyErr_Occurred().is_null() } {
-            Err(pyerr("object is not integer type"))
+            bail!("object is not integer type")
         } else {
             Ok(p as u64)
         }
     }
 
-    pub fn as_f64(self) -> PyResult<f64> {
+    pub fn as_f64(self) -> Result<f64> {
         let p = unsafe { PyFloat_AsDouble(self.as_ptr()) };
         if unsafe { !PyErr_Occurred().is_null() } {
-            Err(pyerr("object is not double float"))
+            bail!("object is not double float")
         } else {
             Ok(p)
         }
     }
 
-    pub fn as_str(self) -> PyResult<&'a str> {
+    pub fn as_str(self) -> Result<&'a str> {
         let mut len: Py_ssize_t = 0;
         let mut p = unsafe { PyUnicode_AsUTF8AndSize(self.as_ptr(), &mut len) };
 
         if p.is_null() {
-            Err(pyerr("object is not a string"))
+            bail!("object is not a string")
         } else {
             unsafe {
                 let slice = std::slice::from_raw_parts(p as *const u8, len as usize);
@@ -240,13 +239,13 @@ impl<'a> ObjectRef<'a> {
         }
     }
 
-    pub fn as_bytes(self) -> PyResult<&'a [u8]> {
+    pub fn as_bytes(self) -> Result<&'a [u8]> {
         let mut len: Py_ssize_t = 0;
         let mut buf: *mut c_char = std::ptr::null_mut();
         let p = unsafe { PyBytes_AsStringAndSize(self.as_ptr(), &mut buf, &mut len) };
 
         if p == -1 {
-            Err(pyerr("object is not bytes"))
+            bail!("object is not bytes")
         } else {
             unsafe {
                 let slice = std::slice::from_raw_parts(buf as *const u8, len as usize);
@@ -255,12 +254,12 @@ impl<'a> ObjectRef<'a> {
         }
     }
 
-    pub fn as_bytearray(self) -> PyResult<&'a [u8]> {
+    pub fn as_bytearray(self) -> Result<&'a [u8]> {
         let p = unsafe { PyByteArray_AsString(self.as_ptr()) };
         let len = unsafe { PyByteArray_Size(self.as_ptr()) };
 
         if p.is_null() {
-            Err(pyerr("object is not bytearray"))
+            bail!("object is not bytearray")
         } else {
             unsafe {
                 let slice = std::slice::from_raw_parts(p as *const u8, len as usize);
@@ -304,11 +303,11 @@ impl Iterator for ObjectIter {
 pub struct Object(ObjectPtr);
 
 impl Object {
-    pub fn new(p: *mut PyObject) -> PyResult<Self> {
+    pub fn new(p: *mut PyObject) -> Result<Self> {
         Ok(Self(ObjectPtr::new(p)?))
     }
 
-    pub fn new_clone(p: *mut PyObject) -> PyResult<Self> {
+    pub fn new_clone(p: *mut PyObject) -> Result<Self> {
         let o = Self::new(p)?;
         o.incref();
         Ok(o)
@@ -326,31 +325,31 @@ impl Object {
         Self::new_clone(ptr).unwrap()
     }
 
-    pub fn new_i64(v: i64) -> PyResult<Object> {
+    pub fn new_i64(v: i64) -> Result<Object> {
         Self::new(unsafe { PyLong_FromLongLong(v) })
     }
 
-    pub fn new_u64(v: u64) -> PyResult<Object> {
+    pub fn new_u64(v: u64) -> Result<Object> {
         Self::new(unsafe { PyLong_FromUnsignedLongLong(v) })
     }
 
-    pub fn new_f64(v: f64) -> PyResult<Object> {
+    pub fn new_f64(v: f64) -> Result<Object> {
         Self::new(unsafe { PyFloat_FromDouble(v) })
     }
 
-    pub fn new_str(v: &str) -> PyResult<Object> {
+    pub fn new_str(v: &str) -> Result<Object> {
         Self::new(unsafe {
             PyUnicode_FromStringAndSize(v.as_ptr() as *const c_char, v.len() as Py_ssize_t)
         })
     }
 
-    pub fn new_bytes(v: &[u8]) -> PyResult<Object> {
+    pub fn new_bytes(v: &[u8]) -> Result<Object> {
         Self::new(unsafe {
             PyBytes_FromStringAndSize(v.as_ptr() as *const c_char, v.len() as Py_ssize_t)
         })
     }
 
-    pub fn new_bytearray(v: &[u8]) -> PyResult<Object> {
+    pub fn new_bytearray(v: &[u8]) -> Result<Object> {
         Self::new(unsafe {
             PyByteArray_FromStringAndSize(v.as_ptr() as *const c_char, v.len() as Py_ssize_t)
         })
@@ -362,7 +361,7 @@ impl Object {
         ptr
     }
 
-    pub fn call(&self, tuple: Tuple) -> PyResult<Object> {
+    pub fn call(&self, tuple: Tuple) -> Result<Object> {
         objnew!(PyObject_CallObject(self.0.as_ptr(), tuple.as_ptr()))
     }
 
@@ -441,8 +440,8 @@ pub struct StaticObjects {
 
 unsafe impl Sync for StaticObject {}
 
-pub fn static_objects() -> PyResult<&'static StaticObjects> {
-    STATIC_OBJECTS.as_ref().map_err(|e| pyerr(e))
+pub fn static_objects() -> std::result::Result<&'static StaticObjects, &'static anyhow::Error> {
+    STATIC_OBJECTS.as_ref()
 }
 
 macro_rules! getattr {
@@ -450,20 +449,22 @@ macro_rules! getattr {
         $module
             .getattr($name)
             .map(|p| pyo3::PyObject::from(p).into())
-            .map_err(|_| concat!("couldn't find function `", $name, "`"))
+            .map_err(|_| anyhow!(concat!("couldn't find function `", $name, "`")))
     };
 }
 
 lazy_static::lazy_static! {
-    static ref STATIC_OBJECTS: Result<StaticObjects, &'static str> = {
-        use pyo3::types::PyModule;
+    static ref STATIC_OBJECTS: Result<StaticObjects> = {
+        use pyo3::{Python, types::PyModule};
 
-        let dataclasses = PyModule::import(py(), "dataclasses")
-            .map_err(|_| "couldn't import `dataclasses`")?;
-        let typing = PyModule::import(py(), "typing")
-            .map_err(|_| "couldn't import `typing`")?;
-        let enum_ = PyModule::import(py(), "enum")
-            .map_err(|_| "couldn't import `enum`")?;
+        let py = unsafe { Python::assume_gil_acquired() };
+
+        let dataclasses = PyModule::import(py, "dataclasses")
+            .map_err(|_| anyhow!("couldn't import `dataclasses`"))?;
+        let typing = PyModule::import(py, "typing")
+            .map_err(|_| anyhow!("couldn't import `typing`"))?;
+        let enum_ = PyModule::import(py, "enum")
+            .map_err(|_| anyhow!("couldn't import `enum`"))?;
 
         let fields = getattr!(dataclasses, "fields")?;
         let generic_alias = getattr!(typing, "_GenericAlias")?;
