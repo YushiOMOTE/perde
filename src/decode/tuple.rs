@@ -1,7 +1,7 @@
 use crate::{
+    error::Convert,
     schema::*,
     types::{self, Object},
-    util::*,
 };
 use pyo3::{prelude::*, types::PyTuple};
 use serde::de::{DeserializeSeed, Deserializer, IgnoredAny, SeqAccess, Visitor};
@@ -41,7 +41,7 @@ impl<'a, 'de> Visitor<'de> for TupleVisitor<'a> {
             }
         }
 
-        let mut tuple = types::Tuple::new(items.len()).map_err(de)?;
+        let mut tuple = types::Tuple::new(items.len()).de()?;
         for (i, a) in items.into_iter().enumerate() {
             tuple.set(i, a);
         }

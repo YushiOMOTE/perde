@@ -1,11 +1,14 @@
 use crate::{
+    error::{Error, Result},
     inspect::resolve_schema,
-    types::{self, Object, ObjectRef},
-    util::*,
+    types::{self, DictRef, Object, ObjectRef},
 };
+use anyhow::{bail, Context};
 use derive_new::new;
 use pyo3::conversion::AsPyPointer;
-use pyo3::{prelude::*, types::*};
+use pyo3::ffi::PyObject;
+// use pyo3::{prelude::*, types::*};
+use indexmap::IndexMap;
 use std::str::FromStr;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -21,10 +24,10 @@ pub enum StrCase {
 }
 
 impl FromStr for StrCase {
-    type Err = PyErr;
+    type Err = Error;
 
     #[cfg_attr(feature = "perf", flame)]
-    fn from_str(s: &str) -> PyResult<Self> {
+    fn from_str(s: &str) -> Result<Self> {
         match s {
             "lowercase" => Ok(StrCase::Lower),
             "UPPERCASE" => Ok(StrCase::Upper),
@@ -34,7 +37,7 @@ impl FromStr for StrCase {
             "SCREAMING_SNAKE_CASE" => Ok(StrCase::ScreamingSnake),
             "kebab-case" => Ok(StrCase::Kebab),
             "SCREAMING-KEBAB-CASE" => Ok(StrCase::ScreamingKebab),
-            c => Err(pyerr(format!("Unsupported string case: {}", c))),
+            c => erret!("Unsupported string case: {}", c),
         }
     }
 }
@@ -43,8 +46,8 @@ impl FromStr for StrCase {
 pub struct FieldAttr {
     pub flatten: bool,
     pub rename: Option<String>,
-    pub default: Option<Py<PyAny>>,
-    pub default_factory: Option<Py<PyAny>>,
+    pub default: Option<Object>,
+    pub default_factory: Option<Object>,
     pub skip: bool,
     pub skip_deserializing: bool,
 }
@@ -52,11 +55,11 @@ pub struct FieldAttr {
 macro_rules! extract_parse {
     ($dict:expr, $field:expr) => {
         $dict
-            .get_item($field)
+            .get($field)
             .map(|v| {
-                let s: &str = v.extract()?;
+                let s = v.as_str()?;
                 s.parse()
-                    .map_err(|_| pyerr(format!("invalid string `{}` in attribute `{}`", s, $field)))
+                    .with_context(|| format!("invalid string `{}` in attribute `{}`", s, $field))
             })
             .transpose()?
     };
@@ -65,29 +68,35 @@ macro_rules! extract_parse {
 macro_rules! extract_bool {
     ($dict:expr, $field:expr) => {
         $dict
-            .get_item($field)
-            .map(|v| v.extract())
+            .get($field)
+            .map(|v| v.as_bool())
             .transpose()
-            .map_err(|_| pyerr(format!("expected `bool` in attribute `{}`", $field)))?
+            .with_context(|| format!("expected `bool` in attribute `{}`", $field))?
             .unwrap_or(false)
+    };
+}
+
+macro_rules! extract_str {
+    ($dict:expr, $field:expr) => {
+        $dict
+            .get($field)
+            .map(|v| v.as_str().map(|v| v.to_string()))
+            .transpose()
+            .with_context(|| format!("expected `str` in attribute `{}`", $field))?
     };
 }
 
 macro_rules! extract {
     ($dict:expr, $field:expr) => {
-        $dict
-            .get_item($field)
-            .map(|v| v.extract())
-            .transpose()
-            .map_err(|_| pyerr(format!("expected `str` in attribute `{}`", $field)))?
+        $dict.get($field)
     };
 }
 
 impl FieldAttr {
-    pub fn parse(dict: &PyDict) -> PyResult<Self> {
+    pub fn parse(dict: &DictRef) -> Result<Self> {
         Ok(Self::new(
             extract_bool!(dict, "flatten"),
-            extract!(dict, "rename"),
+            extract_str!(dict, "rename"),
             extract!(dict, "default"),
             extract!(dict, "default_factory"),
             extract_bool!(dict, "skip"),
@@ -110,10 +119,10 @@ pub struct ClassAttr {
 }
 
 impl ClassAttr {
-    pub fn parse(dict: &PyDict) -> PyResult<Self> {
+    pub fn parse(dict: &DictRef) -> Result<Self> {
         Ok(Self::new(
             extract_parse!(dict, "rename_all"),
-            extract!(dict, "rename"),
+            extract_str!(dict, "rename"),
             extract_bool!(dict, "deny_unknown_fields"),
             extract_bool!(dict, "default"),
         ))
@@ -127,16 +136,16 @@ pub struct EnumAttr {
 }
 
 impl EnumAttr {
-    pub fn parse(dict: &PyDict) -> PyResult<Self> {
+    pub fn parse(dict: &DictRef) -> Result<Self> {
         Ok(Self::new(
             extract_parse!(dict, "rename_all"),
-            extract!(dict, "rename"),
+            extract_str!(dict, "rename"),
         ))
     }
 }
 
 impl Schema {
-    pub fn resolve<'a>(ty: ObjectRef<'a>, kw: *mut PyObject) -> PyResult<&'a Self> {
+    pub fn resolve<'a>(ty: &'a ObjectRef, kw: *mut PyObject) -> Result<&'a Self> {
         resolve_schema(ty, kw)
     }
 }
@@ -315,33 +324,6 @@ impl Schema {
             Self::Union(u) => u.name(),
             Self::Any(_) => "any",
         }
-    }
-
-    pub fn type_of(&self, value: &PyAny) -> PyResult<bool> {
-        let ty = value.get_type();
-
-        let ok = match self {
-            Schema::Primitive(Primitive::Bool) if is_type!(ty, PyBool) => true,
-            Schema::Primitive(Primitive::Float) if is_type!(ty, PyFloat) => true,
-            Schema::Primitive(Primitive::Int) if is_type!(ty, PyLong) => true,
-            Schema::Primitive(Primitive::Str) if is_type!(ty, PyUnicode) => true,
-            Schema::Primitive(Primitive::ByteArray) if is_type!(ty, PyByteArray) => true,
-            Schema::Primitive(Primitive::Bytes) if is_type!(ty, PyBytes) => true,
-            Schema::Dict(_) if is_type!(ty, PyDict) => true,
-            Schema::Tuple(_) if is_type!(ty, PyTuple) => true,
-            Schema::List(_) if is_type!(ty, PyList) => true,
-            Schema::Set(_) if is_type!(ty, PySet) => true,
-            Schema::Class(c) if c.ty.is_typeof(ty.as_ptr()) => true,
-            Schema::Enum(e) if unimplemented!() => true,
-            Schema::Optional(o) if o.value.type_of(ty)? => true,
-            Schema::Union(u) => {
-                let v: PyResult<Vec<_>> = u.variants.iter().map(|s| s.type_of(ty)).collect();
-                v?.iter().any(|v| *v)
-            }
-            Schema::Any(_) => true,
-            _ => false,
-        };
-        Ok(ok)
     }
 }
 

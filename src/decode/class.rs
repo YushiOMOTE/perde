@@ -1,7 +1,7 @@
 use crate::{
+    error::{Convert, Result},
     schema::*,
     types::{self, Object},
-    util::*,
 };
 use pyo3::conversion::AsPyPointer;
 use pyo3::{prelude::*, types::PyTuple};
@@ -19,16 +19,16 @@ impl<'a, 'de> Visitor<'de> for ClassVisitor<'a> {
     }
 
     #[cfg_attr(feature = "perf", flame)]
-    fn visit_map<M>(self, mut access: M) -> Result<Self::Value, M::Error>
+    fn visit_map<M>(self, mut access: M) -> std::result::Result<Self::Value, M::Error>
     where
         M: MapAccess<'de>,
     {
-        let mut tuple = types::Tuple::new(self.0.fields.len()).map_err(de)?;
+        let mut tuple = types::Tuple::new(self.0.fields.len()).de()?;
 
         while let Some(key) = access.next_key()? {
             let key: &str = key;
 
-            if let Some(s) = self.0.field(key)? {
+            if let Some(s) = self.0.field(key).de()? {
                 let value: Object = access.next_value_seed(&s.schema)?;
 
                 tuple.set(s.pos, value);
@@ -37,7 +37,7 @@ impl<'a, 'de> Visitor<'de> for ClassVisitor<'a> {
             }
         }
 
-        self.0.ty.construct(tuple).map_err(de)
+        self.0.ty.construct(tuple).de()
     }
 }
 
@@ -45,7 +45,7 @@ impl<'a, 'de> DeserializeSeed<'de> for &'a Class {
     type Value = Object;
 
     #[cfg_attr(feature = "perf", flame)]
-    fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
+    fn deserialize<D>(self, deserializer: D) -> std::result::Result<Self::Value, D::Error>
     where
         D: Deserializer<'de>,
     {
@@ -55,10 +55,7 @@ impl<'a, 'de> DeserializeSeed<'de> for &'a Class {
 
 impl Class {
     #[cfg_attr(feature = "perf", flame)]
-    pub fn field<E>(&self, name: &str) -> Result<Option<&FieldSchema>, E>
-    where
-        E: de::Error,
-    {
+    pub fn field(&self, name: &str) -> Result<Option<&FieldSchema>> {
         let map = if self.flatten_fields.is_empty() {
             &self.fields
         } else {
@@ -75,20 +72,16 @@ impl Class {
             })
             .unwrap_or_else(|| {
                 if self.attr.deny_unknown_fields {
-                    Err(pyerr(format!("the field `{}` is missing", name,)))
+                    Err(err!("the field `{}` is missing", name,))
                 } else {
                     Ok(None)
                 }
             })
-            .map_err(de)
     }
 
     #[cfg_attr(feature = "perf", flame)]
-    pub fn call<'a, E>(&self, map: &mut HashMap<&'a str, Object>) -> Result<Object, E>
-    where
-        E: de::Error,
-    {
-        let args: Result<Vec<_>, _> = self
+    pub fn call(&self, map: &mut HashMap<&str, Object>) -> Result<Object> {
+        let args: Result<Vec<_>> = self
             .fields
             .iter()
             .map(|(k, s)| {
@@ -98,17 +91,13 @@ impl Class {
                         Schema::Dict(_) => {
                             let map = std::mem::replace(map, HashMap::new());
 
-                            let mut dict = types::Dict::new().map_err(de)?;
+                            let mut dict = types::Dict::new()?;
                             for (k, v) in map {
-                                dict.set(Object::new_str(&k).map_err(de)?, v).map_err(de)?;
+                                dict.set(Object::new_str(&k)?, v)?;
                             }
                             return Ok(dict.into_inner());
                         }
-                        _ => {
-                            return Err(de::Error::custom(
-                                "found `flatten` attribute an non-map type",
-                            ))
-                        }
+                        _ => return Err(err!("found `flatten` attribute an non-map type",)),
                     }
                 }
 
@@ -125,11 +114,11 @@ impl Class {
                                 unimplemented!()
                             // return Ok(d.as_ref(py()).as_ptr());
                             } else if let Some(d) = s.attr.default_factory.as_ref() {
-                                // return d.as_ref(py()).call0().map(|v| v.into()).map_err(de);
+                                // return d.as_ref(py()).call0().map(|v| v.into());
                                 unimplemented!()
                             }
                         }
-                        Err(de::Error::custom(format!("missing field \"{}\"", k)))
+                        Err(err!("missing field \"{}\"", k))
                     }
                 }
             })
@@ -139,14 +128,11 @@ impl Class {
     }
 
     #[cfg_attr(feature = "perf", flame)]
-    pub fn construct<E>(&self, args: Vec<Object>) -> Result<Object, E>
-    where
-        E: de::Error,
-    {
-        let mut tuple = types::Tuple::new(args.len()).map_err(de)?;
+    pub fn construct(&self, args: Vec<Object>) -> Result<Object> {
+        let mut tuple = types::Tuple::new(args.len())?;
         for (i, arg) in args.into_iter().enumerate() {
             tuple.set(i, arg);
         }
-        self.ty.construct(tuple).map_err(de)
+        self.ty.construct(tuple)
     }
 }

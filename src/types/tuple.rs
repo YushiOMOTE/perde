@@ -1,5 +1,5 @@
 use super::{Object, ObjectRef};
-use anyhow::Result;
+use crate::error::Result;
 use pyo3::{conversion::AsPyPointer, ffi::*};
 
 #[derive(Debug, Clone)]
@@ -66,7 +66,7 @@ impl Tuple {
         Ok(Self(objnew!(PyTuple_New(len as Py_ssize_t))?))
     }
 
-    pub fn one(a1: ObjectRef) -> Result<Self> {
+    pub fn one(a1: &ObjectRef) -> Result<Self> {
         let mut t = Self::new(1)?;
         t.setref(0, a1);
         Ok(t)
@@ -79,7 +79,7 @@ impl Tuple {
         }
     }
 
-    pub fn setref(&mut self, index: usize, objref: ObjectRef) {
+    pub fn setref(&mut self, index: usize, objref: &ObjectRef) {
         unsafe {
             PyTuple_SetItem(self.0.as_ptr(), index as Py_ssize_t, objref.as_ptr());
         }

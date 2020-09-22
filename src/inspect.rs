@@ -1,9 +1,11 @@
 use crate::{
+    error::Result,
     schema::*,
     types::{self, static_objects, Object, ObjectRef, StaticObject, TupleRef},
-    util::*,
 };
-use pyo3::{prelude::*, types::PyModule};
+use anyhow::{bail, Context};
+use indexmap::IndexMap;
+use pyo3::ffi::PyObject;
 use std::os::raw::c_char;
 
 #[cfg_attr(feature = "perf", flame)]
@@ -25,8 +27,8 @@ fn convert_stringcase(s: &str, case: Option<StrCase>) -> String {
 
 const SCHEMA_CACHE: &'static str = "__perde_schema__\0";
 
-pub fn resolve_schema<'a>(p: ObjectRef<'a>, attr: *mut PyObject) -> PyResult<&'a Schema> {
-    match p.load_item(SCHEMA_CACHE) {
+pub fn resolve_schema<'a>(p: &'a ObjectRef, attr: *mut PyObject) -> Result<&'a Schema> {
+    match p.get_capsule(SCHEMA_CACHE) {
         Ok(p) => return Ok(p),
         _ => {}
     }
@@ -50,17 +52,17 @@ pub fn resolve_schema<'a>(p: ObjectRef<'a>, attr: *mut PyObject) -> PyResult<&'a
     } else if p.is_set() {
         Ok(&static_schema().set)
     } else if let Some(s) = maybe_dataclass(p, attr)? {
-        p.store_item(SCHEMA_CACHE, s)
+        p.set_capsule(SCHEMA_CACHE, s)
     } else if let Some(s) = maybe_generic(p)? {
-        p.store_item(SCHEMA_CACHE, s)
+        p.set_capsule(SCHEMA_CACHE, s)
     } else if let Some(s) = maybe_enum(p)? {
-        p.store_item(SCHEMA_CACHE, s)
+        p.set_capsule(SCHEMA_CACHE, s)
     } else {
-        Err(pyerr("unsupported type"))
+        erret!("unsupported type")
     }
 }
 
-pub fn to_schema(p: ObjectRef) -> PyResult<Schema> {
+pub fn to_schema(p: &ObjectRef) -> Result<Schema> {
     if p.is_bool() {
         Ok(Schema::Primitive(Primitive::Bool))
     } else if p.is_str() {
@@ -80,11 +82,11 @@ pub fn to_schema(p: ObjectRef) -> PyResult<Schema> {
     } else if let Some(s) = maybe_enum(p)? {
         Ok(s)
     } else {
-        Err(pyerr("unsupported type"))
+        erret!("unsupported type")
     }
 }
 
-fn maybe_dataclass(p: ObjectRef, attr: *mut PyObject) -> PyResult<Option<Schema>> {
+fn maybe_dataclass(p: &ObjectRef, attr: *mut PyObject) -> Result<Option<Schema>> {
     if !p.has_attr("__dataclass_fields__\0") {
         return Ok(None);
     }
@@ -93,7 +95,7 @@ fn maybe_dataclass(p: ObjectRef, attr: *mut PyObject) -> PyResult<Option<Schema>
     let fields = static_objects()?.fields.call(arg)?;
     let fields = types::Tuple::from(fields);
 
-    let mut members = new_indexmap();
+    let mut members = IndexMap::new();
 
     for i in 0..fields.len() {
         let field = fields.getref(i)?;
@@ -118,18 +120,18 @@ fn maybe_dataclass(p: ObjectRef, attr: *mut PyObject) -> PyResult<Option<Schema>
         name.into(),
         ClassAttr::default(),
         members,
-        new_indexmap(),
+        IndexMap::new(),
     ))))
 }
 
-fn maybe_enum(p: ObjectRef) -> PyResult<Option<Schema>> {
+fn maybe_enum(p: &ObjectRef) -> Result<Option<Schema>> {
     if !p.is_instance(static_objects()?.enum_meta.as_ptr()) {
         return Ok(None);
     }
 
     let iter = p.get_iter()?;
 
-    let variants: PyResult<_> = iter
+    let variants: Result<_> = iter
         .map(|item| {
             let name = item.get_attr("name\0")?;
             let value = item.get_attr("value\0")?;
@@ -149,7 +151,7 @@ fn maybe_enum(p: ObjectRef) -> PyResult<Option<Schema>> {
     ))))
 }
 
-fn maybe_option(args: TupleRef) -> PyResult<Schema> {
+fn maybe_option(args: TupleRef) -> Result<Schema> {
     let t1 = args.get(0)?;
     let t2 = args.get(1)?;
     let s = if t1.is_none_type() {
@@ -164,7 +166,7 @@ fn maybe_option(args: TupleRef) -> PyResult<Schema> {
     Ok(s)
 }
 
-fn to_union(p: ObjectRef) -> PyResult<Schema> {
+fn to_union(p: &ObjectRef) -> Result<Schema> {
     let args = get_args(p)?;
     let args = args.as_ref();
     let iter = args.iter();
@@ -173,20 +175,20 @@ fn to_union(p: ObjectRef) -> PyResult<Schema> {
         return maybe_option(args);
     }
 
-    let variants: PyResult<Vec<_>> = iter.map(|arg| to_schema(arg)).collect();
+    let variants: Result<Vec<_>> = iter.map(|arg| to_schema(arg)).collect();
     Ok(Schema::Union(Union::new(variants?)))
 }
 
-fn to_tuple(p: ObjectRef) -> PyResult<Schema> {
+fn to_tuple(p: &ObjectRef) -> Result<Schema> {
     let args = get_args(p)?;
     let args = args.as_ref();
     let iter = args.iter();
 
-    let args: PyResult<_> = iter.map(|arg| to_schema(arg)).collect();
+    let args: Result<_> = iter.map(|arg| to_schema(arg)).collect();
     Ok(Schema::Tuple(Tuple::new(args?)))
 }
 
-fn to_dict(p: ObjectRef) -> PyResult<Schema> {
+fn to_dict(p: &ObjectRef) -> Result<Schema> {
     let args = get_args(p)?;
     let args = args.as_ref();
     let key = to_schema(args.get(0)?)?;
@@ -194,25 +196,25 @@ fn to_dict(p: ObjectRef) -> PyResult<Schema> {
     Ok(Schema::Dict(Dict::new(Box::new(key), Box::new(value))))
 }
 
-fn to_list(p: ObjectRef) -> PyResult<Schema> {
+fn to_list(p: &ObjectRef) -> Result<Schema> {
     let args = get_args(p)?;
     let args = args.as_ref();
     let value = to_schema(args.get(0)?)?;
     Ok(Schema::List(List::new(Box::new(value))))
 }
 
-fn to_set(p: ObjectRef) -> PyResult<Schema> {
+fn to_set(p: &ObjectRef) -> Result<Schema> {
     let args = get_args(p)?;
     let args = args.as_ref();
     let value = to_schema(args.get(1)?)?;
     Ok(Schema::Set(Set::new(Box::new(value))))
 }
 
-fn get_args(p: ObjectRef) -> PyResult<types::Tuple> {
+fn get_args(p: &ObjectRef) -> Result<types::Tuple> {
     Ok(types::Tuple::from(p.get_attr("__args__\0")?))
 }
 
-fn maybe_generic(p: ObjectRef) -> PyResult<Option<Schema>> {
+fn maybe_generic(p: &ObjectRef) -> Result<Option<Schema>> {
     if !p.is_instance(static_objects()?.generic_alias.as_ptr()) {
         return Ok(None);
     }

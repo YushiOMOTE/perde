@@ -1,7 +1,7 @@
 use crate::{
+    error::Convert,
     schema::*,
     types::{self, Object},
-    util::*,
 };
 use pyo3::prelude::*;
 use serde::de::{DeserializeSeed, Deserializer, SeqAccess, Visitor};
@@ -29,7 +29,7 @@ impl<'a, 'de> Visitor<'de> for ListVisitor<'a> {
             items.push(value);
         }
 
-        let mut list = types::List::new(items.len()).map_err(de)?;
+        let mut list = types::List::new(items.len()).de()?;
 
         for (i, a) in items.into_iter().enumerate() {
             list.set(i, a);

@@ -1,7 +1,7 @@
 use crate::{
+    error::Convert,
     schema::*,
     types::{self, Object},
-    util::*,
 };
 use pyo3::{prelude::*, types::PyDict};
 use serde::de::{DeserializeSeed, Deserializer, MapAccess, Visitor};
@@ -22,7 +22,7 @@ impl<'a, 'de> Visitor<'de> for DictVisitor<'a> {
     where
         M: MapAccess<'de>,
     {
-        let mut dict = types::Dict::new().map_err(de)?;
+        let mut dict = types::Dict::new().de()?;
 
         while let Some(key) = access.next_key_seed(&*self.0.key)? {
             let key: Object = key;

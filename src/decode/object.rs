@@ -1,7 +1,7 @@
 use crate::{
+    error::Convert,
     schema::Any,
     types::{self, Object},
-    util::*,
 };
 use serde::{
     de::{DeserializeSeed, Deserializer, EnumAccess, Error, MapAccess, SeqAccess, Visitor},
@@ -56,7 +56,7 @@ impl<'de> Visitor<'de> for AnyVisitor {
     where
         E: Error,
     {
-        Object::new_i64(v).map_err(de)
+        Object::new_i64(v).de()
     }
 
     #[cfg_attr(feature = "perf", flame)]
@@ -88,7 +88,7 @@ impl<'de> Visitor<'de> for AnyVisitor {
     where
         E: Error,
     {
-        Object::new_u64(v).map_err(de)
+        Object::new_u64(v).de()
     }
 
     #[cfg_attr(feature = "perf", flame)]
@@ -104,7 +104,7 @@ impl<'de> Visitor<'de> for AnyVisitor {
     where
         E: Error,
     {
-        Object::new_f64(v).map_err(de)
+        Object::new_f64(v).de()
     }
 
     #[cfg_attr(feature = "perf", flame)]
@@ -128,7 +128,7 @@ impl<'de> Visitor<'de> for AnyVisitor {
     where
         E: Error,
     {
-        Object::new_str(v).map_err(de)
+        Object::new_str(v).de()
     }
 
     #[cfg_attr(feature = "perf", flame)]
@@ -152,7 +152,7 @@ impl<'de> Visitor<'de> for AnyVisitor {
     where
         E: Error,
     {
-        Object::new_bytes(v).map_err(de)
+        Object::new_bytes(v).de()
     }
 
     #[cfg_attr(feature = "perf", flame)]
@@ -207,7 +207,7 @@ impl<'de> Visitor<'de> for AnyVisitor {
             args.push(arg);
         }
 
-        let mut list = types::List::new(args.len()).map_err(de)?;
+        let mut list = types::List::new(args.len()).de()?;
         for (i, arg) in args.into_iter().enumerate() {
             list.set(i, arg);
         }
@@ -220,12 +220,12 @@ impl<'de> Visitor<'de> for AnyVisitor {
     where
         A: MapAccess<'de>,
     {
-        let mut dict = types::Dict::new().map_err(de)?;
+        let mut dict = types::Dict::new().de()?;
 
         while let Some(k) = map.next_key()? {
             let k: &str = k;
             let v = map.next_value()?;
-            dict.set(Object::new_str(&k).map_err(de)?, v).map_err(de)?;
+            dict.set(Object::new_str(&k).de()?, v).de()?;
         }
 
         Ok(dict.into_inner())

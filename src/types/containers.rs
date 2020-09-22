@@ -1,13 +1,14 @@
 use super::{Object, ObjectRef, Tuple};
-use anyhow::{bail, Result};
+use crate::error::Result;
+use anyhow::bail;
 use pyo3::{conversion::AsPyPointer, ffi::*};
 use std::os::raw::c_char;
 
 #[derive(Debug, Clone)]
-pub struct ListRef<'a>(ObjectRef<'a>);
+pub struct ListRef<'a>(&'a ObjectRef);
 
 impl<'a> ListRef<'a> {
-    pub fn new(obj: ObjectRef<'a>) -> Self {
+    pub fn new(obj: &'a ObjectRef) -> Self {
         Self(obj)
     }
 
@@ -15,7 +16,7 @@ impl<'a> ListRef<'a> {
         unsafe { PyList_Size(self.0.as_ptr()) as usize }
     }
 
-    pub fn get(&self, index: usize) -> Option<ObjectRef> {
+    pub fn get(&self, index: usize) -> Option<&'a ObjectRef> {
         let p = unsafe { PyList_GetItem(self.0.as_ptr(), index as Py_ssize_t) };
         if p.is_null() {
             None
@@ -46,10 +47,10 @@ impl List {
 }
 
 #[derive(Debug, Clone)]
-pub struct SetRef<'a>(ObjectRef<'a>);
+pub struct SetRef<'a>(&'a ObjectRef);
 
 impl<'a> SetRef<'a> {
-    pub fn new(obj: ObjectRef<'a>) -> Self {
+    pub fn new(obj: &'a ObjectRef) -> Self {
         Self(obj)
     }
 
@@ -57,7 +58,7 @@ impl<'a> SetRef<'a> {
         unsafe { PySet_Size(self.0.as_ptr()) as usize }
     }
 
-    pub fn get(&self, index: usize) -> Option<ObjectRef> {
+    pub fn get(&self, index: usize) -> Option<&ObjectRef> {
         unimplemented!()
     }
 }
@@ -74,7 +75,7 @@ impl Set {
         unsafe {
             // This API doesn't steal.
             if PySet_Add(self.0.as_ptr(), obj.as_ptr()) != 0 {
-                bail!("cannot add an item to a set")
+                erret!("cannot add an item to a set")
             }
         }
         Ok(())
@@ -86,15 +87,24 @@ impl Set {
 }
 
 #[derive(Debug, Clone)]
-pub struct DictRef<'a>(ObjectRef<'a>);
+pub struct DictRef<'a>(&'a ObjectRef);
 
 impl<'a> DictRef<'a> {
-    pub fn new(obj: ObjectRef<'a>) -> Self {
+    pub fn new(obj: &'a ObjectRef) -> Self {
         Self(obj)
     }
 
     pub fn len(&self) -> usize {
         unsafe { PyDict_Size(self.0.as_ptr()) as usize }
+    }
+
+    pub fn get(&self, key: &str) -> Option<Object> {
+        let key = Object::new_str(key).ok()?;
+        if unsafe { PyDict_Contains(self.0.as_ptr(), key.as_ptr()) } != -1 {
+            Object::new(unsafe { PyDict_GetItem(self.0.as_ptr(), key.as_ptr()) }).ok()
+        } else {
+            None
+        }
     }
 
     pub fn iter(&self) -> DictRefIter<'a> {
@@ -107,12 +117,12 @@ impl<'a> DictRef<'a> {
 
 #[derive(Debug, Clone)]
 pub struct DictRefIter<'a> {
-    obj: ObjectRef<'a>,
+    obj: &'a ObjectRef,
     index: Py_ssize_t,
 }
 
 impl<'a> Iterator for DictRefIter<'a> {
-    type Item = (ObjectRef<'a>, ObjectRef<'a>);
+    type Item = (&'a ObjectRef, &'a ObjectRef);
 
     fn next(&mut self) -> Option<Self::Item> {
         let mut k = std::ptr::null_mut();
@@ -142,7 +152,7 @@ impl Dict {
         unsafe {
             // This API doesn't steal.
             if PyDict_SetItem(self.0.as_ptr(), key.as_ptr(), value.as_ptr()) != 0 {
-                bail!("cannot set an item to dictionary")
+                erret!("cannot set an item to dictionary")
             }
         }
         Ok(())
@@ -154,10 +164,10 @@ impl Dict {
 }
 
 #[derive(Debug, Clone)]
-pub struct ClassRef<'a>(ObjectRef<'a>);
+pub struct ClassRef<'a>(&'a ObjectRef);
 
 impl<'a> ClassRef<'a> {
-    pub fn new(obj: ObjectRef<'a>) -> Self {
+    pub fn new(obj: &'a ObjectRef) -> Self {
         Self(obj)
     }
 

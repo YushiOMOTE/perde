@@ -2,7 +2,6 @@ use crate::{
     encode::WithSchema,
     schema::Schema,
     types::{self, Object, ObjectRef, TupleRef, _PyCFunctionFastWithKeywords},
-    util::*,
 };
 use pyo3::{ffi::*, prelude::*, wrap_pyfunction, wrap_pymodule};
 use serde::ser::Serialize;
@@ -22,10 +21,7 @@ pub unsafe extern "C" fn loads_as(
 
     use serde::de::DeserializeSeed;
     let schema = Schema::resolve(args.get(0).unwrap(), std::ptr::null_mut()).unwrap();
-    let obj = schema
-        .deserialize(&mut deserializer)
-        .map_err(pyerr)
-        .unwrap();
+    let obj = schema.deserialize(&mut deserializer).unwrap();
 
     #[cfg(feature = "perf")]
     {
@@ -77,7 +73,6 @@ pub unsafe extern "C" fn loads(
     let s = unsafe { std::slice::from_raw_parts(p, size as usize) };
     let mut deserializer = serde_json::Deserializer::from_slice(s);
     Object::deserialize(&mut deserializer)
-        .map_err(pyerr)
         .map(|v| v.into_ptr())
         .unwrap_or_else(|_| std::ptr::null_mut())
 }

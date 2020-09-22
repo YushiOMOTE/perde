@@ -1,7 +1,7 @@
 use crate::{
+    error::Convert,
     schema::*,
     types::{self, Object},
-    util::*,
 };
 use pyo3::prelude::*;
 use serde::de::{self, DeserializeSeed, Deserializer, SeqAccess, Visitor};
@@ -58,7 +58,7 @@ impl<'de> Visitor<'de> for IntVisitor {
     where
         E: de::Error,
     {
-        Object::new_i64(value).map_err(de)
+        Object::new_i64(value).de()
     }
 
     #[cfg_attr(feature = "perf", flame)]
@@ -90,7 +90,7 @@ impl<'de> Visitor<'de> for IntVisitor {
     where
         E: de::Error,
     {
-        Object::new_u64(value).map_err(de)
+        Object::new_u64(value).de()
     }
 }
 
@@ -117,7 +117,7 @@ impl<'de> Visitor<'de> for FloatVisitor {
     where
         E: de::Error,
     {
-        Object::new_f64(value).map_err(de)
+        Object::new_f64(value).de()
     }
 }
 
@@ -152,7 +152,7 @@ impl<'de> Visitor<'de> for StrVisitor {
     where
         E: de::Error,
     {
-        Object::new_str(value).map_err(de)
+        Object::new_str(value).de()
     }
 
     #[cfg_attr(feature = "perf", flame)]
@@ -188,9 +188,9 @@ impl<'de> Visitor<'de> for BytesVisitor {
         E: de::Error,
     {
         if self.0 {
-            Object::new_bytearray(value).map_err(de)
+            Object::new_bytearray(value).de()
         } else {
-            Object::new_bytes(value).map_err(de)
+            Object::new_bytes(value).de()
         }
     }
 

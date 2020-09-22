@@ -1,7 +1,6 @@
 use crate::{
     schema::*,
     types::{self, Object},
-    util::*,
 };
 use pyo3::prelude::*;
 use serde::de::{self, DeserializeSeed, Deserializer, Visitor};

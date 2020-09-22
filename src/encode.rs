@@ -1,7 +1,7 @@
 use crate::{
+    error::Convert,
     schema::{Class, Enum, Primitive, Schema, Union},
     types::{DictRef, ListRef, ObjectRef, SetRef, TupleRef},
-    util::*,
 };
 use derive_new::new;
 use pyo3::{
@@ -16,7 +16,7 @@ use serde::{
 #[derive(new, Clone, Debug)]
 pub struct WithSchema<'a> {
     pub schema: &'a Schema,
-    pub object: ObjectRef<'a>,
+    pub object: &'a ObjectRef,
 }
 
 impl<'a> Serialize for WithSchema<'a> {
@@ -25,24 +25,14 @@ impl<'a> Serialize for WithSchema<'a> {
         S: Serializer,
     {
         match self.schema {
-            Schema::Primitive(Primitive::Bool) => {
-                s.serialize_bool(self.object.as_bool().map_err(ser)?)
-            }
-            Schema::Primitive(Primitive::Int) => {
-                s.serialize_i64(self.object.as_i64().map_err(ser)?)
-            }
-            Schema::Primitive(Primitive::Str) => {
-                s.serialize_str(self.object.as_str().map_err(ser)?)
-            }
-            Schema::Primitive(Primitive::Float) => {
-                s.serialize_f64(self.object.as_f64().map_err(ser)?)
-            }
+            Schema::Primitive(Primitive::Bool) => s.serialize_bool(self.object.as_bool().ser()?),
+            Schema::Primitive(Primitive::Int) => s.serialize_i64(self.object.as_i64().ser()?),
+            Schema::Primitive(Primitive::Str) => s.serialize_str(self.object.as_str().ser()?),
+            Schema::Primitive(Primitive::Float) => s.serialize_f64(self.object.as_f64().ser()?),
             Schema::Primitive(Primitive::ByteArray) => {
-                s.serialize_bytes(self.object.as_bytearray().map_err(ser)?)
+                s.serialize_bytes(self.object.as_bytearray().ser()?)
             }
-            Schema::Primitive(Primitive::Bytes) => {
-                s.serialize_bytes(self.object.as_bytes().map_err(ser)?)
-            }
+            Schema::Primitive(Primitive::Bytes) => s.serialize_bytes(self.object.as_bytes().ser()?),
             Schema::List(l) => {
                 let list = ListRef::new(self.object);
                 let len = list.len();
