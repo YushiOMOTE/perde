@@ -1,131 +1,142 @@
 use crate::{
     encode::WithSchema,
+    error::Error,
     schema::Schema,
     types::{self, Object, ObjectRef, TupleRef, _PyCFunctionFastWithKeywords},
 };
-use pyo3::{ffi::*, prelude::*, wrap_pyfunction, wrap_pymodule};
+use pyo3::{
+    ffi::*, proc_macro::pymodule, types::PyModule, wrap_pyfunction, wrap_pymodule, PyResult, Python,
+};
 use serde::ser::Serialize;
 use serde::Deserialize;
 use std::os::raw::c_char;
 
-pub unsafe extern "C" fn loads_as(
-    _self: *mut pyo3::ffi::PyObject,
-    args: *mut pyo3::ffi::PyObject,
-) -> *mut pyo3::ffi::PyObject {
-    let args = TupleRef::from_args(args).unwrap();
+pub unsafe extern "C" fn loads_as(_self: *mut PyObject, args: *mut PyObject) -> *mut PyObject {
+    let inner = || {
+        let args = TupleRef::from_args(args)?;
 
-    let mut size = 0;
-    let p = crate::unicode::read_utf8_from_str(args.get(1).unwrap().as_ptr(), &mut size);
-    let s = unsafe { std::slice::from_raw_parts(p, size as usize) };
-    let mut deserializer = serde_json::Deserializer::from_slice(s);
+        let mut size = 0;
+        let p = crate::unicode::read_utf8_from_str(args.get(1).unwrap().as_ptr(), &mut size);
+        let s = unsafe { std::slice::from_raw_parts(p, size as usize) };
+        let mut deserializer = serde_json::Deserializer::from_slice(s);
 
-    use serde::de::DeserializeSeed;
-    let schema = Schema::resolve(args.get(0).unwrap(), std::ptr::null_mut()).unwrap();
-    let obj = schema.deserialize(&mut deserializer).unwrap();
+        use serde::de::DeserializeSeed;
+        let schema = Schema::resolve(args.get(0)?, std::ptr::null_mut())?;
+        let obj = schema.deserialize(&mut deserializer)?;
 
-    #[cfg(feature = "perf")]
-    {
-        flame::dump_html(&mut std::fs::File::create("flame-graph.html").unwrap()).unwrap();
-        flame::clear();
-    }
+        Ok::<_, Error>(obj.into_ptr())
+    };
 
-    obj.into_ptr()
+    inner().unwrap_or(std::ptr::null_mut())
 }
 
 pub unsafe extern "C" fn dumps(
-    _self: *mut pyo3::ffi::PyObject,
-    args: *const *mut pyo3::ffi::PyObject,
-    nargs: Py_ssize_t,
-    kwnames: *mut pyo3::ffi::PyObject,
-) -> *mut pyo3::ffi::PyObject {
-    let obj = unsafe { ObjectRef::new(*args.offset(0)).unwrap() };
-    let schema = Schema::resolve(
-        ObjectRef::new(unsafe { (*obj.as_ptr()).ob_type } as *mut pyo3::ffi::PyObject).unwrap(),
-        std::ptr::null_mut(),
-    )
-    .unwrap();
-    let with_schema = WithSchema::new(schema, obj);
+    _self: *mut PyObject,
+    args: *mut PyObject,
+    // args: *const *mut PyObject,
+    // nargs: Py_ssize_t,
+    // kwnames: *mut PyObject,
+) -> *mut PyObject {
+    println!("((((()))))pack");
 
-    let buf = vec![];
-    let mut serializer = serde_json::Serializer::new(buf);
-    with_schema.serialize(&mut serializer);
-    let buf = serializer.into_inner();
+    let inner = || {
+        let obj = unsafe {
+            ObjectRef::new(
+                args, // .offset(0)
+            )?
+        };
+        println!("resovle");
+        let re = ObjectRef::new(unsafe { (*obj.as_ptr()).ob_type } as *mut PyObject)?;
+        println!("resolve re");
+        let schema = Schema::resolve(re, std::ptr::null_mut())?;
+        println!("resolve");
+        let with_schema = WithSchema::new(schema, obj);
 
-    #[cfg(feature = "perf")]
-    {
-        flame::dump_html(&mut std::fs::File::create("flame-graph.html").unwrap()).unwrap();
-        flame::clear();
-    }
+        let buf = vec![];
+        let mut serializer = serde_json::Serializer::new(buf);
+        with_schema.serialize(&mut serializer);
+        let buf = serializer.into_inner();
 
-    Object::new_str(&String::from_utf8(buf).unwrap())
-        .unwrap()
-        .into_ptr()
+        Ok::<_, Error>(Object::new_str(&String::from_utf8(buf)?)?.into_ptr())
+    };
+
+    inner().unwrap_or(std::ptr::null_mut())
 }
 
 pub unsafe extern "C" fn loads(
-    _self: *mut pyo3::ffi::PyObject,
-    args: *const *mut pyo3::ffi::PyObject,
+    _self: *mut PyObject,
+    args: *const *mut PyObject,
     nargs: Py_ssize_t,
-    kwnames: *mut pyo3::ffi::PyObject,
-) -> *mut pyo3::ffi::PyObject {
-    let mut size = 0;
-    let p = crate::unicode::read_utf8_from_str(*args.offset(0), &mut size);
-    let s = unsafe { std::slice::from_raw_parts(p, size as usize) };
-    let mut deserializer = serde_json::Deserializer::from_slice(s);
-    Object::deserialize(&mut deserializer)
-        .map(|v| v.into_ptr())
-        .unwrap_or_else(|_| std::ptr::null_mut())
+    kwnames: *mut PyObject,
+) -> *mut PyObject {
+    let inner = || {
+        let mut size = 0;
+        let p = crate::unicode::read_utf8_from_str(*args.offset(0), &mut size);
+        let s = unsafe { std::slice::from_raw_parts(p, size as usize) };
+        let mut deserializer = serde_json::Deserializer::from_slice(s);
+        Ok::<_, Error>(Object::deserialize(&mut deserializer).map(|v| v.into_ptr())?)
+    };
+
+    inner().unwrap_or(std::ptr::null_mut())
 }
 
 #[pymodule]
 pub fn json(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
+    println!("LOADING");
     use pyo3::AsPyPointer;
 
-    let def = pyo3::ffi::PyMethodDef {
+    let def = PyMethodDef {
         ml_name: "dumps\0".as_ptr() as *const c_char,
         ml_meth: Some(unsafe {
-            std::mem::transmute::<_PyCFunctionFastWithKeywords, PyCFunction>(loads)
+            dumps
+            // std::mem::transmute::<_PyCFunctionFastWithKeywords, PyCFunction>(loads)
         }),
-        ml_flags: pyo3::ffi::METH_FASTCALL | pyo3::ffi::METH_KEYWORDS,
+        ml_flags: METH_VARARGS, // METH_FASTCALL | METH_KEYWORDS,
         ml_doc: "".as_ptr() as *const c_char,
     };
     unsafe {
-        pyo3::ffi::PyModule_AddObject(
+        PyModule_AddObject(
             m.as_ptr(),
             "dumps\0".as_ptr() as *const c_char,
-            pyo3::ffi::PyCFunction_New(Box::into_raw(Box::new(def)), std::ptr::null_mut()),
+            PyCFunction_NewEx(
+                Box::into_raw(Box::new(def)),
+                std::ptr::null_mut(),
+                m.as_ptr(),
+            ),
         )
     };
 
-    let def = pyo3::ffi::PyMethodDef {
+    let def = PyMethodDef {
         ml_name: "loads\0".as_ptr() as *const c_char,
         ml_meth: Some(unsafe {
             std::mem::transmute::<_PyCFunctionFastWithKeywords, PyCFunction>(loads)
         }),
-        ml_flags: pyo3::ffi::METH_FASTCALL | pyo3::ffi::METH_KEYWORDS,
+        ml_flags: METH_FASTCALL | METH_KEYWORDS,
         ml_doc: "".as_ptr() as *const c_char,
     };
     unsafe {
-        pyo3::ffi::PyModule_AddObject(
+        PyModule_AddObject(
             m.as_ptr(),
             "loads\0".as_ptr() as *const c_char,
-            pyo3::ffi::PyCFunction_New(Box::into_raw(Box::new(def)), std::ptr::null_mut()),
+            PyCFunction_New(Box::into_raw(Box::new(def)), std::ptr::null_mut()),
         )
     };
 
-    let def = pyo3::ffi::PyMethodDef {
+    let def = PyMethodDef {
         ml_name: "loads_as\0".as_ptr() as *const c_char,
         ml_meth: Some(loads_as),
-        ml_flags: pyo3::ffi::METH_VARARGS,
+        ml_flags: METH_VARARGS,
         ml_doc: "".as_ptr() as *const c_char,
     };
     unsafe {
-        pyo3::ffi::PyModule_AddObject(
+        PyModule_AddObject(
             m.as_ptr(),
             "loads_as\0".as_ptr() as *const c_char,
-            pyo3::ffi::PyCFunction_New(Box::into_raw(Box::new(def)), std::ptr::null_mut()),
+            PyCFunction_New(Box::into_raw(Box::new(def)), std::ptr::null_mut()),
         )
     };
+
+    println!("LOADED");
 
     Ok(())
 }

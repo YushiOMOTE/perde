@@ -75,7 +75,7 @@ impl Set {
         unsafe {
             // This API doesn't steal.
             if PySet_Add(self.0.as_ptr(), obj.as_ptr()) != 0 {
-                erret!("cannot add an item to a set")
+                bail!("cannot add an item to a set")
             }
         }
         Ok(())
@@ -152,7 +152,7 @@ impl Dict {
         unsafe {
             // This API doesn't steal.
             if PyDict_SetItem(self.0.as_ptr(), key.as_ptr(), value.as_ptr()) != 0 {
-                erret!("cannot set an item to dictionary")
+                bail!("cannot set an item to dictionary")
             }
         }
         Ok(())

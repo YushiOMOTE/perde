@@ -37,7 +37,7 @@ impl FromStr for StrCase {
             "SCREAMING_SNAKE_CASE" => Ok(StrCase::ScreamingSnake),
             "kebab-case" => Ok(StrCase::Kebab),
             "SCREAMING-KEBAB-CASE" => Ok(StrCase::ScreamingKebab),
-            c => erret!("Unsupported string case: {}", c),
+            c => bail!("Unsupported string case: {}", c),
         }
     }
 }

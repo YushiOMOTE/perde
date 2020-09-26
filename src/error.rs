@@ -1,7 +1,9 @@
+use anyhow::anyhow;
+use pyo3::{exceptions::PyRuntimeError, PyErr, Python};
 use serde::{de, ser};
 use std::fmt::{self, Display};
 
-pub type Result<T> = std::result::Result<T, Error>;
+pub use anyhow::{Error, Result};
 
 pub trait Convert<T> {
     fn de<E>(self) -> std::result::Result<T, E>
@@ -13,34 +15,13 @@ pub trait Convert<T> {
     where
         E: ser::Error,
         Self: Sized;
+
+    fn restore(self) -> Option<T>
+    where
+        Self: Sized;
 }
 
-#[derive(Debug)]
-pub struct Error(anyhow::Error);
-
-impl std::ops::Deref for Error {
-    type Target = anyhow::Error;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl From<anyhow::Error> for Error {
-    fn from(e: anyhow::Error) -> Self {
-        Self(e)
-    }
-}
-
-impl Display for Error {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.0)
-    }
-}
-
-impl std::error::Error for Error {}
-
-impl<T> Convert<T> for std::result::Result<T, Error> {
+impl<T> Convert<T> for Result<T> {
     fn de<E>(self) -> std::result::Result<T, E>
     where
         E: de::Error,
@@ -56,16 +37,20 @@ impl<T> Convert<T> for std::result::Result<T, Error> {
     {
         self.map_err(|e| ser::Error::custom(e.to_string()))
     }
-}
 
-macro_rules! err {
-    ($($t:tt)*) => {
-        crate::error::Error::from(anyhow::anyhow!($($t)*))
-    }
-}
-
-macro_rules! erret {
-    ($($t:tt)*) => {
-        return Err(crate::error::Error::from(anyhow::anyhow!($($t)*)))
+    fn restore(self) -> Option<T> {
+        match self {
+            Ok(t) => Some(t),
+            Err(e) => {
+                let py = unsafe { Python::assume_gil_acquired() };
+                match e.downcast::<PyErr>() {
+                    Ok(pyerr) => pyerr.restore(py),
+                    Err(e) => {
+                        PyErr::new::<PyRuntimeError, _>(e.to_string()).restore(py);
+                    }
+                }
+                None
+            }
+        }
     }
 }

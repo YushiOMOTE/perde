@@ -28,10 +28,14 @@ fn convert_stringcase(s: &str, case: Option<StrCase>) -> String {
 const SCHEMA_CACHE: &'static str = "__perde_schema__\0";
 
 pub fn resolve_schema<'a>(p: &'a ObjectRef, attr: *mut PyObject) -> Result<&'a Schema> {
+    println!("getting cupsule");
+
     match p.get_capsule(SCHEMA_CACHE) {
         Ok(p) => return Ok(p),
         _ => {}
     }
+
+    println!("resovle schema");
 
     if p.is_bool() {
         Ok(&static_schema().boolean)
@@ -58,7 +62,7 @@ pub fn resolve_schema<'a>(p: &'a ObjectRef, attr: *mut PyObject) -> Result<&'a S
     } else if let Some(s) = maybe_enum(p)? {
         p.set_capsule(SCHEMA_CACHE, s)
     } else {
-        erret!("unsupported type")
+        bail!("unsupported type")
     }
 }
 
@@ -82,7 +86,7 @@ pub fn to_schema(p: &ObjectRef) -> Result<Schema> {
     } else if let Some(s) = maybe_enum(p)? {
         Ok(s)
     } else {
-        erret!("unsupported type")
+        bail!("unsupported type")
     }
 }
 
