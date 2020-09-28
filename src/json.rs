@@ -15,10 +15,8 @@ pub unsafe extern "C" fn loads_as(_self: *mut PyObject, args: *mut PyObject) -> 
     let inner = || {
         let args = TupleRef::from_args(args)?;
 
-        let mut size = 0;
-        let p = crate::unicode::read_utf8_from_str(args.get(1).unwrap().as_ptr(), &mut size);
-        let s = unsafe { std::slice::from_raw_parts(p, size as usize) };
-        let mut deserializer = serde_json::Deserializer::from_slice(s);
+        let s = args.get(1).unwrap().as_str()?;
+        let mut deserializer = serde_json::Deserializer::from_str(s);
 
         use serde::de::DeserializeSeed;
         let schema = Schema::resolve(args.get(0)?, std::ptr::null_mut())?;
@@ -92,10 +90,8 @@ pub unsafe extern "C" fn loads(
     kwnames: *mut PyObject,
 ) -> *mut PyObject {
     let inner = || {
-        let mut size = 0;
-        let p = crate::unicode::read_utf8_from_str(*args.offset(0), &mut size);
-        let s = unsafe { std::slice::from_raw_parts(p, size as usize) };
-        let mut deserializer = serde_json::Deserializer::from_slice(s);
+        let obj = ObjectRef::new(*args.offset(0))?;
+        let mut deserializer = serde_json::Deserializer::from_str(obj.as_str()?);
         Ok::<_, Error>(Object::deserialize(&mut deserializer).map(|v| v.into_ptr())?)
     };
 

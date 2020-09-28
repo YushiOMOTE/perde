@@ -13,12 +13,10 @@ pub struct ClassVisitor<'a>(pub &'a Class);
 impl<'a, 'de> Visitor<'de> for ClassVisitor<'a> {
     type Value = Object;
 
-    #[cfg_attr(feature = "perf", flame)]
     fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "a class")
     }
 
-    #[cfg_attr(feature = "perf", flame)]
     fn visit_map<M>(self, mut access: M) -> std::result::Result<Self::Value, M::Error>
     where
         M: MapAccess<'de>,
@@ -44,7 +42,6 @@ impl<'a, 'de> Visitor<'de> for ClassVisitor<'a> {
 impl<'a, 'de> DeserializeSeed<'de> for &'a Class {
     type Value = Object;
 
-    #[cfg_attr(feature = "perf", flame)]
     fn deserialize<D>(self, deserializer: D) -> std::result::Result<Self::Value, D::Error>
     where
         D: Deserializer<'de>,
@@ -54,7 +51,6 @@ impl<'a, 'de> DeserializeSeed<'de> for &'a Class {
 }
 
 impl Class {
-    #[cfg_attr(feature = "perf", flame)]
     pub fn field(&self, name: &str) -> Result<Option<&FieldSchema>> {
         let map = if self.flatten_fields.is_empty() {
             &self.fields
@@ -79,7 +75,6 @@ impl Class {
             })
     }
 
-    #[cfg_attr(feature = "perf", flame)]
     pub fn call(&self, map: &mut HashMap<&str, Object>) -> Result<Object> {
         let args: Result<Vec<_>> = self
             .fields
@@ -127,7 +122,6 @@ impl Class {
         self.construct(args?)
     }
 
-    #[cfg_attr(feature = "perf", flame)]
     pub fn construct(&self, args: Vec<Object>) -> Result<Object> {
         let mut tuple = types::Tuple::new(args.len())?;
         for (i, arg) in args.into_iter().enumerate() {

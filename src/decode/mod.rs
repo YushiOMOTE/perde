@@ -16,7 +16,6 @@ pub mod union;
 impl<'a, 'de> DeserializeSeed<'de> for &'a Schema {
     type Value = Object;
 
-    #[cfg_attr(feature = "perf", flame)]
     fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
     where
         D: Deserializer<'de>,

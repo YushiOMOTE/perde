@@ -24,7 +24,6 @@ pub enum StrCase {
 impl FromStr for StrCase {
     type Err = Error;
 
-    #[cfg_attr(feature = "perf", flame)]
     fn from_str(s: &str) -> Result<Self> {
         match s {
             "lowercase" => Ok(StrCase::Lower),

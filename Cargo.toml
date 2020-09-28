@@ -15,8 +15,6 @@ serde_yaml = { version = "0.8", optional = true }
 serde_toml = { version = "0.5", package = "toml", optional = true }
 rmp-serde = { version = "0.14", optional = true }
 indexmap = "1.6"
-flame = { version = "0.2", optional = true }
-flamer = { version = "0.3", optional = true }
 bytecount = "0.6"
 smallvec = "1.4"
 fnv = "1.0"
@@ -31,7 +29,6 @@ json = ["serde_json"]
 yaml = ["serde_yaml"]
 toml = ["serde_toml"]
 msgpack = ["rmp-serde"]
-perf = ["flame", "flamer"]
 
 [profile.release]
 codegen-units = 1

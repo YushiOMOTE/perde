@@ -13,12 +13,10 @@ pub struct TupleVisitor<'a>(pub &'a Tuple);
 impl<'a, 'de> Visitor<'de> for TupleVisitor<'a> {
     type Value = Object;
 
-    #[cfg_attr(feature = "perf", flame)]
     fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "a tuple")
     }
 
-    #[cfg_attr(feature = "perf", flame)]
     fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
     where
         A: SeqAccess<'de>,
@@ -53,7 +51,6 @@ impl<'a, 'de> Visitor<'de> for TupleVisitor<'a> {
 impl<'a, 'de> DeserializeSeed<'de> for &'a Tuple {
     type Value = Object;
 
-    #[cfg_attr(feature = "perf", flame)]
     fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
     where
         D: Deserializer<'de>,

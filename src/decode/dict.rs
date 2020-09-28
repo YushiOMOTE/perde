@@ -12,12 +12,10 @@ pub struct DictVisitor<'a>(pub &'a Dict);
 impl<'a, 'de> Visitor<'de> for DictVisitor<'a> {
     type Value = Object;
 
-    #[cfg_attr(feature = "perf", flame)]
     fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "a map")
     }
 
-    #[cfg_attr(feature = "perf", flame)]
     fn visit_map<M>(self, mut access: M) -> Result<Self::Value, M::Error>
     where
         M: MapAccess<'de>,
@@ -37,7 +35,6 @@ impl<'a, 'de> Visitor<'de> for DictVisitor<'a> {
 impl<'a, 'de> DeserializeSeed<'de> for &'a Dict {
     type Value = Object;
 
-    #[cfg_attr(feature = "perf", flame)]
     fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
     where
         D: Deserializer<'de>,

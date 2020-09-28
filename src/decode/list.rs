@@ -13,12 +13,10 @@ pub struct ListVisitor<'a>(pub &'a List);
 impl<'a, 'de> Visitor<'de> for ListVisitor<'a> {
     type Value = Object;
 
-    #[cfg_attr(feature = "perf", flame)]
     fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "a list")
     }
 
-    #[cfg_attr(feature = "perf", flame)]
     fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
     where
         A: SeqAccess<'de>,
@@ -42,7 +40,6 @@ impl<'a, 'de> Visitor<'de> for ListVisitor<'a> {
 impl<'a, 'de> DeserializeSeed<'de> for &'a List {
     type Value = Object;
 
-    #[cfg_attr(feature = "perf", flame)]
     fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
     where
         D: Deserializer<'de>,

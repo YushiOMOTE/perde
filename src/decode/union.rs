@@ -25,13 +25,11 @@ macro_rules! find {
 impl<'a, 'de> Visitor<'de> for UnionVisitor<'a> {
     type Value = Object;
 
-    #[cfg_attr(feature = "perf", flame)]
     fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let names: Vec<_> = self.0.variants.iter().map(|v| v.name()).collect();
         write!(f, "any of {:?}", names)
     }
 
-    #[cfg_attr(feature = "perf", flame)]
     fn visit_bool<E>(self, v: bool) -> Result<Self::Value, E>
     where
         E: de::Error,
@@ -40,7 +38,6 @@ impl<'a, 'de> Visitor<'de> for UnionVisitor<'a> {
         schema.deserialize(v.into_deserializer())
     }
 
-    #[cfg_attr(feature = "perf", flame)]
     fn visit_i8<E>(self, v: i8) -> Result<Self::Value, E>
     where
         E: de::Error,
@@ -48,7 +45,6 @@ impl<'a, 'de> Visitor<'de> for UnionVisitor<'a> {
         self.visit_i64(v as i64)
     }
 
-    #[cfg_attr(feature = "perf", flame)]
     fn visit_i16<E>(self, v: i16) -> Result<Self::Value, E>
     where
         E: de::Error,
@@ -56,7 +52,6 @@ impl<'a, 'de> Visitor<'de> for UnionVisitor<'a> {
         self.visit_i64(v as i64)
     }
 
-    #[cfg_attr(feature = "perf", flame)]
     fn visit_i32<E>(self, v: i32) -> Result<Self::Value, E>
     where
         E: de::Error,
@@ -64,7 +59,6 @@ impl<'a, 'de> Visitor<'de> for UnionVisitor<'a> {
         self.visit_i64(v as i64)
     }
 
-    #[cfg_attr(feature = "perf", flame)]
     fn visit_i64<E>(self, v: i64) -> Result<Self::Value, E>
     where
         E: de::Error,
@@ -73,7 +67,6 @@ impl<'a, 'de> Visitor<'de> for UnionVisitor<'a> {
         schema.deserialize(v.into_deserializer())
     }
 
-    #[cfg_attr(feature = "perf", flame)]
     fn visit_u8<E>(self, v: u8) -> Result<Self::Value, E>
     where
         E: de::Error,
@@ -81,7 +74,6 @@ impl<'a, 'de> Visitor<'de> for UnionVisitor<'a> {
         self.visit_u64(v as u64)
     }
 
-    #[cfg_attr(feature = "perf", flame)]
     fn visit_u16<E>(self, v: u16) -> Result<Self::Value, E>
     where
         E: de::Error,
@@ -89,7 +81,6 @@ impl<'a, 'de> Visitor<'de> for UnionVisitor<'a> {
         self.visit_u64(v as u64)
     }
 
-    #[cfg_attr(feature = "perf", flame)]
     fn visit_u32<E>(self, v: u32) -> Result<Self::Value, E>
     where
         E: de::Error,
@@ -97,7 +88,6 @@ impl<'a, 'de> Visitor<'de> for UnionVisitor<'a> {
         self.visit_u64(v as u64)
     }
 
-    #[cfg_attr(feature = "perf", flame)]
     fn visit_u64<E>(self, v: u64) -> Result<Self::Value, E>
     where
         E: de::Error,
@@ -106,7 +96,6 @@ impl<'a, 'de> Visitor<'de> for UnionVisitor<'a> {
         schema.deserialize(v.into_deserializer())
     }
 
-    #[cfg_attr(feature = "perf", flame)]
     fn visit_f32<E>(self, v: f32) -> Result<Self::Value, E>
     where
         E: de::Error,
@@ -114,7 +103,6 @@ impl<'a, 'de> Visitor<'de> for UnionVisitor<'a> {
         self.visit_f64(v as f64)
     }
 
-    #[cfg_attr(feature = "perf", flame)]
     fn visit_f64<E>(self, v: f64) -> Result<Self::Value, E>
     where
         E: de::Error,
@@ -123,7 +111,6 @@ impl<'a, 'de> Visitor<'de> for UnionVisitor<'a> {
         schema.deserialize(v.into_deserializer())
     }
 
-    #[cfg_attr(feature = "perf", flame)]
     fn visit_char<E>(self, v: char) -> Result<Self::Value, E>
     where
         E: de::Error,
@@ -131,7 +118,6 @@ impl<'a, 'de> Visitor<'de> for UnionVisitor<'a> {
         self.visit_borrowed_str(&v.to_string())
     }
 
-    #[cfg_attr(feature = "perf", flame)]
     fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
     where
         E: de::Error,
@@ -139,7 +125,6 @@ impl<'a, 'de> Visitor<'de> for UnionVisitor<'a> {
         self.visit_borrowed_str(v)
     }
 
-    #[cfg_attr(feature = "perf", flame)]
     fn visit_borrowed_str<E>(self, v: &'de str) -> Result<Self::Value, E>
     where
         E: de::Error,
@@ -148,7 +133,6 @@ impl<'a, 'de> Visitor<'de> for UnionVisitor<'a> {
         schema.deserialize(v.into_deserializer())
     }
 
-    #[cfg_attr(feature = "perf", flame)]
     fn visit_string<E>(self, v: String) -> Result<Self::Value, E>
     where
         E: de::Error,
@@ -156,7 +140,6 @@ impl<'a, 'de> Visitor<'de> for UnionVisitor<'a> {
         self.visit_borrowed_str(&v)
     }
 
-    #[cfg_attr(feature = "perf", flame)]
     fn visit_bytes<E>(self, v: &[u8]) -> Result<Self::Value, E>
     where
         E: de::Error,
@@ -164,7 +147,6 @@ impl<'a, 'de> Visitor<'de> for UnionVisitor<'a> {
         self.visit_borrowed_bytes(v)
     }
 
-    #[cfg_attr(feature = "perf", flame)]
     fn visit_borrowed_bytes<E>(self, v: &'de [u8]) -> Result<Self::Value, E>
     where
         E: de::Error,
@@ -182,7 +164,6 @@ impl<'a, 'de> Visitor<'de> for UnionVisitor<'a> {
         }
     }
 
-    #[cfg_attr(feature = "perf", flame)]
     fn visit_byte_buf<E>(self, v: Vec<u8>) -> Result<Self::Value, E>
     where
         E: de::Error,
@@ -190,7 +171,6 @@ impl<'a, 'de> Visitor<'de> for UnionVisitor<'a> {
         self.visit_borrowed_bytes(&v)
     }
 
-    #[cfg_attr(feature = "perf", flame)]
     fn visit_none<E>(self) -> Result<Self::Value, E>
     where
         E: de::Error,
@@ -203,7 +183,6 @@ impl<'a, 'de> Visitor<'de> for UnionVisitor<'a> {
         }
     }
 
-    #[cfg_attr(feature = "perf", flame)]
     fn visit_some<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
     where
         D: Deserializer<'de>,
@@ -212,7 +191,6 @@ impl<'a, 'de> Visitor<'de> for UnionVisitor<'a> {
         schema.deserialize(deserializer)
     }
 
-    #[cfg_attr(feature = "perf", flame)]
     fn visit_seq<A>(self, seq: A) -> Result<Self::Value, A::Error>
     where
         A: SeqAccess<'de>,
@@ -227,7 +205,6 @@ impl<'a, 'de> Visitor<'de> for UnionVisitor<'a> {
         }
     }
 
-    #[cfg_attr(feature = "perf", flame)]
     fn visit_map<A>(self, map: A) -> Result<Self::Value, A::Error>
     where
         A: MapAccess<'de>,
@@ -245,7 +222,6 @@ impl<'a, 'de> Visitor<'de> for UnionVisitor<'a> {
 impl<'a, 'de> DeserializeSeed<'de> for &'a Union {
     type Value = Object;
 
-    #[cfg_attr(feature = "perf", flame)]
     fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
     where
         D: Deserializer<'de>,

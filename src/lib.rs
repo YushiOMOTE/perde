@@ -2,16 +2,11 @@ use crate::types::_PyCFunctionFastWithKeywords;
 use pyo3::{conversion::AsPyPointer, ffi::*, prelude::*};
 use std::os::raw::c_char;
 
-#[cfg(feature = "perf")]
-#[macro_use]
-extern crate flamer;
-
 #[macro_use]
 mod error;
 
 #[macro_use]
 mod types;
-// mod util;
 
 mod inspect;
 mod schema;
@@ -21,8 +16,6 @@ mod encode;
 
 #[cfg(feature = "json")]
 mod json;
-
-mod unicode;
 
 pub unsafe extern "C" fn resolve(
     _self: *mut pyo3::ffi::PyObject,

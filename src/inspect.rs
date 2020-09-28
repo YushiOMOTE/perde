@@ -7,7 +7,6 @@ use indexmap::IndexMap;
 use pyo3::ffi::PyObject;
 use std::os::raw::c_char;
 
-#[cfg_attr(feature = "perf", flame)]
 fn convert_stringcase(s: &str, case: Option<StrCase>) -> String {
     use inflections::Inflect;
 
