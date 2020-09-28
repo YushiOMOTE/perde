@@ -1,6 +1,5 @@
 use super::{Object, ObjectRef, Tuple};
 use crate::error::Result;
-use anyhow::bail;
 use pyo3::{conversion::AsPyPointer, ffi::*};
 use std::os::raw::c_char;
 

@@ -1,6 +1,5 @@
 use super::Tuple;
 use crate::error::{Error, Result};
-use anyhow::{anyhow, bail, Context};
 use pyo3::{
     conversion::{AsPyPointer, IntoPyPointer},
     ffi::*,
@@ -37,10 +36,7 @@ impl ObjectRef {
     pub fn new<'a>(p: *mut PyObject) -> Result<&'a Self> {
         match unsafe { (p as *mut ObjectRef).as_ref() } {
             Some(p) => Ok(p),
-            None => {
-                println!("error ref");
-                Err(anyhow!("failed to create an object"))
-            }
+            None => Err(err!("failed to create an object")),
         }
     }
 
@@ -77,14 +73,11 @@ impl ObjectRef {
     pub fn get_capsule<'a, T>(&self, s: &str) -> Result<&'a T> {
         let obj = self.get_attr(s)?;
 
-        println!("got an attr");
-
         let p = unsafe { PyCapsule_GetPointer(obj.as_ptr(), std::ptr::null_mut()) };
 
         if p.is_null() {
             bail!("cannot get capsule pointer")
         } else {
-            println!("Goit non null");
             Ok(unsafe { &*(p as *mut T) })
         }
     }
@@ -242,17 +235,12 @@ impl ObjectRef {
     }
 
     pub fn get_attr(&self, s: &str) -> Result<Object> {
-        println!("getting attr {}: {:?}", s, self.as_ptr());
-
         unsafe { PyObject_HasAttrString(self.as_ptr(), s.as_ptr() as *mut c_char) };
-
-        println!("check pass");
 
         let e = objnew!(PyObject_GetAttrString(
             self.as_ptr(),
             s.as_ptr() as *mut c_char
         ));
-        println!("{:?}", e);
         e
     }
 
@@ -288,7 +276,7 @@ impl Object {
     pub fn new(p: *mut PyObject) -> Result<Self> {
         match NonNull::new(p as *mut ObjectRef) {
             Some(p) => Ok(Self(p)),
-            None => Err(anyhow!("failed to create an object")),
+            None => Err(err!("failed to create an object")),
         }
     }
 
@@ -421,7 +409,7 @@ pub struct StaticObjects {
 unsafe impl Sync for StaticObject {}
 
 pub fn static_objects() -> Result<&'static StaticObjects> {
-    STATIC_OBJECTS.as_ref().map_err(|e| anyhow!("{}", e))
+    STATIC_OBJECTS.as_ref().map_err(|e| err!("{}", e))
 }
 
 macro_rules! getattr {
@@ -429,7 +417,7 @@ macro_rules! getattr {
         $module
             .getattr($name)
             .map(|p| pyo3::PyObject::from(p).into())
-            .map_err(|_| anyhow!(concat!("couldn't find function `", $name, "`")))
+            .map_err(|_| err!(concat!("couldn't find function `", $name, "`")))
     };
 }
 
@@ -440,11 +428,11 @@ lazy_static::lazy_static! {
         let py = unsafe { Python::assume_gil_acquired() };
 
         let dataclasses = PyModule::import(py, "dataclasses")
-            .map_err(|_| anyhow!("couldn't import `dataclasses`"))?;
+            .map_err(|_| err!("couldn't import `dataclasses`"))?;
         let typing = PyModule::import(py, "typing")
-            .map_err(|_| anyhow!("couldn't import `typing`"))?;
+            .map_err(|_| err!("couldn't import `typing`"))?;
         let enum_ = PyModule::import(py, "enum")
-            .map_err(|_| anyhow!("couldn't import `enum`"))?;
+            .map_err(|_| err!("couldn't import `enum`"))?;
 
         let fields = getattr!(dataclasses, "fields")?;
         let generic_alias = getattr!(typing, "_GenericAlias")?;

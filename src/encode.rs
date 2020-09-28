@@ -76,7 +76,15 @@ impl<'a> Serialize for WithSchema<'a> {
                 }
                 map.end()
             }
-            Schema::Class(c) => unimplemented!(),
+            Schema::Class(c) => {
+                let mut map = s.serialize_map(Some(c.fields.len()))?;
+                for (name, field) in &c.fields {
+                    let obj = self.object.get_attr(&field.name).ser()?;
+                    let f = WithSchema::new(&field.schema, &obj);
+                    map.serialize_entry(&name, &f)?;
+                }
+                map.end()
+            }
             Schema::Enum(e) => unimplemented!(),
             Schema::Optional(o) => {
                 if self.object.is_none() {

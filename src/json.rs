@@ -1,6 +1,6 @@
 use crate::{
     encode::WithSchema,
-    error::Error,
+    error::{Convert, Error},
     schema::Schema,
     types::{self, Object, ObjectRef, TupleRef, _PyCFunctionFastWithKeywords},
 };
@@ -27,7 +27,7 @@ pub unsafe extern "C" fn loads_as(_self: *mut PyObject, args: *mut PyObject) -> 
         Ok::<_, Error>(obj.into_ptr())
     };
 
-    inner().unwrap_or(std::ptr::null_mut())
+    inner().restore().unwrap_or(std::ptr::null_mut())
 }
 
 pub unsafe extern "C" fn dumps(
@@ -37,30 +37,52 @@ pub unsafe extern "C" fn dumps(
     // nargs: Py_ssize_t,
     // kwnames: *mut PyObject,
 ) -> *mut PyObject {
-    println!("((((()))))pack");
-
     let inner = || {
+        let args = TupleRef::from_args(args)?;
+        let args = args.get(0).unwrap().as_ptr();
+
+        assert!(!pyo3::PyErr::occurred(unsafe {
+            pyo3::Python::assume_gil_acquired()
+        }));
+
         let obj = unsafe {
             ObjectRef::new(
                 args, // .offset(0)
             )?
         };
-        println!("resovle");
-        let re = ObjectRef::new(unsafe { (*obj.as_ptr()).ob_type } as *mut PyObject)?;
-        println!("resolve re");
+        let p = unsafe { (*obj.as_ptr()).ob_type } as *mut PyObject;
+        let re = ObjectRef::new(p)?;
+
+        assert!(!pyo3::PyErr::occurred(unsafe {
+            pyo3::Python::assume_gil_acquired()
+        }));
+
         let schema = Schema::resolve(re, std::ptr::null_mut())?;
+
+        assert!(!pyo3::PyErr::occurred(unsafe {
+            pyo3::Python::assume_gil_acquired()
+        }));
+
         println!("resolve");
         let with_schema = WithSchema::new(schema, obj);
+
+        assert!(!pyo3::PyErr::occurred(unsafe {
+            pyo3::Python::assume_gil_acquired()
+        }));
 
         let buf = vec![];
         let mut serializer = serde_json::Serializer::new(buf);
         with_schema.serialize(&mut serializer);
         let buf = serializer.into_inner();
 
+        assert!(!pyo3::PyErr::occurred(unsafe {
+            pyo3::Python::assume_gil_acquired()
+        }));
+
         Ok::<_, Error>(Object::new_str(&String::from_utf8(buf)?)?.into_ptr())
     };
 
-    inner().unwrap_or(std::ptr::null_mut())
+    inner().restore().unwrap_or(std::ptr::null_mut())
 }
 
 pub unsafe extern "C" fn loads(
@@ -77,7 +99,7 @@ pub unsafe extern "C" fn loads(
         Ok::<_, Error>(Object::deserialize(&mut deserializer).map(|v| v.into_ptr())?)
     };
 
-    inner().unwrap_or(std::ptr::null_mut())
+    inner().restore().unwrap_or(std::ptr::null_mut())
 }
 
 #[pymodule]

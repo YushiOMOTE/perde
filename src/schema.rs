@@ -1,14 +1,12 @@
 use crate::{
-    error::{Error, Result},
+    error::{Convert, Error, Result},
     inspect::resolve_schema,
     types::{self, DictRef, Object, ObjectRef},
 };
-use anyhow::{bail, Context};
 use derive_new::new;
+use indexmap::IndexMap;
 use pyo3::conversion::AsPyPointer;
 use pyo3::ffi::PyObject;
-// use pyo3::{prelude::*, types::*};
-use indexmap::IndexMap;
 use std::str::FromStr;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -146,7 +144,9 @@ impl EnumAttr {
 
 impl Schema {
     pub fn resolve<'a>(ty: &'a ObjectRef, kw: *mut PyObject) -> Result<&'a Self> {
-        resolve_schema(ty, kw)
+        let p = resolve_schema(ty, kw);
+        println!("nop: {:?}", p);
+        p
     }
 }
 

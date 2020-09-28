@@ -3,7 +3,6 @@ use crate::{
     schema::*,
     types::{self, Object},
 };
-use anyhow::anyhow;
 use pyo3::conversion::AsPyPointer;
 use pyo3::{prelude::*, types::PyTuple};
 use serde::de::{self, DeserializeSeed, Deserializer, IgnoredAny, MapAccess, Visitor};
@@ -73,7 +72,7 @@ impl Class {
             })
             .unwrap_or_else(|| {
                 if self.attr.deny_unknown_fields {
-                    Err(anyhow!("the field `{}` is missing", name,))
+                    Err(err!("the field `{}` is missing", name,))
                 } else {
                     Ok(None)
                 }
@@ -98,7 +97,7 @@ impl Class {
                             }
                             return Ok(dict.into_inner());
                         }
-                        _ => return Err(anyhow!("found `flatten` attribute an non-map type",)),
+                        _ => return Err(err!("found `flatten` attribute an non-map type",)),
                     }
                 }
 
@@ -119,7 +118,7 @@ impl Class {
                                 unimplemented!()
                             }
                         }
-                        Err(anyhow!("missing field \"{}\"", k))
+                        Err(err!("missing field \"{}\"", k))
                     }
                 }
             })
