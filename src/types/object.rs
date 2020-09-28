@@ -1,4 +1,4 @@
-use super::Tuple;
+use super::{AttrStr, Tuple};
 use crate::error::{Error, Result};
 use pyo3::{
     conversion::{AsPyPointer, IntoPyPointer},
@@ -44,7 +44,7 @@ impl ObjectRef {
         Object::new_clone(self.as_ptr()).unwrap()
     }
 
-    pub fn set_capsule<'a, T>(&self, s: &str, item: T) -> Result<&'a T> {
+    pub fn set_capsule<'a, T>(&self, s: &AttrStr, item: T) -> Result<&'a T> {
         extern "C" fn destructor(p: *mut PyObject) {
             let p = unsafe { PyCapsule_GetPointer(p, std::ptr::null_mut()) };
             let _b = unsafe { Box::from_raw(p) };
@@ -61,16 +61,14 @@ impl ObjectRef {
             )
         })?;
 
-        if unsafe {
-            PyObject_SetAttrString(self.as_ptr(), s.as_ptr() as *mut c_char, obj.as_ptr()) != 0
-        } {
+        if unsafe { PyObject_SetAttrString(self.as_ptr(), s.as_ptr(), obj.as_ptr()) != 0 } {
             bail!("cannot set attribute `{}`", s)
         } else {
             Ok(p)
         }
     }
 
-    pub fn get_capsule<'a, T>(&self, s: &str) -> Result<&'a T> {
+    pub fn get_capsule<'a, T>(&self, s: &AttrStr) -> Result<&'a T> {
         let obj = self.get_attr(s)?;
 
         let p = unsafe { PyCapsule_GetPointer(obj.as_ptr(), std::ptr::null_mut()) };
@@ -230,12 +228,12 @@ impl ObjectRef {
         unsafe { &*self as *const Self as *mut Self as *mut PyObject }
     }
 
-    pub fn has_attr(&self, s: &str) -> bool {
-        unsafe { PyObject_HasAttrString(self.as_ptr(), s.as_ptr() as *mut c_char) != 0 }
+    pub fn has_attr(&self, s: &AttrStr) -> bool {
+        unsafe { PyObject_HasAttrString(self.as_ptr(), s.as_ptr()) != 0 }
     }
 
-    pub fn get_attr(&self, s: &str) -> Result<Object> {
-        unsafe { PyObject_HasAttrString(self.as_ptr(), s.as_ptr() as *mut c_char) };
+    pub fn get_attr(&self, s: &AttrStr) -> Result<Object> {
+        unsafe { PyObject_HasAttrString(self.as_ptr(), s.as_ptr()) };
 
         let e = objnew!(PyObject_GetAttrString(
             self.as_ptr(),

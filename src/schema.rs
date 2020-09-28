@@ -1,7 +1,7 @@
 use crate::{
     error::{Convert, Error, Result},
     inspect::resolve_schema,
-    types::{self, DictRef, Object, ObjectRef},
+    types::{self, AttrStr, DictRef, Object, ObjectRef},
 };
 use derive_new::new;
 use indexmap::IndexMap;
@@ -259,7 +259,7 @@ impl Class {
 
 #[derive(Debug, Clone, new)]
 pub struct FieldSchema {
-    pub name: String,
+    pub name: AttrStr,
     pub pos: usize,
     pub attr: FieldAttr,
     pub schema: Schema,

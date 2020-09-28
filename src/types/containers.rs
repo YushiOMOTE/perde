@@ -1,4 +1,4 @@
-use super::{Object, ObjectRef, Tuple};
+use super::{AttrStr, Object, ObjectRef, Tuple};
 use crate::error::Result;
 use pyo3::{conversion::AsPyPointer, ffi::*};
 use std::os::raw::c_char;
@@ -210,7 +210,7 @@ impl Enum {
         Self(obj)
     }
 
-    pub fn value(&self, name: &str) -> Result<Object> {
+    pub fn value(&self, name: &AttrStr) -> Result<Object> {
         self.0.get_attr(name)
     }
 

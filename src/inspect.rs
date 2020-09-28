@@ -1,7 +1,7 @@
 use crate::{
     error::Result,
     schema::*,
-    types::{self, static_objects, Object, ObjectRef, StaticObject, TupleRef},
+    types::{self, static_objects, AttrStr, Object, ObjectRef, StaticObject, TupleRef},
 };
 use indexmap::IndexMap;
 use pyo3::ffi::PyObject;
@@ -24,10 +24,18 @@ fn convert_stringcase(s: &str, case: Option<StrCase>) -> String {
     }
 }
 
-const SCHEMA_CACHE: &'static str = "__perde_schema__\0";
+lazy_static::lazy_static! {
+    static ref SCHEMA_CACHE: AttrStr = AttrStr::new("__perde_schema__");
+    static ref DATACLASS_FIELDS: AttrStr = AttrStr::new("__dataclass_fields__");
+    static ref ATTR_NAME: AttrStr = AttrStr::new("name");
+    static ref ATTR_TYPE: AttrStr = AttrStr::new("type");
+    static ref ATTR_VALUE: AttrStr = AttrStr::new("value");
+    static ref ATTR_ARGS: AttrStr = AttrStr::new("__args__");
+    static ref ATTR_ORIGIN: AttrStr = AttrStr::new("__origin__");
+}
 
 pub fn resolve_schema<'a>(p: &'a ObjectRef, attr: *mut PyObject) -> Result<&'a Schema> {
-    match p.get_capsule(SCHEMA_CACHE) {
+    match p.get_capsule(&SCHEMA_CACHE) {
         Ok(p) => return Ok(p),
         _ => {}
     }
@@ -51,11 +59,11 @@ pub fn resolve_schema<'a>(p: &'a ObjectRef, attr: *mut PyObject) -> Result<&'a S
     } else if p.is_set() {
         Ok(&static_schema().set)
     } else if let Some(s) = maybe_dataclass(p, attr)? {
-        p.set_capsule(SCHEMA_CACHE, s)
+        p.set_capsule(&SCHEMA_CACHE, s)
     } else if let Some(s) = maybe_generic(p)? {
-        p.set_capsule(SCHEMA_CACHE, s)
+        p.set_capsule(&SCHEMA_CACHE, s)
     } else if let Some(s) = maybe_enum(p)? {
-        p.set_capsule(SCHEMA_CACHE, s)
+        p.set_capsule(&SCHEMA_CACHE, s)
     } else {
         bail!("unsupported type")
     }
@@ -86,7 +94,7 @@ pub fn to_schema(p: &ObjectRef) -> Result<Schema> {
 }
 
 fn maybe_dataclass(p: &ObjectRef, attr: *mut PyObject) -> Result<Option<Schema>> {
-    if !p.has_attr("__dataclass_fields__\0") {
+    if !p.has_attr(&DATACLASS_FIELDS) {
         return Ok(None);
     }
 
@@ -98,12 +106,12 @@ fn maybe_dataclass(p: &ObjectRef, attr: *mut PyObject) -> Result<Option<Schema>>
 
     for i in 0..fields.len() {
         let field = fields.getref(i)?;
-        let name = field.get_attr("name\0")?;
-        let ty = field.get_attr("type\0")?;
+        let name = field.get_attr(&ATTR_NAME)?;
+        let ty = field.get_attr(&ATTR_TYPE)?;
 
         let s = name.as_str()?;
         let mem = FieldSchema::new(
-            format!("{}\0", s),
+            AttrStr::new(s),
             i as usize,
             FieldAttr::default(),
             to_schema(ty.as_ref())?,
@@ -132,8 +140,8 @@ fn maybe_enum(p: &ObjectRef) -> Result<Option<Schema>> {
 
     let variants: Result<_> = iter
         .map(|item| {
-            let name = item.get_attr("name\0")?;
-            let value = item.get_attr("value\0")?;
+            let name = item.get_attr(&ATTR_NAME)?;
+            let value = item.get_attr(&ATTR_VALUE)?;
 
             let name = name.as_str()?;
 
@@ -210,7 +218,7 @@ fn to_set(p: &ObjectRef) -> Result<Schema> {
 }
 
 fn get_args(p: &ObjectRef) -> Result<types::Tuple> {
-    Ok(types::Tuple::from(p.get_attr("__args__\0")?))
+    Ok(types::Tuple::from(p.get_attr(&ATTR_ARGS)?))
 }
 
 fn maybe_generic(p: &ObjectRef) -> Result<Option<Schema>> {
@@ -218,7 +226,7 @@ fn maybe_generic(p: &ObjectRef) -> Result<Option<Schema>> {
         return Ok(None);
     }
 
-    let origin = p.get_attr("__origin__\0")?;
+    let origin = p.get_attr(&ATTR_ORIGIN)?;
 
     let s = if origin.is(static_objects()?.union.as_ptr()) {
         to_union(p)?
