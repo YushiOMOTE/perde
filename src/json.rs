@@ -39,34 +39,14 @@ pub unsafe extern "C" fn dumps(
         let args = TupleRef::from_args(args)?;
         let args = args.get(0).unwrap().as_ptr();
 
-        assert!(!pyo3::PyErr::occurred(unsafe {
-            pyo3::Python::assume_gil_acquired()
-        }));
-
         let obj = unsafe {
             ObjectRef::new(
                 args, // .offset(0)
             )?
         };
-        let p = unsafe { (*obj.as_ptr()).ob_type } as *mut PyObject;
-        let re = ObjectRef::new(p)?;
 
-        assert!(!pyo3::PyErr::occurred(unsafe {
-            pyo3::Python::assume_gil_acquired()
-        }));
-
-        let schema = Schema::resolve(re, std::ptr::null_mut())?;
-
-        assert!(!pyo3::PyErr::occurred(unsafe {
-            pyo3::Python::assume_gil_acquired()
-        }));
-
-        println!("resolve");
+        let schema = obj.get_type()?.resolve()?;
         let with_schema = WithSchema::new(schema, obj);
-
-        assert!(!pyo3::PyErr::occurred(unsafe {
-            pyo3::Python::assume_gil_acquired()
-        }));
 
         let buf = vec![];
         let mut serializer = serde_json::Serializer::new(buf);

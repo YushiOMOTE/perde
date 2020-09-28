@@ -1,5 +1,8 @@
 use super::{AttrStr, Tuple};
-use crate::error::{Error, Result};
+use crate::{
+    error::{Error, Result},
+    schema::Schema,
+};
 use pyo3::{
     conversion::{AsPyPointer, IntoPyPointer},
     ffi::*,
@@ -40,8 +43,16 @@ impl ObjectRef {
         }
     }
 
+    pub fn resolve(&self) -> Result<&Schema> {
+        Schema::resolve(self, std::ptr::null_mut())
+    }
+
     pub fn to_owned(&self) -> Object {
         Object::new_clone(self.as_ptr()).unwrap()
+    }
+
+    pub fn get_type(&self) -> Result<&ObjectRef> {
+        Self::new(unsafe { (*self.as_ptr()).ob_type } as *mut PyObject)
     }
 
     pub fn set_capsule<'a, T>(&self, s: &AttrStr, item: T) -> Result<&'a T> {

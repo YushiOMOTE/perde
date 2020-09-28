@@ -24,6 +24,7 @@ impl<'a> Serialize for WithSchema<'a> {
     where
         S: Serializer,
     {
+        println!("{:?}", self.schema);
         match self.schema {
             Schema::Primitive(Primitive::Bool) => s.serialize_bool(self.object.as_bool().ser()?),
             Schema::Primitive(Primitive::Int) => s.serialize_i64(self.object.as_i64().ser()?),
@@ -95,7 +96,10 @@ impl<'a> Serialize for WithSchema<'a> {
                 }
             }
             Schema::Union(u) => unimplemented!(),
-            Schema::Any(a) => unimplemented!(),
+            Schema::Any(a) => {
+                let schema = self.object.get_type().ser()?.resolve().ser()?;
+                WithSchema::new(&schema, self.object).serialize(s)
+            }
         }
     }
 }

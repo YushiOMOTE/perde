@@ -52,12 +52,12 @@ LISTS = [
 DICTS_SK = [
     Entry(Dict[str, bool], [{"k": True}, {}]),
     Entry(Dict[str, int], [{"a": 3}, {}]),
-    Entry(Dict[str, float], [{"v": -1.4, "p": 0, "n": 2.2}, {}]),
+    Entry(Dict[str, float], [{"v": -1.4, "p": 0.0, "n": 2.2}, {}]),
     Entry(Dict[str, str], [{"v": "avc", "p": ""}, {"n": "x"}, {}]),
     Entry(Dict[str, bytes], [{"v": b"aaaa", "z": b""}, {"p": b"v"}, {}]),
 ]
 
-@pytest.mark.parametrize("t1,v1", expand(PRIMITIVES))
+@pytest.mark.parametrize("t1,v1", expand(PRIMITIVES + LISTS + DICTS_SK))
 def test_primitives(t1, v1):
     repack(t1, v1)
 
