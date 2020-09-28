@@ -31,20 +31,12 @@ macro_rules! cast {
 }
 
 #[derive(Debug)]
-#[repr(transparent)]
-pub struct ObjectRef(NonNull<PyObject>);
+pub struct ObjectRef;
 
 impl ObjectRef {
     pub fn new<'a>(p: *mut PyObject) -> Result<&'a Self> {
-        match NonNull::new(p) {
-            Some(p) => unsafe {
-                {
-                    println!("before: {:?}", p);
-                    let v = Ok(std::mem::transmute::<&ObjectRef, &ObjectRef>(&Self(p)));
-                    println!("after: {:?}", v);
-                    v
-                }
-            },
+        match unsafe { (p as *mut ObjectRef).as_ref() } {
+            Some(p) => Ok(p),
             None => {
                 println!("error ref");
                 Err(anyhow!("failed to create an object"))
@@ -74,7 +66,7 @@ impl ObjectRef {
         })?;
 
         if unsafe {
-            PyObject_SetAttrString(self.0.as_ptr(), s.as_ptr() as *mut c_char, obj.as_ptr()) != 0
+            PyObject_SetAttrString(self.as_ptr(), s.as_ptr() as *mut c_char, obj.as_ptr()) != 0
         } {
             bail!("cannot set attribute `{}`", s)
         } else {
@@ -178,7 +170,7 @@ impl ObjectRef {
     }
 
     pub fn is(&self, p: *mut PyObject) -> bool {
-        self.0.as_ptr() == p
+        self.as_ptr() == p
     }
 
     pub fn is_none(&self) -> bool {
@@ -242,22 +234,22 @@ impl ObjectRef {
     }
 
     pub fn as_ptr(&self) -> *mut PyObject {
-        self.0.as_ptr()
+        unsafe { &*self as *const Self as *mut Self as *mut PyObject }
     }
 
     pub fn has_attr(&self, s: &str) -> bool {
-        unsafe { PyObject_HasAttrString(self.0.as_ptr(), s.as_ptr() as *mut c_char) != 0 }
+        unsafe { PyObject_HasAttrString(self.as_ptr(), s.as_ptr() as *mut c_char) != 0 }
     }
 
     pub fn get_attr(&self, s: &str) -> Result<Object> {
-        println!("getting attr {}: {:?}", s, self.0.as_ptr());
+        println!("getting attr {}: {:?}", s, self.as_ptr());
 
-        unsafe { PyObject_HasAttrString(self.0.as_ptr(), s.as_ptr() as *mut c_char) };
+        unsafe { PyObject_HasAttrString(self.as_ptr(), s.as_ptr() as *mut c_char) };
 
         println!("check pass");
 
         let e = objnew!(PyObject_GetAttrString(
-            self.0.as_ptr(),
+            self.as_ptr(),
             s.as_ptr() as *mut c_char
         ));
         println!("{:?}", e);
@@ -269,7 +261,7 @@ impl ObjectRef {
     }
 
     pub fn call(&self, tuple: Tuple) -> Result<Object> {
-        objnew!(PyObject_CallObject(self.0.as_ptr(), tuple.as_ptr()))
+        objnew!(PyObject_CallObject(self.as_ptr(), tuple.as_ptr()))
     }
 }
 
@@ -290,12 +282,12 @@ impl Iterator for ObjectIter {
 }
 
 #[derive(Debug)]
-pub struct Object(ObjectRef);
+pub struct Object(NonNull<ObjectRef>);
 
 impl Object {
     pub fn new(p: *mut PyObject) -> Result<Self> {
-        match NonNull::new(p) {
-            Some(p) => Ok(Self(ObjectRef(p))),
+        match NonNull::new(p as *mut ObjectRef) {
+            Some(p) => Ok(Self(p)),
             None => Err(anyhow!("failed to create an object")),
         }
     }
@@ -351,15 +343,15 @@ impl Object {
     pub fn into_ptr(self) -> *mut PyObject {
         let ptr = self.0.as_ptr();
         std::mem::forget(self);
-        ptr
+        ptr as *mut PyObject
     }
 
     fn incref(&self) {
-        unsafe { Py_INCREF(self.0.as_ptr()) }
+        unsafe { Py_INCREF(self.as_ptr()) }
     }
 
     fn decref(&self) {
-        unsafe { Py_DECREF(self.0.as_ptr()) }
+        unsafe { Py_DECREF(self.as_ptr()) }
     }
 }
 
@@ -367,25 +359,25 @@ impl Deref for Object {
     type Target = ObjectRef;
 
     fn deref(&self) -> &Self::Target {
-        &self.0
+        unsafe { self.0.as_ref() }
     }
 }
 
 impl DerefMut for Object {
     fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
+        unsafe { self.0.as_mut() }
     }
 }
 
 impl AsRef<ObjectRef> for Object {
     fn as_ref(&self) -> &ObjectRef {
-        &self.0
+        &self
     }
 }
 
 impl Clone for Object {
     fn clone(&self) -> Self {
-        self.0.to_owned()
+        self.to_owned()
     }
 }
 
