@@ -326,6 +326,12 @@ impl Schema {
     }
 }
 
+#[derive(new, Clone, Debug)]
+pub struct WithSchema<'a> {
+    pub schema: &'a Schema,
+    pub object: &'a ObjectRef,
+}
+
 pub struct StaticSchema {
     pub boolean: Schema,
     pub int: Schema,

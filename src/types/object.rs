@@ -1,7 +1,7 @@
 use super::{AttrStr, Tuple};
 use crate::{
     error::{Error, Result},
-    schema::Schema,
+    schema::{Schema, WithSchema},
 };
 use pyo3::{
     conversion::{AsPyPointer, IntoPyPointer},
@@ -45,6 +45,15 @@ impl ObjectRef {
 
     pub fn resolve(&self) -> Result<&Schema> {
         Schema::resolve(self, std::ptr::null_mut())
+    }
+
+    pub fn resolved_object<'a>(&'a self) -> Result<WithSchema<'a>> {
+        let schema = self.get_type()?.resolve()?;
+        Ok(WithSchema::new(schema, self))
+    }
+
+    pub fn with_schema<'a>(&'a self, schema: &'a Schema) -> WithSchema<'a> {
+        WithSchema::new(schema, self)
     }
 
     pub fn to_owned(&self) -> Object {

@@ -1,5 +1,4 @@
 use crate::{
-    encode::WithSchema,
     error::{Convert, Error},
     schema::Schema,
     types::{self, Object, ObjectRef, TupleRef, _PyCFunctionFastWithKeywords},
@@ -45,12 +44,11 @@ pub unsafe extern "C" fn dumps(
             )?
         };
 
-        let schema = obj.get_type()?.resolve()?;
-        let with_schema = WithSchema::new(schema, obj);
+        let resolved = obj.resolved_object()?;
 
         let buf = vec![];
         let mut serializer = serde_json::Serializer::new(buf);
-        with_schema.serialize(&mut serializer);
+        resolved.serialize(&mut serializer);
         let buf = serializer.into_inner();
 
         assert!(!pyo3::PyErr::occurred(unsafe {

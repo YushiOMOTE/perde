@@ -1,6 +1,6 @@
 use crate::{
     error::Convert,
-    schema::{Class, Enum, Primitive, Schema, Union},
+    schema::{Class, Enum, Primitive, Schema, Union, WithSchema},
     types::{DictRef, ListRef, ObjectRef, SetRef, TupleRef},
 };
 use derive_new::new;
@@ -12,12 +12,6 @@ use serde::{
     ser::{self, Error, SerializeMap, SerializeSeq, Serializer},
     Serialize,
 };
-
-#[derive(new, Clone, Debug)]
-pub struct WithSchema<'a> {
-    pub schema: &'a Schema,
-    pub object: &'a ObjectRef,
-}
 
 impl<'a> Serialize for WithSchema<'a> {
     fn serialize<S>(&self, s: S) -> Result<S::Ok, S::Error>
@@ -40,7 +34,7 @@ impl<'a> Serialize for WithSchema<'a> {
                 let mut seq = s.serialize_seq(Some(len))?;
                 for i in 0..len {
                     let obj = list.get(i).unwrap();
-                    let w = WithSchema::new(&l.value, obj);
+                    let w = obj.with_schema(&l.value);
                     seq.serialize_element(&w)?;
                 }
                 seq.end()
@@ -51,7 +45,7 @@ impl<'a> Serialize for WithSchema<'a> {
                 let mut seq = s.serialize_seq(Some(len))?;
                 for i in 0..len {
                     let obj = set.get(i).unwrap();
-                    let w = WithSchema::new(&l.value, obj);
+                    let w = obj.with_schema(&l.value);
                     seq.serialize_element(&w)?;
                 }
                 seq.end()
@@ -62,7 +56,7 @@ impl<'a> Serialize for WithSchema<'a> {
                 let len = iter.len();
                 let mut seq = s.serialize_seq(Some(len))?;
                 for (obj, schema) in iter.zip(t.args.iter()) {
-                    let w = WithSchema::new(schema, obj);
+                    let w = obj.with_schema(schema);
                     seq.serialize_element(&w)?;
                 }
                 seq.end()
@@ -71,8 +65,8 @@ impl<'a> Serialize for WithSchema<'a> {
                 let dict = DictRef::new(self.object);
                 let mut map = s.serialize_map(Some(dict.len()))?;
                 for (k, v) in dict.iter() {
-                    let k = WithSchema::new(&d.key, k);
-                    let v = WithSchema::new(&d.value, v);
+                    let k = k.with_schema(&d.key);
+                    let v = v.with_schema(&d.value);
                     map.serialize_entry(&k, &v)?;
                 }
                 map.end()
@@ -81,7 +75,7 @@ impl<'a> Serialize for WithSchema<'a> {
                 let mut map = s.serialize_map(Some(c.fields.len()))?;
                 for (name, field) in &c.fields {
                     let obj = self.object.get_attr(&field.name).ser()?;
-                    let f = WithSchema::new(&field.schema, &obj);
+                    let f = obj.with_schema(&field.schema);
                     map.serialize_entry(&name, &f)?;
                 }
                 map.end()
@@ -91,15 +85,12 @@ impl<'a> Serialize for WithSchema<'a> {
                 if self.object.is_none() {
                     s.serialize_none()
                 } else {
-                    let w = WithSchema::new(&o.value, self.object);
+                    let w = self.object.with_schema(&o.value);
                     s.serialize_some(&w)
                 }
             }
             Schema::Union(u) => unimplemented!(),
-            Schema::Any(a) => {
-                let schema = self.object.get_type().ser()?.resolve().ser()?;
-                WithSchema::new(&schema, self.object).serialize(s)
-            }
+            Schema::Any(a) => self.object.resolved_object().ser()?.serialize(s),
         }
     }
 }
