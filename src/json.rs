@@ -55,7 +55,7 @@ pub extern "C" fn dumps(
     inner().restore().unwrap_or(std::ptr::null_mut())
 }
 
-pub unsafe extern "C" fn loads(
+pub extern "C" fn loads(
     _self: *mut PyObject,
     args: *const *mut PyObject,
     nargs: Py_ssize_t,

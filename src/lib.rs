@@ -11,7 +11,7 @@ mod error;
 #[macro_use]
 mod types;
 
-mod inspect;
+mod resolve;
 mod schema;
 
 mod decode;

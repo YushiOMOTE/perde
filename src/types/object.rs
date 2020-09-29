@@ -1,6 +1,7 @@
 use super::{AttrStr, Tuple};
 use crate::{
     error::Result,
+    resolve::resolve_schema,
     schema::{Schema, WithSchema},
 };
 use pyo3::{conversion::IntoPyPointer, ffi::*};
@@ -35,7 +36,7 @@ impl ObjectRef {
     }
 
     pub fn resolve<'a>(&'a self, attr: Option<HashMap<&str, &ObjectRef>>) -> Result<&'a Schema> {
-        Schema::resolve(self, attr)
+        resolve_schema(self, attr)
     }
 
     pub fn resolved_object<'a>(&'a self) -> Result<WithSchema<'a>> {

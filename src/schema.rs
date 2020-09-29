@@ -1,6 +1,5 @@
 use crate::{
     error::{Convert, Error, Result},
-    inspect::resolve_schema,
     types::{self, AttrStr, Object, ObjectRef},
 };
 use derive_new::new;
@@ -141,15 +140,6 @@ impl EnumAttr {
             extract_parse!(attr, "rename_all"),
             extract_str!(attr, "rename"),
         ))
-    }
-}
-
-impl Schema {
-    pub fn resolve<'a>(
-        ty: &'a ObjectRef,
-        kw: Option<HashMap<&str, &ObjectRef>>,
-    ) -> Result<&'a Self> {
-        resolve_schema(ty, kw)
     }
 }
 
