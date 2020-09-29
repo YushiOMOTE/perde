@@ -57,10 +57,7 @@ pub extern "C" fn resolve(
 
 #[pymodule]
 fn perde(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
-    #[cfg(feature = "json")]
-    format::json::import(m)?;
-    #[cfg(feature = "yaml")]
-    format::yaml::import(m)?;
+    format::import(m)?;
 
     method_fastcall!(resolve, "")(m);
 
