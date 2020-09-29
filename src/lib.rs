@@ -1,6 +1,6 @@
 use crate::{
     error::Convert,
-    types::{Object, ObjectRef, TupleRef, _PyCFunctionFastWithKeywords},
+    types::{FastArgs, Object, _PyCFunctionFastWithKeywords},
 };
 use pyo3::{conversion::AsPyPointer, ffi::*, prelude::*};
 use std::{collections::HashMap, os::raw::c_char};
@@ -20,26 +20,25 @@ mod encode;
 #[cfg(feature = "json")]
 mod json;
 
-pub unsafe extern "C" fn resolve(
+pub extern "C" fn resolve(
     _self: *mut pyo3::ffi::PyObject,
     args: *const *mut pyo3::ffi::PyObject,
     nargs: Py_ssize_t,
     kwnames: *mut pyo3::ffi::PyObject,
 ) -> *mut pyo3::ffi::PyObject {
     let inner = || {
-        let nargs = PyVectorcall_NARGS(nargs as isize);
+        let fargs = FastArgs::new(args, nargs, kwnames);
 
-        if nargs != 1 {
+        if fargs.num_args() != 1 {
             bail!("resolve() requires 1 positional argument");
         }
 
-        let typeobj = ObjectRef::new(*args.offset(0))?;
+        let typeobj = fargs.arg(0)?;
 
-        let attr = if !kwnames.is_null() {
+        let attr = if let Some(iter) = fargs.iter_kwargs()? {
             let mut attr = HashMap::new();
-            for (index, key) in TupleRef::new(ObjectRef::new(kwnames)?).iter().enumerate() {
-                let key = key.as_str()?;
-                let value = ObjectRef::new(*args.offset(nargs + index as isize))?;
+            for res in iter {
+                let (key, value) = res?;
                 attr.insert(key, value);
             }
             Some(attr)

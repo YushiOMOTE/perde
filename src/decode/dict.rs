@@ -24,7 +24,7 @@ impl<'a, 'de> Visitor<'de> for DictVisitor<'a> {
         while let Some(key) = access.next_key_seed(&*self.0.key)? {
             let key: Object = key;
             let value: Object = access.next_value_seed(&*self.0.value)?;
-            dict.set(key, value);
+            dict.set(key, value).de()?;
         }
 
         Ok(dict.into_inner())

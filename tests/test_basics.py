@@ -10,8 +10,6 @@ def repack(ty, *args, **kwargs):
     oty = get_origin(ty) or ty
     e = oty(*args, **kwargs)
     assert e is not None
-    print(hex(id(e)))
-    print(hex(id(type(e))))
     v = perde.json.dumps(e)
     print(f'ok: ser: {v}')
     a = perde.json.loads_as(ty, v)

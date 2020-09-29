@@ -1,6 +1,6 @@
 use crate::{
     error::{Convert, Error},
-    types::{Object, ObjectRef, TupleRef, _PyCFunctionFastWithKeywords},
+    types::{FastArgs, Object, TupleRef, _PyCFunctionFastWithKeywords},
 };
 use pyo3::{ffi::*, proc_macro::pymodule, types::PyModule, wrap_pymodule, PyResult, Python};
 use serde::ser::Serialize;
@@ -26,19 +26,18 @@ pub extern "C" fn loads_as(_self: *mut PyObject, args: *mut PyObject) -> *mut Py
 
 pub extern "C" fn dumps(
     _self: *mut PyObject,
-    args: *mut PyObject,
-    // args: *const *mut PyObject,
-    // nargs: Py_ssize_t,
-    // kwnames: *mut PyObject,
+    args: *const *mut PyObject,
+    nargs: Py_ssize_t,
+    kwnames: *mut PyObject,
 ) -> *mut PyObject {
     let inner = || {
-        let args = TupleRef::from_args(args)?;
-        let args = args.get(0).unwrap().as_ptr();
+        let fargs = FastArgs::new(args, nargs, kwnames);
 
-        let obj = ObjectRef::new(
-            args, // .offset(0)
-        )?;
+        if fargs.num_args() != 1 {
+            bail!("dumps() requires 1 positional argument");
+        }
 
+        let obj = fargs.arg(0)?;
         let resolved = obj.resolved_object()?;
 
         let buf = vec![];
@@ -63,7 +62,8 @@ pub unsafe extern "C" fn loads(
     kwnames: *mut PyObject,
 ) -> *mut PyObject {
     let inner = || {
-        let obj = ObjectRef::new(*args.offset(0))?;
+        let fargs = FastArgs::new(args, nargs, kwnames);
+        let obj = fargs.arg(0)?;
         let mut deserializer = serde_json::Deserializer::from_str(obj.as_str()?);
         Ok::<_, Error>(Object::deserialize(&mut deserializer).map(|v| v.into_ptr())?)
     };
@@ -78,21 +78,16 @@ pub fn json(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
     let def = PyMethodDef {
         ml_name: "dumps\0".as_ptr() as *const c_char,
         ml_meth: Some(unsafe {
-            dumps
-            // std::mem::transmute::<_PyCFunctionFastWithKeywords, PyCFunction>(loads)
+            std::mem::transmute::<_PyCFunctionFastWithKeywords, PyCFunction>(dumps)
         }),
-        ml_flags: METH_VARARGS, // METH_FASTCALL | METH_KEYWORDS,
+        ml_flags: METH_FASTCALL | METH_KEYWORDS,
         ml_doc: "".as_ptr() as *const c_char,
     };
     unsafe {
         PyModule_AddObject(
             m.as_ptr(),
             "dumps\0".as_ptr() as *const c_char,
-            PyCFunction_NewEx(
-                Box::into_raw(Box::new(def)),
-                std::ptr::null_mut(),
-                m.as_ptr(),
-            ),
+            PyCFunction_New(Box::into_raw(Box::new(def)), std::ptr::null_mut()),
         )
     };
 
