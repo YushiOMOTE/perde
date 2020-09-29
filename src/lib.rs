@@ -22,6 +22,8 @@ mod encode;
 
 #[cfg(feature = "json")]
 mod json;
+#[cfg(feature = "yaml")]
+mod yaml;
 
 pub extern "C" fn resolve(
     _self: *mut pyo3::ffi::PyObject,
@@ -61,6 +63,8 @@ pub extern "C" fn resolve(
 fn perde(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
     #[cfg(feature = "json")]
     json::import(m)?;
+    #[cfg(feature = "yaml")]
+    yaml::import(m)?;
 
     method_fastcall!(resolve, "")(m);
 

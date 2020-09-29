@@ -52,7 +52,7 @@ macro_rules! method_varargs {
 
 macro_rules! module {
     ($name:tt, $($cls:expr),*) => {
-        #[pymodule]
+        #[pyo3::proc_macro::pymodule]
         pub fn $name(_py: pyo3::Python<'_>, m: &pyo3::types::PyModule) -> pyo3::PyResult<()> {
             use pyo3::AsPyPointer;
 
@@ -65,7 +65,7 @@ macro_rules! module {
         }
 
         pub fn import(m: &pyo3::types::PyModule) -> pyo3::PyResult<()> {
-            m.add_wrapped(pyo3::wrap_pymodule!(json))
+            m.add_wrapped(pyo3::wrap_pymodule!($name))
         }
     };
 }

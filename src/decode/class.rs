@@ -4,7 +4,7 @@ use crate::{
     types::{self, Object},
 };
 use serde::de::{self, DeserializeSeed, Deserializer, IgnoredAny, MapAccess, Visitor};
-use std::{collections::HashMap, fmt};
+use std::{borrow::Cow, collections::HashMap, fmt};
 
 pub struct ClassVisitor<'a>(pub &'a Class);
 
@@ -23,9 +23,9 @@ impl<'a, 'de> Visitor<'de> for ClassVisitor<'a> {
         let mut setcount = 0;
 
         while let Some(key) = access.next_key()? {
-            let key: &str = key;
+            let key: Cow<str> = key;
 
-            if let Some(s) = self.0.field(key).de()? {
+            if let Some(s) = self.0.field(&key).de()? {
                 let value: Object = access.next_value_seed(&s.schema)?;
 
                 tuple.set(s.pos, value);

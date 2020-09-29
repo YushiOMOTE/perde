@@ -58,6 +58,37 @@ print(f'perde     = {res_perde}')
 print(f'ujson     = {res_ujson}')
 print(f'orjson    = {res_orjson}')
 
+############################### yaml
+print("a")
+res_perde_as = timeit.repeat('yaml.loads_as(C, \'{"key": 3, "value": "hoge"}\')', setup = '''
+from perde import yaml
+from dataclasses import dataclass
+
+@dataclass
+class C:
+    key: int
+    value: str
+yaml.loads_as(C, \'{"key": 300, "value": "hoge"}\')
+''', number = 100000)
+
+data = '{"key": 300, "value": "hoge"}'
+check = f'''
+# assert yaml.loads(\'{data}\') == {{"key": 300, "value": "hoge"}}
+'''
+print("b")
+# data = '{"a": [1,2,3,4,5,6,7,8,9]}'
+# check = f'''
+# assert yaml.loads(\'{data}\') == {{"a": [1,2,3,4,5,6,7,8,9]}}
+# '''
+
+# Why so slow...
+res_yaml = timeit.repeat(f'yaml.load(\'{data}\')', setup = f"import yaml{check}", number = 10000)
+res_perde = timeit.repeat(f'yaml.loads(\'{data}\')', setup = f"from perde import yaml{check}", number = 100000)
+
+print(f'yaml      = {res_yaml}')
+print(f'perde as  = {res_perde_as}')
+print(f'perde     = {res_perde}')
+
 # prep = '''
 # from dataclasses import dataclass
 

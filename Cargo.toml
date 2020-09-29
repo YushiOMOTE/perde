@@ -24,7 +24,7 @@ name = "perde"
 crate-type = ["cdylib"]
 
 [features]
-default = ["json"]
+default = ["json", "yaml"]
 json = ["serde_json"]
 yaml = ["serde_yaml"]
 toml = ["serde_toml"]

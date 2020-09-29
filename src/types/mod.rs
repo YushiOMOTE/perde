@@ -9,7 +9,6 @@ pub use self::containers::*;
 pub use self::object::*;
 pub use self::tuple::*;
 
-use pyo3::ffi::*;
 use std::{
     fmt::{self, Display},
     os::raw::c_char,

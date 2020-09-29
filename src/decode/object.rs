@@ -7,7 +7,7 @@ use serde::{
     de::{DeserializeSeed, Deserializer, EnumAccess, Error, MapAccess, SeqAccess, Visitor},
     Deserialize,
 };
-use std::fmt;
+use std::{borrow::Cow, fmt};
 
 struct AnyVisitor;
 
@@ -198,7 +198,7 @@ impl<'de> Visitor<'de> for AnyVisitor {
         let mut dict = types::Dict::new().de()?;
 
         while let Some(k) = map.next_key()? {
-            let k: &str = k;
+            let k: Cow<str> = k;
             let v = map.next_value()?;
             dict.set(Object::new_str(&k).de()?, v).de()?;
         }
