@@ -18,7 +18,7 @@ pub unsafe extern "C" fn loads_as(_self: *mut PyObject, args: *mut PyObject) -> 
         let mut deserializer = serde_json::Deserializer::from_str(s);
 
         use serde::de::DeserializeSeed;
-        let schema = Schema::resolve(args.get(0)?, std::ptr::null_mut())?;
+        let schema = args.get(0)?.resolve(None)?;
         let obj = schema.deserialize(&mut deserializer)?;
 
         Ok::<_, Error>(obj.into_ptr())
@@ -78,7 +78,6 @@ pub unsafe extern "C" fn loads(
 
 #[pymodule]
 pub fn json(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
-    println!("LOADING");
     use pyo3::AsPyPointer;
 
     let def = PyMethodDef {
@@ -131,8 +130,6 @@ pub fn json(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
             PyCFunction_New(Box::into_raw(Box::new(def)), std::ptr::null_mut()),
         )
     };
-
-    println!("LOADED");
 
     Ok(())
 }

@@ -8,6 +8,7 @@ use pyo3::{
     ffi::*,
 };
 use std::{
+    collections::HashMap,
     marker::PhantomData,
     ops::{Deref, DerefMut},
     os::raw::c_char,
@@ -43,12 +44,12 @@ impl ObjectRef {
         }
     }
 
-    pub fn resolve(&self) -> Result<&Schema> {
-        Schema::resolve(self, std::ptr::null_mut())
+    pub fn resolve<'a>(&'a self, attr: Option<HashMap<&str, &ObjectRef>>) -> Result<&'a Schema> {
+        Schema::resolve(self, attr)
     }
 
     pub fn resolved_object<'a>(&'a self) -> Result<WithSchema<'a>> {
-        let schema = self.get_type()?.resolve()?;
+        let schema = self.get_type()?.resolve(None)?;
         Ok(WithSchema::new(schema, self))
     }
 
@@ -253,17 +254,16 @@ impl ObjectRef {
     }
 
     pub fn get_attr(&self, s: &AttrStr) -> Result<Object> {
-        unsafe { PyObject_HasAttrString(self.as_ptr(), s.as_ptr()) };
-
-        let e = objnew!(PyObject_GetAttrString(
-            self.as_ptr(),
-            s.as_ptr() as *mut c_char
-        ));
-        e
+        objnew!(PyObject_GetAttrString(self.as_ptr(), s.as_ptr()))
     }
 
     pub fn get_iter(&self) -> Result<ObjectIter> {
         Ok(ObjectIter(objnew!(PyObject_GetIter(self.as_ptr()))?))
+    }
+
+    pub fn get(&self, s: &str) -> Option<Object> {
+        let key = Object::new_str(s).ok()?;
+        objnew!(PyObject_GetItem(self.as_ptr(), key.as_ptr())).ok()
     }
 
     pub fn call(&self, tuple: Tuple) -> Result<Object> {

@@ -22,6 +22,7 @@ impl<'a, 'de> Visitor<'de> for ClassVisitor<'a> {
         M: MapAccess<'de>,
     {
         let mut tuple = types::Tuple::new(self.0.fields.len()).de()?;
+        let mut setcount = 0;
 
         while let Some(key) = access.next_key()? {
             let key: &str = key;
@@ -30,9 +31,14 @@ impl<'a, 'de> Visitor<'de> for ClassVisitor<'a> {
                 let value: Object = access.next_value_seed(&s.schema)?;
 
                 tuple.set(s.pos, value);
+                setcount += 1;
             } else {
                 let _: IgnoredAny = access.next_value()?;
             }
+        }
+
+        if setcount != self.0.fields.len() {
+            return Err(de::Error::custom("missing field"));
         }
 
         self.0.ty.construct(tuple).de()

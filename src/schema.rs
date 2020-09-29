@@ -7,7 +7,7 @@ use derive_new::new;
 use indexmap::IndexMap;
 use pyo3::conversion::AsPyPointer;
 use pyo3::ffi::PyObject;
-use std::str::FromStr;
+use std::{collections::HashMap, str::FromStr};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum StrCase {
@@ -52,11 +52,14 @@ pub struct FieldAttr {
 macro_rules! extract_parse {
     ($dict:expr, $field:expr) => {
         $dict
-            .get($field)
-            .map(|v| {
-                let s = v.as_str()?;
-                s.parse()
-                    .with_context(|| format!("invalid string `{}` in attribute `{}`", s, $field))
+            .as_ref()
+            .and_then(|map| {
+                map.get($field).map(|v| {
+                    let s = v.as_str()?;
+                    s.parse().with_context(|| {
+                        format!("invalid string `{}` in attribute `{}`", s, $field)
+                    })
+                })
             })
             .transpose()?
     };
@@ -65,8 +68,8 @@ macro_rules! extract_parse {
 macro_rules! extract_bool {
     ($dict:expr, $field:expr) => {
         $dict
-            .get($field)
-            .map(|v| v.as_bool())
+            .as_ref()
+            .and_then(|map| map.get($field).map(|v| v.as_bool()))
             .transpose()
             .with_context(|| format!("expected `bool` in attribute `{}`", $field))?
             .unwrap_or(false)
@@ -76,8 +79,8 @@ macro_rules! extract_bool {
 macro_rules! extract_str {
     ($dict:expr, $field:expr) => {
         $dict
-            .get($field)
-            .map(|v| v.as_str().map(|v| v.to_string()))
+            .as_ref()
+            .and_then(|map| map.get($field).map(|v| v.as_str().map(|v| v.to_string())))
             .transpose()
             .with_context(|| format!("expected `str` in attribute `{}`", $field))?
     };
@@ -85,19 +88,78 @@ macro_rules! extract_str {
 
 macro_rules! extract {
     ($dict:expr, $field:expr) => {
-        $dict.get($field)
+        $dict
+            .as_ref()
+            .and_then(|map| map.get($field).map(|v| (*v).to_owned()))
+    };
+}
+
+macro_rules! obj_extract_parse {
+    ($dict:expr, $field:expr) => {
+        $dict
+            .as_ref()
+            .and_then(|map| {
+                map.get_attr(&AttrStr::new($field))
+                    .map(|v| {
+                        let s = v.as_str()?;
+                        s.parse().with_context(|| {
+                            format!("invalid string `{}` in attribute `{}`", s, $field)
+                        })
+                    })
+                    .ok()
+            })
+            .transpose()?
+    };
+}
+
+macro_rules! obj_extract_bool {
+    ($dict:expr, $field:expr) => {
+        $dict
+            .as_ref()
+            .and_then(|map| {
+                map.get_attr(&AttrStr::new($field))
+                    .map(|v| v.as_bool())
+                    .ok()
+            })
+            .transpose()
+            .with_context(|| format!("expected `bool` in attribute `{}`", $field))?
+            .unwrap_or(false)
+    };
+}
+
+macro_rules! obj_extract_str {
+    ($dict:expr, $field:expr) => {
+        $dict
+            .as_ref()
+            .and_then(|map| {
+                map.get_attr(&AttrStr::new($field))
+                    .map(|v| v.as_str().map(|v| v.to_string()))
+                    .ok()
+            })
+            .transpose()
+            .with_context(|| format!("expected `str` in attribute `{}`", $field))?
+    };
+}
+
+macro_rules! obj_extract {
+    ($dict:expr, $field:expr) => {
+        $dict.as_ref().and_then(|map| {
+            map.get_attr(&AttrStr::new($field))
+                .ok()
+                .map(|v| (*v).to_owned())
+        })
     };
 }
 
 impl FieldAttr {
-    pub fn parse(dict: &DictRef) -> Result<Self> {
+    pub fn parse(attr: &Option<&ObjectRef>) -> Result<Self> {
         Ok(Self::new(
-            extract_bool!(dict, "flatten"),
-            extract_str!(dict, "rename"),
-            extract!(dict, "default"),
-            extract!(dict, "default_factory"),
-            extract_bool!(dict, "skip"),
-            extract_bool!(dict, "skip_deserializing"),
+            extract_bool!(attr, "flatten"),
+            extract_str!(attr, "rename"),
+            extract!(attr, "default"),
+            extract!(attr, "default_factory"),
+            extract_bool!(attr, "skip"),
+            extract_bool!(attr, "skip_deserializing"),
         ))
     }
 }
@@ -116,12 +178,12 @@ pub struct ClassAttr {
 }
 
 impl ClassAttr {
-    pub fn parse(dict: &DictRef) -> Result<Self> {
+    pub fn parse(attr: &Option<HashMap<&str, &ObjectRef>>) -> Result<Self> {
         Ok(Self::new(
-            extract_parse!(dict, "rename_all"),
-            extract_str!(dict, "rename"),
-            extract_bool!(dict, "deny_unknown_fields"),
-            extract_bool!(dict, "default"),
+            extract_parse!(attr, "rename_all"),
+            extract_str!(attr, "rename"),
+            extract_bool!(attr, "deny_unknown_fields"),
+            extract_bool!(attr, "default"),
         ))
     }
 }
@@ -133,19 +195,20 @@ pub struct EnumAttr {
 }
 
 impl EnumAttr {
-    pub fn parse(dict: &DictRef) -> Result<Self> {
+    pub fn parse(attr: &Option<HashMap<&str, &ObjectRef>>) -> Result<Self> {
         Ok(Self::new(
-            extract_parse!(dict, "rename_all"),
-            extract_str!(dict, "rename"),
+            extract_parse!(attr, "rename_all"),
+            extract_str!(attr, "rename"),
         ))
     }
 }
 
 impl Schema {
-    pub fn resolve<'a>(ty: &'a ObjectRef, kw: *mut PyObject) -> Result<&'a Self> {
-        let p = resolve_schema(ty, kw);
-        println!("nop: {:?}", p);
-        p
+    pub fn resolve<'a>(
+        ty: &'a ObjectRef,
+        kw: Option<HashMap<&str, &ObjectRef>>,
+    ) -> Result<&'a Self> {
+        resolve_schema(ty, kw)
     }
 }
 

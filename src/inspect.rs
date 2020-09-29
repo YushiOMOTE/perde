@@ -1,11 +1,11 @@
 use crate::{
     error::Result,
     schema::*,
-    types::{self, static_objects, AttrStr, Object, ObjectRef, StaticObject, TupleRef},
+    types::{self, static_objects, AttrStr, DictRef, Object, ObjectRef, StaticObject, TupleRef},
 };
 use indexmap::IndexMap;
 use pyo3::ffi::PyObject;
-use std::os::raw::c_char;
+use std::{collections::HashMap, os::raw::c_char};
 
 fn convert_stringcase(s: &str, case: Option<StrCase>) -> String {
     use inflections::Inflect;
@@ -28,12 +28,16 @@ lazy_static::lazy_static! {
     static ref DATACLASS_FIELDS: AttrStr = AttrStr::new("__dataclass_fields__");
     static ref ATTR_NAME: AttrStr = AttrStr::new("name");
     static ref ATTR_TYPE: AttrStr = AttrStr::new("type");
+    static ref ATTR_METADATA: AttrStr = AttrStr::new("metadata");
     static ref ATTR_VALUE: AttrStr = AttrStr::new("value");
     static ref ATTR_ARGS: AttrStr = AttrStr::new("__args__");
     static ref ATTR_ORIGIN: AttrStr = AttrStr::new("__origin__");
 }
 
-pub fn resolve_schema<'a>(p: &'a ObjectRef, attr: *mut PyObject) -> Result<&'a Schema> {
+pub fn resolve_schema<'a>(
+    p: &'a ObjectRef,
+    attr: Option<HashMap<&str, &ObjectRef>>,
+) -> Result<&'a Schema> {
     match p.get_capsule(&SCHEMA_CACHE) {
         Ok(p) => return Ok(p),
         _ => {}
@@ -57,11 +61,11 @@ pub fn resolve_schema<'a>(p: &'a ObjectRef, attr: *mut PyObject) -> Result<&'a S
         Ok(&static_schema().list)
     } else if p.is_set() {
         Ok(&static_schema().set)
-    } else if let Some(s) = maybe_dataclass(p, attr)? {
+    } else if let Some(s) = maybe_dataclass(p, &attr)? {
         p.set_capsule(&SCHEMA_CACHE, s)
     } else if let Some(s) = maybe_generic(p)? {
         p.set_capsule(&SCHEMA_CACHE, s)
-    } else if let Some(s) = maybe_enum(p)? {
+    } else if let Some(s) = maybe_enum(p, &attr)? {
         p.set_capsule(&SCHEMA_CACHE, s)
     } else {
         bail!("unsupported type")
@@ -81,21 +85,26 @@ pub fn to_schema(p: &ObjectRef) -> Result<Schema> {
         Ok(Schema::Primitive(Primitive::Bytes))
     } else if p.is_bytearray() {
         Ok(Schema::Primitive(Primitive::ByteArray))
-    } else if let Some(s) = maybe_dataclass(p, std::ptr::null_mut())? {
+    } else if let Some(s) = maybe_dataclass(p, &None)? {
         Ok(s)
     } else if let Some(s) = maybe_generic(p)? {
         Ok(s)
-    } else if let Some(s) = maybe_enum(p)? {
+    } else if let Some(s) = maybe_enum(p, &None)? {
         Ok(s)
     } else {
         bail!("unsupported type")
     }
 }
 
-fn maybe_dataclass(p: &ObjectRef, attr: *mut PyObject) -> Result<Option<Schema>> {
+fn maybe_dataclass(
+    p: &ObjectRef,
+    attr: &Option<HashMap<&str, &ObjectRef>>,
+) -> Result<Option<Schema>> {
     if !p.has_attr(&DATACLASS_FIELDS) {
         return Ok(None);
     }
+
+    let cattr = ClassAttr::parse(attr)?;
 
     let arg = types::Tuple::one(p)?;
     let fields = static_objects()?.fields.call(arg)?;
@@ -107,15 +116,23 @@ fn maybe_dataclass(p: &ObjectRef, attr: *mut PyObject) -> Result<Option<Schema>>
         let field = fields.getref(i)?;
         let name = field.get_attr(&ATTR_NAME)?;
         let ty = field.get_attr(&ATTR_TYPE)?;
+        let metadata = field.get_attr(&ATTR_METADATA)?;
+        let fattr = if metadata.is_none() {
+            None
+        } else {
+            Some(metadata.as_ref())
+        };
+        let fattr = FieldAttr::parse(&fattr)?;
 
         let s = name.as_str()?;
-        let mem = FieldSchema::new(
-            AttrStr::new(s),
-            i as usize,
-            FieldAttr::default(),
-            to_schema(ty.as_ref())?,
-        );
-        members.insert(s.to_string(), mem);
+        let name = if let Some(renamed) = &fattr.rename {
+            renamed.to_owned()
+        } else {
+            convert_stringcase(s, cattr.rename_all)
+        };
+
+        let mem = FieldSchema::new(AttrStr::new(s), i as usize, fattr, to_schema(ty.as_ref())?);
+        members.insert(name, mem);
     }
 
     let name = p.name();
@@ -124,13 +141,13 @@ fn maybe_dataclass(p: &ObjectRef, attr: *mut PyObject) -> Result<Option<Schema>>
     Ok(Some(Schema::Class(Class::new(
         class,
         name.into(),
-        ClassAttr::default(),
+        cattr,
         members,
         IndexMap::new(),
     ))))
 }
 
-fn maybe_enum(p: &ObjectRef) -> Result<Option<Schema>> {
+fn maybe_enum(p: &ObjectRef, attr: &Option<HashMap<&str, &ObjectRef>>) -> Result<Option<Schema>> {
     if !p.is_instance(static_objects()?.enum_meta.as_ptr()) {
         return Ok(None);
     }
@@ -152,7 +169,7 @@ fn maybe_enum(p: &ObjectRef) -> Result<Option<Schema>> {
         .collect();
 
     Ok(Some(Schema::Enum(Enum::new(
-        EnumAttr::default(),
+        EnumAttr::parse(&attr)?,
         variants?,
     ))))
 }

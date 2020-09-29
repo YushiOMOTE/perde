@@ -1,6 +1,9 @@
-use crate::types::_PyCFunctionFastWithKeywords;
+use crate::{
+    error::Convert,
+    types::{Object, ObjectRef, TupleRef, _PyCFunctionFastWithKeywords},
+};
 use pyo3::{conversion::AsPyPointer, ffi::*, prelude::*};
-use std::os::raw::c_char;
+use std::{collections::HashMap, os::raw::c_char};
 
 #[macro_use]
 mod error;
@@ -23,7 +26,33 @@ pub unsafe extern "C" fn resolve(
     nargs: Py_ssize_t,
     kwnames: *mut pyo3::ffi::PyObject,
 ) -> *mut pyo3::ffi::PyObject {
-    unimplemented!()
+    let inner = || {
+        let nargs = PyVectorcall_NARGS(nargs as isize);
+
+        if nargs != 1 {
+            bail!("resolve() requires 1 positional argument");
+        }
+
+        let typeobj = ObjectRef::new(*args.offset(0))?;
+
+        let attr = if !kwnames.is_null() {
+            let mut attr = HashMap::new();
+            for (index, key) in TupleRef::new(ObjectRef::new(kwnames)?).iter().enumerate() {
+                let key = key.as_str()?;
+                let value = ObjectRef::new(*args.offset(nargs + index as isize))?;
+                attr.insert(key, value);
+            }
+            Some(attr)
+        } else {
+            None
+        };
+
+        typeobj.resolve(attr);
+
+        Ok(Object::new_none().into_ptr())
+    };
+
+    inner().restore().unwrap_or(std::ptr::null_mut())
 }
 
 #[pymodule]

@@ -1,4 +1,5 @@
 from .perde import *
+from .perde import resolve
 
 def attr(**kwargs):
     def func(ty):
