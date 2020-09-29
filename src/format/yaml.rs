@@ -3,7 +3,6 @@ use crate::{
     types::{FastArgs, Object, TupleRef},
 };
 use pyo3::ffi::*;
-use serde::ser::Serialize;
 use std::os::raw::c_char;
 
 pub extern "C" fn loads_as(_self: *mut PyObject, args: *mut PyObject) -> *mut PyObject {
