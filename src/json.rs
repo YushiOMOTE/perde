@@ -1,16 +1,13 @@
 use crate::{
     error::{Convert, Error},
-    schema::Schema,
-    types::{self, Object, ObjectRef, TupleRef, _PyCFunctionFastWithKeywords},
+    types::{Object, ObjectRef, TupleRef, _PyCFunctionFastWithKeywords},
 };
-use pyo3::{
-    ffi::*, proc_macro::pymodule, types::PyModule, wrap_pyfunction, wrap_pymodule, PyResult, Python,
-};
+use pyo3::{ffi::*, proc_macro::pymodule, types::PyModule, wrap_pymodule, PyResult, Python};
 use serde::ser::Serialize;
 use serde::Deserialize;
 use std::os::raw::c_char;
 
-pub unsafe extern "C" fn loads_as(_self: *mut PyObject, args: *mut PyObject) -> *mut PyObject {
+pub extern "C" fn loads_as(_self: *mut PyObject, args: *mut PyObject) -> *mut PyObject {
     let inner = || {
         let args = TupleRef::from_args(args)?;
 
@@ -27,7 +24,7 @@ pub unsafe extern "C" fn loads_as(_self: *mut PyObject, args: *mut PyObject) -> 
     inner().restore().unwrap_or(std::ptr::null_mut())
 }
 
-pub unsafe extern "C" fn dumps(
+pub extern "C" fn dumps(
     _self: *mut PyObject,
     args: *mut PyObject,
     // args: *const *mut PyObject,
@@ -38,17 +35,15 @@ pub unsafe extern "C" fn dumps(
         let args = TupleRef::from_args(args)?;
         let args = args.get(0).unwrap().as_ptr();
 
-        let obj = unsafe {
-            ObjectRef::new(
-                args, // .offset(0)
-            )?
-        };
+        let obj = ObjectRef::new(
+            args, // .offset(0)
+        )?;
 
         let resolved = obj.resolved_object()?;
 
         let buf = vec![];
         let mut serializer = serde_json::Serializer::new(buf);
-        resolved.serialize(&mut serializer);
+        resolved.serialize(&mut serializer)?;
         let buf = serializer.into_inner();
 
         assert!(!pyo3::PyErr::occurred(unsafe {

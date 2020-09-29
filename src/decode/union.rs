@@ -1,9 +1,4 @@
-use crate::{
-    decode,
-    schema::*,
-    types::{self, Object},
-};
-use pyo3::prelude::*;
+use crate::{decode, schema::*, types::Object};
 use serde::de::{
     self, DeserializeSeed, Deserializer, IntoDeserializer, MapAccess, SeqAccess, Unexpected,
     Visitor,

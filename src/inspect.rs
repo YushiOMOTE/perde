@@ -1,11 +1,10 @@
 use crate::{
     error::Result,
     schema::*,
-    types::{self, static_objects, AttrStr, DictRef, Object, ObjectRef, StaticObject, TupleRef},
+    types::{self, static_objects, AttrStr, ObjectRef, TupleRef},
 };
 use indexmap::IndexMap;
-use pyo3::ffi::PyObject;
-use std::{collections::HashMap, os::raw::c_char};
+use std::collections::HashMap;
 
 fn convert_stringcase(s: &str, case: Option<StrCase>) -> String {
     use inflections::Inflect;

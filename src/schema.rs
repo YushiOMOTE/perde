@@ -1,12 +1,10 @@
 use crate::{
     error::{Convert, Error, Result},
     inspect::resolve_schema,
-    types::{self, AttrStr, DictRef, Object, ObjectRef},
+    types::{self, AttrStr, Object, ObjectRef},
 };
 use derive_new::new;
 use indexmap::IndexMap;
-use pyo3::conversion::AsPyPointer;
-use pyo3::ffi::PyObject;
 use std::{collections::HashMap, str::FromStr};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -91,63 +89,6 @@ macro_rules! extract {
         $dict
             .as_ref()
             .and_then(|map| map.get($field).map(|v| (*v).to_owned()))
-    };
-}
-
-macro_rules! obj_extract_parse {
-    ($dict:expr, $field:expr) => {
-        $dict
-            .as_ref()
-            .and_then(|map| {
-                map.get_attr(&AttrStr::new($field))
-                    .map(|v| {
-                        let s = v.as_str()?;
-                        s.parse().with_context(|| {
-                            format!("invalid string `{}` in attribute `{}`", s, $field)
-                        })
-                    })
-                    .ok()
-            })
-            .transpose()?
-    };
-}
-
-macro_rules! obj_extract_bool {
-    ($dict:expr, $field:expr) => {
-        $dict
-            .as_ref()
-            .and_then(|map| {
-                map.get_attr(&AttrStr::new($field))
-                    .map(|v| v.as_bool())
-                    .ok()
-            })
-            .transpose()
-            .with_context(|| format!("expected `bool` in attribute `{}`", $field))?
-            .unwrap_or(false)
-    };
-}
-
-macro_rules! obj_extract_str {
-    ($dict:expr, $field:expr) => {
-        $dict
-            .as_ref()
-            .and_then(|map| {
-                map.get_attr(&AttrStr::new($field))
-                    .map(|v| v.as_str().map(|v| v.to_string()))
-                    .ok()
-            })
-            .transpose()
-            .with_context(|| format!("expected `str` in attribute `{}`", $field))?
-    };
-}
-
-macro_rules! obj_extract {
-    ($dict:expr, $field:expr) => {
-        $dict.as_ref().and_then(|map| {
-            map.get_attr(&AttrStr::new($field))
-                .ok()
-                .map(|v| (*v).to_owned())
-        })
     };
 }
 
@@ -347,12 +288,6 @@ impl Union {
     pub fn name(&self) -> &str {
         "union"
     }
-}
-
-macro_rules! is_type {
-    ($given:expr, $($type:ty),*) => {
-        $(py().get_type::<$type>().eq($given))||*
-    };
 }
 
 #[derive(Debug, Clone, new)]

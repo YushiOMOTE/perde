@@ -7,7 +7,7 @@ use serde::{
     de::{DeserializeSeed, Deserializer, EnumAccess, Error, MapAccess, SeqAccess, Visitor},
     Deserialize,
 };
-use std::{collections::HashMap, fmt};
+use std::fmt;
 
 struct AnyVisitor;
 
@@ -106,7 +106,7 @@ impl<'de> Visitor<'de> for AnyVisitor {
     where
         E: Error,
     {
-        self.visit_str(v)
+        self.visit_borrowed_str(v)
     }
 
     fn visit_borrowed_str<E>(self, v: &'de str) -> Result<Self::Value, E>

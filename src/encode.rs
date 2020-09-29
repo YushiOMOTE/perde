@@ -1,15 +1,10 @@
 use crate::{
     error::Convert,
-    schema::{Class, Enum, Primitive, Schema, Union, WithSchema},
-    types::{DictRef, ListRef, ObjectRef, SetRef, TupleRef},
-};
-use derive_new::new;
-use pyo3::{
-    prelude::*,
-    types::{PyDict, PyList, PySet, PyTuple},
+    schema::{Primitive, Schema, WithSchema},
+    types::{DictRef, ListRef, SetRef, TupleRef},
 };
 use serde::{
-    ser::{self, Error, SerializeMap, SerializeSeq, Serializer},
+    ser::{SerializeMap, SerializeSeq, Serializer},
     Serialize,
 };
 
@@ -79,7 +74,7 @@ impl<'a> Serialize for WithSchema<'a> {
                 }
                 map.end()
             }
-            Schema::Enum(e) => unimplemented!(),
+            Schema::Enum(_e) => unimplemented!(),
             Schema::Optional(o) => {
                 if self.object.is_none() {
                     s.serialize_none()
@@ -88,8 +83,8 @@ impl<'a> Serialize for WithSchema<'a> {
                     s.serialize_some(&w)
                 }
             }
-            Schema::Union(u) => unimplemented!(),
-            Schema::Any(a) => self.object.resolved_object().ser()?.serialize(s),
+            Schema::Union(_u) => unimplemented!(),
+            Schema::Any(_) => self.object.resolved_object().ser()?.serialize(s),
         }
     }
 }

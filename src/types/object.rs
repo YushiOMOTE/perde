@@ -1,15 +1,11 @@
 use super::{AttrStr, Tuple};
 use crate::{
-    error::{Error, Result},
+    error::Result,
     schema::{Schema, WithSchema},
 };
-use pyo3::{
-    conversion::{AsPyPointer, IntoPyPointer},
-    ffi::*,
-};
+use pyo3::{conversion::IntoPyPointer, ffi::*};
 use std::{
     collections::HashMap,
-    marker::PhantomData,
     ops::{Deref, DerefMut},
     os::raw::c_char,
     ptr::NonNull,
@@ -18,12 +14,6 @@ use std::{
 macro_rules! objnew {
     ($p:expr) => {
         $crate::types::Object::new(unsafe { $p })
-    };
-}
-
-macro_rules! objclone {
-    ($p:expr) => {
-        $crate::types::Object::new_clone(unsafe { $p })
     };
 }
 
@@ -140,7 +130,7 @@ impl ObjectRef {
 
     pub fn as_str<'a>(&'a self) -> Result<&'a str> {
         let mut len: Py_ssize_t = 0;
-        let mut p = unsafe { PyUnicode_AsUTF8AndSize(self.as_ptr(), &mut len) };
+        let p = unsafe { PyUnicode_AsUTF8AndSize(self.as_ptr(), &mut len) };
 
         if p.is_null() {
             bail!("object is not a string")
@@ -246,7 +236,7 @@ impl ObjectRef {
     }
 
     pub fn as_ptr(&self) -> *mut PyObject {
-        unsafe { &*self as *const Self as *mut Self as *mut PyObject }
+        &*self as *const Self as *mut Self as *mut PyObject
     }
 
     pub fn has_attr(&self, s: &AttrStr) -> bool {
@@ -395,12 +385,6 @@ impl Drop for Object {
 
 #[derive(Debug)]
 pub struct StaticObject(Object);
-
-impl StaticObject {
-    fn as_ptr(&self) -> *mut PyObject {
-        self.0.as_ptr()
-    }
-}
 
 impl Deref for StaticObject {
     type Target = Object;

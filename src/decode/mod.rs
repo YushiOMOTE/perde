@@ -1,5 +1,4 @@
 use crate::{schema::*, types::Object};
-use pyo3::prelude::*;
 use serde::de::{DeserializeSeed, Deserializer};
 
 pub mod class;

@@ -3,7 +3,6 @@ use crate::{
     schema::*,
     types::{self, Object},
 };
-use pyo3::{prelude::*, types::PyTuple};
 use serde::de::{DeserializeSeed, Deserializer, IgnoredAny, SeqAccess, Visitor};
 use smallvec::SmallVec;
 use std::fmt;

@@ -3,7 +3,6 @@ use crate::{
     schema::*,
     types::{self, Object},
 };
-use pyo3::{prelude::*, types::PyDict};
 use serde::de::{DeserializeSeed, Deserializer, MapAccess, Visitor};
 use std::fmt;
 

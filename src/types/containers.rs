@@ -1,6 +1,6 @@
 use super::{AttrStr, Object, ObjectRef, Tuple};
 use crate::error::Result;
-use pyo3::{conversion::AsPyPointer, ffi::*};
+use pyo3::ffi::*;
 use std::os::raw::c_char;
 
 #[derive(Debug, Clone)]
@@ -20,7 +20,7 @@ impl<'a> ListRef<'a> {
         if p.is_null() {
             None
         } else {
-            Some(unsafe { ObjectRef::new(p).ok()? })
+            Some(ObjectRef::new(p).ok()?)
         }
     }
 }
@@ -57,7 +57,7 @@ impl<'a> SetRef<'a> {
         unsafe { PySet_Size(self.0.as_ptr()) as usize }
     }
 
-    pub fn get(&self, index: usize) -> Option<&ObjectRef> {
+    pub fn get(&self, _index: usize) -> Option<&ObjectRef> {
         unimplemented!()
     }
 }
@@ -132,8 +132,8 @@ impl<'a> Iterator for DictRefIter<'a> {
         if res == 0 {
             None
         } else {
-            let k = unsafe { ObjectRef::new(k).ok()? };
-            let v = unsafe { ObjectRef::new(v).ok()? };
+            let k = ObjectRef::new(k).ok()?;
+            let v = ObjectRef::new(v).ok()?;
             Some((k, v))
         }
     }
@@ -191,10 +191,6 @@ impl Class {
 
     pub fn name(&self) -> &str {
         self.0.name()
-    }
-
-    pub fn is_typeof(&self, p: *mut PyObject) -> bool {
-        p == self.0.as_ptr()
     }
 
     pub fn into_inner(self) -> Object {

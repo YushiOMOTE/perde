@@ -1,9 +1,4 @@
-use crate::{
-    error::Convert,
-    schema::*,
-    types::{self, Object},
-};
-use pyo3::prelude::*;
+use crate::{error::Convert, schema::*, types::Object};
 use serde::de::{self, DeserializeSeed, Deserializer, SeqAccess, Visitor};
 use smallvec::SmallVec;
 use std::fmt;

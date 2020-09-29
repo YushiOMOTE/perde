@@ -1,6 +1,6 @@
 use super::{Object, ObjectRef};
 use crate::error::Result;
-use pyo3::{conversion::AsPyPointer, ffi::*};
+use pyo3::ffi::*;
 
 #[derive(Debug, Clone)]
 pub struct TupleRef<'a>(&'a ObjectRef);
@@ -11,7 +11,7 @@ impl<'a> TupleRef<'a> {
     }
 
     pub fn from_args(args: *mut PyObject) -> Result<Self> {
-        Ok(Self(unsafe { ObjectRef::new(args)? }))
+        Ok(Self(ObjectRef::new(args)?))
     }
 
     pub fn len(&self) -> usize {

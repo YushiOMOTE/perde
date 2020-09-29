@@ -47,7 +47,7 @@ pub unsafe extern "C" fn resolve(
             None
         };
 
-        typeobj.resolve(attr);
+        typeobj.resolve(attr)?;
 
         Ok(Object::new_none().into_ptr())
     };

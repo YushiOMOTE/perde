@@ -1,8 +1,4 @@
-use crate::{
-    schema::*,
-    types::{self, Object},
-};
-use pyo3::prelude::*;
+use crate::{schema::*, types::Object};
 use serde::de::{self, DeserializeSeed, Deserializer, Visitor};
 use std::fmt;
 
