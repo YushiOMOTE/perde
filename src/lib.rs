@@ -1,6 +1,6 @@
 use crate::{
     error::Convert,
-    types::{FastArgs, Object, _PyCFunctionFastWithKeywords},
+    types::{FastArgs, Object},
 };
 use pyo3::{conversion::AsPyPointer, ffi::*, prelude::*};
 use std::{collections::HashMap, os::raw::c_char};
@@ -10,6 +10,9 @@ mod error;
 
 #[macro_use]
 mod types;
+
+#[macro_use]
+mod methods;
 
 mod resolve;
 mod schema;
@@ -59,21 +62,7 @@ fn perde(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
     #[cfg(feature = "json")]
     json::import(m)?;
 
-    let def = pyo3::ffi::PyMethodDef {
-        ml_name: "resolve\0".as_ptr() as *const c_char,
-        ml_meth: Some(unsafe {
-            std::mem::transmute::<_PyCFunctionFastWithKeywords, PyCFunction>(resolve)
-        }),
-        ml_flags: pyo3::ffi::METH_FASTCALL | pyo3::ffi::METH_KEYWORDS,
-        ml_doc: "".as_ptr() as *const c_char,
-    };
-    unsafe {
-        pyo3::ffi::PyModule_AddObject(
-            m.as_ptr(),
-            "resolve\0".as_ptr() as *const c_char,
-            pyo3::ffi::PyCFunction_New(Box::into_raw(Box::new(def)), std::ptr::null_mut()),
-        )
-    };
+    method_fastcall!(resolve, "")(m);
 
     Ok(())
 }

@@ -1,6 +1,6 @@
 use crate::{
     error::{Convert, Error},
-    types::{FastArgs, Object, TupleRef, _PyCFunctionFastWithKeywords},
+    types::{FastArgs, Object, TupleRef},
 };
 use pyo3::{ffi::*, proc_macro::pymodule, types::PyModule, wrap_pymodule, PyResult, Python};
 use serde::ser::Serialize;
@@ -71,59 +71,9 @@ pub extern "C" fn loads(
     inner().restore().unwrap_or(std::ptr::null_mut())
 }
 
-#[pymodule]
-pub fn json(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
-    use pyo3::AsPyPointer;
-
-    let def = PyMethodDef {
-        ml_name: "dumps\0".as_ptr() as *const c_char,
-        ml_meth: Some(unsafe {
-            std::mem::transmute::<_PyCFunctionFastWithKeywords, PyCFunction>(dumps)
-        }),
-        ml_flags: METH_FASTCALL | METH_KEYWORDS,
-        ml_doc: "".as_ptr() as *const c_char,
-    };
-    unsafe {
-        PyModule_AddObject(
-            m.as_ptr(),
-            "dumps\0".as_ptr() as *const c_char,
-            PyCFunction_New(Box::into_raw(Box::new(def)), std::ptr::null_mut()),
-        )
-    };
-
-    let def = PyMethodDef {
-        ml_name: "loads\0".as_ptr() as *const c_char,
-        ml_meth: Some(unsafe {
-            std::mem::transmute::<_PyCFunctionFastWithKeywords, PyCFunction>(loads)
-        }),
-        ml_flags: METH_FASTCALL | METH_KEYWORDS,
-        ml_doc: "".as_ptr() as *const c_char,
-    };
-    unsafe {
-        PyModule_AddObject(
-            m.as_ptr(),
-            "loads\0".as_ptr() as *const c_char,
-            PyCFunction_New(Box::into_raw(Box::new(def)), std::ptr::null_mut()),
-        )
-    };
-
-    let def = PyMethodDef {
-        ml_name: "loads_as\0".as_ptr() as *const c_char,
-        ml_meth: Some(loads_as),
-        ml_flags: METH_VARARGS,
-        ml_doc: "".as_ptr() as *const c_char,
-    };
-    unsafe {
-        PyModule_AddObject(
-            m.as_ptr(),
-            "loads_as\0".as_ptr() as *const c_char,
-            PyCFunction_New(Box::into_raw(Box::new(def)), std::ptr::null_mut()),
-        )
-    };
-
-    Ok(())
-}
-
-pub fn import(m: &PyModule) -> PyResult<()> {
-    m.add_wrapped(wrap_pymodule!(json))
-}
+module!(
+    json,
+    method_fastcall!(loads, ""),
+    method_fastcall!(dumps, ""),
+    method_varargs!(loads_as, "")
+);

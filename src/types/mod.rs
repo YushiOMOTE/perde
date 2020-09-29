@@ -33,10 +33,3 @@ impl Display for AttrStr {
         Display::fmt(&self.0, f)
     }
 }
-
-pub type _PyCFunctionFastWithKeywords = unsafe extern "C" fn(
-    slf: *mut pyo3::ffi::PyObject,
-    args: *const *mut pyo3::ffi::PyObject,
-    nargs: Py_ssize_t,
-    kwnames: *mut pyo3::ffi::PyObject,
-) -> *mut pyo3::ffi::PyObject;
