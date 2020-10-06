@@ -4,6 +4,7 @@ use serde::de::{DeserializeSeed, Deserializer};
 pub mod class;
 pub mod dict;
 pub mod enums;
+pub mod frozen_set;
 pub mod list;
 pub mod object;
 pub mod option;
@@ -24,6 +25,7 @@ impl<'a, 'de> DeserializeSeed<'de> for &'a Schema {
             Schema::Dict(d) => d.deserialize(deserializer),
             Schema::List(l) => l.deserialize(deserializer),
             Schema::Set(s) => s.deserialize(deserializer),
+            Schema::FrozenSet(s) => s.deserialize(deserializer),
             Schema::Tuple(t) => t.deserialize(deserializer),
             Schema::Class(c) => c.deserialize(deserializer),
             Schema::Enum(e) => e.deserialize(deserializer),

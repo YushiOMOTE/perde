@@ -71,6 +71,10 @@ impl Set {
         Ok(Self(objnew!(PySet_New(std::ptr::null_mut()))?))
     }
 
+    pub fn from_iter(obj: &ObjectRef) -> Result<Self> {
+        Ok(Self(objnew!(PySet_New(obj.as_ptr()))?))
+    }
+
     pub fn set(&mut self, obj: Object) -> Result<()> {
         unsafe {
             // This API doesn't steal.
@@ -79,6 +83,28 @@ impl Set {
             }
         }
         Ok(())
+    }
+
+    pub fn len(&self) -> usize {
+        unsafe { PySet_Size(self.0.as_ptr()) as usize }
+    }
+
+    pub fn pop(&self) -> Option<Object> {
+        let p = unsafe { PySet_Pop(self.0.as_ptr()) };
+        Object::new(p).ok()
+    }
+
+    pub fn into_inner(self) -> Object {
+        self.0
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct FrozenSet(Object);
+
+impl FrozenSet {
+    pub fn from_iter(obj: &ObjectRef) -> Result<Self> {
+        Ok(Self(objnew!(PyFrozenSet_New(obj.as_ptr()))?))
     }
 
     pub fn into_inner(self) -> Object {

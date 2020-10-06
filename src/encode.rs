@@ -1,7 +1,7 @@
 use crate::{
     error::Convert,
     schema::{FieldSchema, Primitive, Schema, WithSchema},
-    types::{AttrStr, DictRef, ListRef, ObjectRef, SetRef, TupleRef},
+    types::{AttrStr, DictRef, ListRef, ObjectRef, Set, SetRef, TupleRef},
 };
 use indexmap::IndexMap;
 use serde::ser::Error;
@@ -42,6 +42,17 @@ impl<'a> Serialize for WithSchema<'a> {
             }
             Schema::Set(l) => {
                 let set = SetRef::new(self.object);
+                let len = set.len();
+                let mut seq = s.serialize_seq(Some(len))?;
+
+                while let Some(item) = set.pop() {
+                    let w = item.with_schema(&l.value);
+                    seq.serialize_element(&w)?;
+                }
+                seq.end()
+            }
+            Schema::FrozenSet(l) => {
+                let set = Set::from_iter(self.object).ser()?;
                 let len = set.len();
                 let mut seq = s.serialize_seq(Some(len))?;
 

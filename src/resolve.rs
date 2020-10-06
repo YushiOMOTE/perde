@@ -250,6 +250,13 @@ fn to_set(p: &ObjectRef) -> Result<Schema> {
     Ok(Schema::Set(Set::new(Box::new(value))))
 }
 
+fn to_frozen_set(p: &ObjectRef) -> Result<Schema> {
+    let args = get_args(p)?;
+    let args = args.as_ref();
+    let value = to_schema(args.get(1)?)?;
+    Ok(Schema::FrozenSet(FrozenSet::new(Box::new(value))))
+}
+
 fn get_args(p: &ObjectRef) -> Result<types::Tuple> {
     Ok(types::Tuple::from(p.get_attr(&ATTR_ARGS)?))
 }
@@ -272,7 +279,7 @@ fn maybe_generic(p: &ObjectRef) -> Result<Option<Schema>> {
     } else if origin.is_list() {
         to_list(p)?
     } else if origin.is_fronzen_set() {
-        unimplemented!()
+        to_frozen_set(p)?
     } else {
         return Ok(None);
     };

@@ -206,6 +206,17 @@ impl Set {
 }
 
 #[derive(Debug, Clone, new)]
+pub struct FrozenSet {
+    pub value: Box<Schema>,
+}
+
+impl FrozenSet {
+    pub fn name(&self) -> &str {
+        "fronzen_set"
+    }
+}
+
+#[derive(Debug, Clone, new)]
 pub struct Tuple {
     pub args: Vec<Schema>,
 }
@@ -289,6 +300,7 @@ pub enum Schema {
     Dict(Dict),
     List(List),
     Set(Set),
+    FrozenSet(FrozenSet),
     Tuple(Tuple),
     Class(Class),
     Enum(Enum),
@@ -304,6 +316,7 @@ impl Schema {
             Self::Dict(d) => d.name(),
             Self::List(l) => l.name(),
             Self::Set(s) => s.name(),
+            Self::FrozenSet(s) => s.name(),
             Self::Tuple(t) => t.name(),
             Self::Class(c) => c.name(),
             Self::Enum(e) => e.name(),
@@ -330,6 +343,7 @@ pub struct StaticSchema {
     pub dict: Schema,
     pub list: Schema,
     pub set: Schema,
+    pub frozenset: Schema,
 }
 
 pub fn static_schema() -> &'static StaticSchema {
@@ -348,6 +362,7 @@ lazy_static::lazy_static! {
             dict: Schema::Dict(Dict::new(Box::new(Schema::Any(Any::new())), Box::new(Schema::Any(Any::new())))),
             list: Schema::List(List::new(Box::new(Schema::Any(Any::new())))),
             set: Schema::Set(Set::new(Box::new(Schema::Any(Any::new())))),
+            frozenset: Schema::FrozenSet(FrozenSet::new(Box::new(Schema::Any(Any::new())))),
         }
     };
 }
