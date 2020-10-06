@@ -1,22 +1,11 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import List, Dict, Optional, Union, Tuple, TypeVar
 from typing_inspect import get_origin
 import enum
 import perde
 import pytest
 
-
-def repack(ty, *args, **kwargs):
-    oty = get_origin(ty) or ty
-    e = oty(*args, **kwargs)
-    assert e is not None
-    v = perde.json.dumps(e)
-    print(f'ok: ser: {v}')
-    a = perde.json.loads_as(ty, v)
-    assert a is not None
-    assert e == a
-    print(f'ok: de: {a}')
-
+from util import repack
 
 @dataclass
 class Entry:
@@ -38,6 +27,11 @@ PRIMITIVES = [
     Entry(bytearray, [bytearray(b'abc\x03'), bytearray(b'')])
 ]
 
+FEW_PRIMITIVES = [
+    Entry(int, [-100, 0, 100]),
+    Entry(str, ["wazzaaa", ""]),
+]
+
 LISTS = [
     Entry(List[bool], [[True, False], []]),
     Entry(List[int], [[-18, 0, 5], []]),
@@ -47,12 +41,22 @@ LISTS = [
     Entry(List[bytearray], [[bytearray(b'abc\x03'), bytearray(b'')], []])
 ]
 
+FEW_LISTS = [
+    Entry(List[int], [[-18, 0, 5], []]),
+    Entry(List[str], [["wazzaaa", ""], []]),
+]
+
 DICTS_SK = [
     Entry(Dict[str, bool], [{"k": True}, {}]),
     Entry(Dict[str, int], [{"a": 3}, {}]),
     Entry(Dict[str, float], [{"v": -1.4, "p": 0.0, "n": 2.2}, {}]),
     Entry(Dict[str, str], [{"v": "avc", "p": ""}, {"n": "x"}, {}]),
     Entry(Dict[str, bytes], [{"v": b"aaaa", "z": b""}, {"p": b"v"}, {}]),
+]
+
+FEW_DICTS_SK = [
+    Entry(Dict[str, int], [{"a": 3}, {}]),
+    Entry(Dict[str, str], [{"v": "avc", "p": ""}, {"n": "x"}, {}]),
 ]
 
 @pytest.mark.parametrize("t1,v1", expand(PRIMITIVES + LISTS + DICTS_SK))
@@ -68,3 +72,19 @@ def test_simple_classes(t1, t2, v1, v2):
         b: t2
 
     repack(Test, v1, v2)
+
+@pytest.mark.parametrize("t1,v1", expand(FEW_PRIMITIVES))
+@pytest.mark.parametrize("t2,v2", expand(FEW_PRIMITIVES + FEW_LISTS + FEW_DICTS_SK))
+@pytest.mark.parametrize("t3,v3", expand(FEW_PRIMITIVES + FEW_LISTS + FEW_DICTS_SK))
+def test_nested_classes(t1, t2, t3, v1, v2, v3):
+    @dataclass
+    class Test2:
+        a: t1
+        b: t2
+
+    @dataclass
+    class Test:
+        x: t3
+        y: Test2
+
+    repack(Test, v3, Test2(v1, v2))
