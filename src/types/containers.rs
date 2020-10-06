@@ -57,8 +57,9 @@ impl<'a> SetRef<'a> {
         unsafe { PySet_Size(self.0.as_ptr()) as usize }
     }
 
-    pub fn get(&self, _index: usize) -> Option<&ObjectRef> {
-        unimplemented!()
+    pub fn pop(&self) -> Option<Object> {
+        let p = unsafe { PySet_Pop(self.0.as_ptr()) };
+        Object::new(p).ok()
     }
 }
 

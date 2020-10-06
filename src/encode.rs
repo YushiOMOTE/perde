@@ -37,9 +37,9 @@ impl<'a> Serialize for WithSchema<'a> {
                 let set = SetRef::new(self.object);
                 let len = set.len();
                 let mut seq = s.serialize_seq(Some(len))?;
-                for i in 0..len {
-                    let obj = set.get(i).unwrap();
-                    let w = obj.with_schema(&l.value);
+
+                while let Some(item) = set.pop() {
+                    let w = item.with_schema(&l.value);
                     seq.serialize_element(&w)?;
                 }
                 seq.end()
