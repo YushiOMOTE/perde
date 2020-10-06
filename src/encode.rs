@@ -1,12 +1,18 @@
 use crate::{
     error::Convert,
     schema::{Primitive, Schema, WithSchema},
-    types::{DictRef, ListRef, SetRef, TupleRef},
+    types::{AttrStr, DictRef, ListRef, SetRef, TupleRef},
 };
+use serde::ser::Error;
 use serde::{
     ser::{SerializeMap, SerializeSeq, Serializer},
     Serialize,
 };
+
+lazy_static::lazy_static! {
+    static ref ATTR_NAME: AttrStr = AttrStr::new("name");
+    static ref ATTR_VALUE: AttrStr = AttrStr::new("value");
+}
 
 impl<'a> Serialize for WithSchema<'a> {
     fn serialize<S>(&self, s: S) -> Result<S::Ok, S::Error>
@@ -74,7 +80,14 @@ impl<'a> Serialize for WithSchema<'a> {
                 }
                 map.end()
             }
-            Schema::Enum(_e) => unimplemented!(),
+            Schema::Enum(e) => {
+                let name = self.object.get_attr(&ATTR_NAME).ser()?;
+                let name = name.as_str().ser()?;
+                if !e.variants.contains_key(name) {
+                    return Err(S::Error::custom(format!("no such variant: {}", name)));
+                }
+                s.serialize_str(&name)
+            }
             Schema::Optional(o) => {
                 if self.object.is_none() {
                     s.serialize_none()
