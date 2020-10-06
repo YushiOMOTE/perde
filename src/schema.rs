@@ -87,19 +87,19 @@ macro_rules! extract {
     ($dict:expr, $field:expr) => {
         $dict
             .as_ref()
-            .and_then(|map| map.get($field).map(|v| (*v).to_owned()))
+            .and_then(|map| map.get($field).map(|v| (*v).owned()))
     };
 }
 
 impl FieldAttr {
     pub fn parse(attr: &Option<&ObjectRef>) -> Result<Self> {
         Ok(Self::new(
-            extract_bool!(attr, "flatten"),
-            extract_str!(attr, "rename"),
+            extract_bool!(attr, "perde_flatten"),
+            extract_str!(attr, "perde_rename"),
             extract!(attr, "default"),
             extract!(attr, "default_factory"),
-            extract_bool!(attr, "skip"),
-            extract_bool!(attr, "skip_deserializing"),
+            extract_bool!(attr, "perde_skip"),
+            extract_bool!(attr, "perde_skip_deserializing"),
         ))
     }
 }

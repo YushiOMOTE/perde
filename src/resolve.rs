@@ -72,27 +72,7 @@ pub fn resolve_schema<'a>(
 }
 
 pub fn to_schema(p: &ObjectRef) -> Result<Schema> {
-    if p.is_bool() {
-        Ok(Schema::Primitive(Primitive::Bool))
-    } else if p.is_str() {
-        Ok(Schema::Primitive(Primitive::Str))
-    } else if p.is_int() {
-        Ok(Schema::Primitive(Primitive::Int))
-    } else if p.is_float() {
-        Ok(Schema::Primitive(Primitive::Float))
-    } else if p.is_bytes() {
-        Ok(Schema::Primitive(Primitive::Bytes))
-    } else if p.is_bytearray() {
-        Ok(Schema::Primitive(Primitive::ByteArray))
-    } else if let Some(s) = maybe_dataclass(p, &None)? {
-        Ok(s)
-    } else if let Some(s) = maybe_generic(p)? {
-        Ok(s)
-    } else if let Some(s) = maybe_enum(p, &None)? {
-        Ok(s)
-    } else {
-        bail!("unsupported type")
-    }
+    resolve_schema(p, None).map(|s| s.clone())
 }
 
 fn maybe_dataclass(
@@ -135,7 +115,7 @@ fn maybe_dataclass(
     }
 
     let name = p.name();
-    let class = types::Class::new(p.to_owned());
+    let class = types::Class::new(p.owned());
 
     Ok(Some(Schema::Class(Class::new(
         class,

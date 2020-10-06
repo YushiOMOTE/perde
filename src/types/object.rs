@@ -48,7 +48,7 @@ impl ObjectRef {
         WithSchema::new(schema, self)
     }
 
-    pub fn to_owned(&self) -> Object {
+    pub fn owned(&self) -> Object {
         Object::new_clone(self.as_ptr()).unwrap()
     }
 
@@ -374,7 +374,7 @@ impl AsRef<ObjectRef> for Object {
 
 impl Clone for Object {
     fn clone(&self) -> Self {
-        self.to_owned()
+        self.deref().owned()
     }
 }
 
