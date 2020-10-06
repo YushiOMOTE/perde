@@ -141,12 +141,10 @@ impl Class {
                             || s.attr.skip
                             || s.attr.skip_deserializing
                         {
-                            if let Some(_d) = s.attr.default.as_ref() {
-                                unimplemented!()
-                            // return Ok(d.as_ref(py()).as_ptr());
-                            } else if let Some(_d) = s.attr.default_factory.as_ref() {
-                                // return d.as_ref(py()).call0().map(|v| v.into());
-                                unimplemented!()
+                            if let Some(d) = s.attr.default.as_ref() {
+                                return Ok(d.clone());
+                            } else if let Some(d) = s.attr.default_factory.as_ref() {
+                                return d.call_noarg();
                             }
                         }
                         Err(err!("missing field \"{}\"", k))

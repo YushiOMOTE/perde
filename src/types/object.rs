@@ -260,6 +260,10 @@ impl ObjectRef {
     pub fn call(&self, tuple: Tuple) -> Result<Object> {
         objnew!(PyObject_CallObject(self.as_ptr(), tuple.as_ptr()))
     }
+
+    pub fn call_noarg(&self) -> Result<Object> {
+        self.call(Tuple::new(0)?)
+    }
 }
 
 #[derive(Debug)]
