@@ -19,27 +19,51 @@ impl<'a, 'de> Visitor<'de> for ClassVisitor<'a> {
     where
         M: MapAccess<'de>,
     {
-        let mut tuple = types::Tuple::new(self.0.fields.len()).de()?;
-        let mut setcount = 0;
+        if self.0.flatten_fields.is_empty() {
+            let mut tuple = types::Tuple::new(self.0.fields.len()).de()?;
+            let mut setcount = 0;
 
-        while let Some(key) = access.next_key()? {
-            let key: Cow<str> = key;
+            while let Some(key) = access.next_key()? {
+                let key: Cow<str> = key;
 
-            if let Some(s) = self.0.field(&key).de()? {
-                let value: Object = access.next_value_seed(&s.schema)?;
+                if let Some(s) = self.0.field(&key).de()? {
+                    let value: Object = access.next_value_seed(&s.schema)?;
 
-                tuple.set(s.pos, value);
-                setcount += 1;
-            } else {
-                let _: IgnoredAny = access.next_value()?;
+                    tuple.set(s.pos, value);
+                    setcount += 1;
+                } else {
+                    let _: IgnoredAny = access.next_value()?;
+                }
             }
-        }
 
-        if setcount != self.0.fields.len() {
-            return Err(de::Error::custom("missing field"));
-        }
+            if setcount != self.0.num_fields() {
+                return Err(de::Error::custom("missing field"));
+            }
 
-        self.0.ty.construct(tuple).de()
+            self.0.ty.construct(tuple).de()
+        } else {
+            let mut map = HashMap::new();
+
+            while let Some(key) = access.next_key()? {
+                let key: Cow<str> = key;
+
+                if let Some(s) = self.0.field(&key).de()? {
+                    let value: Object = access.next_value_seed(&s.schema)?;
+
+                    map.insert(key, value);
+                } else {
+                    let _: IgnoredAny = access.next_value()?;
+                }
+            }
+
+            let cls = self.0.call(&mut map).de()?;
+
+            if !map.is_empty() && self.0.attr.deny_unknown_fields {
+                // TODO: Error
+            }
+
+            Ok(cls)
+        }
     }
 }
 
@@ -55,6 +79,14 @@ impl<'a, 'de> DeserializeSeed<'de> for &'a Class {
 }
 
 impl Class {
+    pub fn num_fields(&self) -> usize {
+        if self.flatten_fields.is_empty() {
+            self.fields.len()
+        } else {
+            self.flatten_fields.len()
+        }
+    }
+
     pub fn field(&self, name: &str) -> Result<Option<&FieldSchema>> {
         let map = if self.flatten_fields.is_empty() {
             &self.fields
@@ -79,7 +111,7 @@ impl Class {
             })
     }
 
-    pub fn call(&self, map: &mut HashMap<&str, Object>) -> Result<Object> {
+    pub fn call(&self, map: &mut HashMap<Cow<str>, Object>) -> Result<Object> {
         let args: Result<Vec<_>> = self
             .fields
             .iter()

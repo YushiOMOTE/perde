@@ -70,3 +70,20 @@ def test_nested_rename_all():
         c: int
 
     comp(repack(Test, "yes", Test2("he", "she", 0), 3), {"a":"yes","b":{"aK":"he","bK":"she","cK":0},"c":3})
+
+
+def test_flatten():
+    @perde.attr(rename_all="camelCase")
+    @dataclass
+    class Test2:
+        x: str
+        y: str
+        z: int
+
+    @dataclass
+    class Test:
+        a: str
+        b: Test2 = field(metadata = {"perde_flatten": True})
+        c: int
+
+    comp(repack(Test, "yes", Test2("he", "she", 0), 3), {"a":"yes","x":"he","y":"she","z":0,"c":3})

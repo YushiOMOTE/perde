@@ -6,6 +6,39 @@ use crate::{
 use indexmap::IndexMap;
 use std::collections::HashMap;
 
+fn collect_members(mems: &IndexMap<String, FieldSchema>) -> (IndexMap<String, FieldSchema>, bool) {
+    let mut has_flatten = false;
+
+    let mems = mems
+        .iter()
+        .flat_map(|(key, field)| {
+            if field.attr.flatten {
+                match &field.schema {
+                    Schema::Class(cls) => {
+                        has_flatten = true;
+                        return collect_members(&cls.fields).0;
+                    }
+                    _ => {}
+                }
+            }
+            let mut map = IndexMap::new();
+            map.insert(key.to_string(), field.clone());
+            map
+        })
+        .collect();
+
+    (mems, has_flatten)
+}
+
+fn collect_flatten_members(mems: &IndexMap<String, FieldSchema>) -> IndexMap<String, FieldSchema> {
+    let (mems, has_flatten) = collect_members(mems);
+    if has_flatten {
+        mems
+    } else {
+        IndexMap::new()
+    }
+}
+
 fn convert_stringcase(s: &str, case: Option<StrCase>) -> String {
     use inflections::Inflect;
 
@@ -116,13 +149,18 @@ fn maybe_dataclass(
 
     let name = p.name();
     let class = types::Class::new(p.owned());
+    let flatten_members = collect_flatten_members(&members);
+
+    if !flatten_members.is_empty() {
+        println!("{:#?}", flatten_members);
+    }
 
     Ok(Some(Schema::Class(Class::new(
         class,
         name.into(),
         cattr,
         members,
-        IndexMap::new(),
+        flatten_members,
     ))))
 }
 

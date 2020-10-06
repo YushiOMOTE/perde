@@ -1,8 +1,9 @@
 use crate::{
     error::Convert,
-    schema::{Primitive, Schema, WithSchema},
-    types::{AttrStr, DictRef, ListRef, SetRef, TupleRef},
+    schema::{FieldSchema, Primitive, Schema, WithSchema},
+    types::{AttrStr, DictRef, ListRef, ObjectRef, SetRef, TupleRef},
 };
+use indexmap::IndexMap;
 use serde::ser::Error;
 use serde::{
     ser::{SerializeMap, SerializeSeq, Serializer},
@@ -73,11 +74,7 @@ impl<'a> Serialize for WithSchema<'a> {
             }
             Schema::Class(c) => {
                 let mut map = s.serialize_map(Some(c.fields.len()))?;
-                for (name, field) in &c.fields {
-                    let obj = self.object.get_attr(&field.name).ser()?;
-                    let f = obj.with_schema(&field.schema);
-                    map.serialize_entry(&name, &f)?;
-                }
+                serialize_fields(&self.object, &c.fields, &mut map)?;
                 map.end()
             }
             Schema::Enum(e) => {
@@ -100,4 +97,30 @@ impl<'a> Serialize for WithSchema<'a> {
             Schema::Any(_) => self.object.resolved_object().ser()?.serialize(s),
         }
     }
+}
+
+fn serialize_fields<T, E>(
+    object: &ObjectRef,
+    fields: &IndexMap<String, FieldSchema>,
+    map: &mut T,
+) -> Result<(), E>
+where
+    T: SerializeMap<Error = E>,
+    E: serde::ser::Error,
+{
+    for (name, field) in fields {
+        let obj = object.get_attr(&field.name).ser()?;
+        if field.attr.flatten {
+            match &field.schema {
+                Schema::Class(cls) => {
+                    serialize_fields(&obj, &cls.fields, map)?;
+                }
+                _ => return Err(E::custom(format!("found flatten flag for non-class type"))),
+            }
+        } else {
+            let f = obj.with_schema(&field.schema);
+            map.serialize_entry(&name, &f)?;
+        }
+    }
+    Ok(())
 }
