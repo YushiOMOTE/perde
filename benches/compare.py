@@ -73,26 +73,38 @@ print(f'msgpack   = {res_msgpack}')
 print(f'perde as  = {res_perde_as}')
 print(f'perde     = {res_perde}')
 
-# prep = '''
-# from dataclasses import dataclass
+prep = '''
+from dataclasses import dataclass
 
-# @dataclass
-# class C:
-#     key: int
-#     value: str
+@dataclass
+class C:
+    key: int
+    value: str
 
-# c = C(300, "hoge")
-# cc = {"key": 300, "value": "hoge"}
-# '''
+c = C(300, "hoge")
+cc = {"key": 300, "value": "hoge"}
+'''
 
-# print('---------- ser -----------')
+print('---------- ser -----------')
 
-# res_json = timeit.repeat('json.dumps(cc)', setup = f"import json{prep}", number = 100000)
-# res_ujson = timeit.repeat('ujson.dumps(cc)', setup = f"import ujson{prep}", number = 100000)
-# res_perde = timeit.repeat('json.dumps(c)', setup = f"from perde import json{prep}", number = 100000)
-# res_orjson = timeit.repeat('orjson.dumps(c)', setup = f"import orjson{prep}", number = 100000)
+res_json = timeit.repeat('json.dumps(cc)', setup = f"import json{prep}", number = 100000)
+res_ujson = timeit.repeat('ujson.dumps(cc)', setup = f"import ujson{prep}", number = 100000)
+res_perde = timeit.repeat('json.dumps(c)', setup = f"from perde import json{prep}", number = 100000)
+res_orjson = timeit.repeat('orjson.dumps(c)', setup = f"import orjson{prep}", number = 100000)
+res_orjson = timeit.repeat('yaml.dump(cc)', setup = f"import yaml{prep}", number = 10000)
+res_orjson = timeit.repeat('msgpack.dumps(cc)', setup = f"import msgpack{prep}", number = 100000)
 
-# print(f'json      = {res_json}')
-# print(f'ujson     = {res_ujson}')
-# print(f'perde     = {res_perde}')
-# print(f'orjson    = {res_orjson}')
+res_yaml_perde = timeit.repeat('yaml.dumps(c)', setup = f"from perde import yaml{prep}", number = 10000)
+res_msgpack_perde = timeit.repeat('msgpack.dumps(c)', setup = f"from perde import msgpack{prep}", number = 100000)
+
+
+print(f'json      = {res_json}')
+print(f'ujson     = {res_ujson}')
+print(f'perde     = {res_perde}')
+print(f'orjson    = {res_orjson}')
+
+print(f'yaml      = {res_yaml}')
+print(f'perde     = {res_yaml_perde}')
+
+print(f'msgpack   = {res_msgpack}')
+print(f'perde     = {res_msgpack_perde}')
