@@ -1,6 +1,13 @@
-# perde
+# perde: python-wrapped serde
 
-Experimentally connecting Rust and Python for serialization/deserialization.
+Python wrapper around [the powerful Rust serialization framework](https://github.com/serde-rs/serde).
+
+* Serialization & deserialization of python data structures.
+* Supports dataclasses and most generics.
+* Supports various format. By design, `perde` can support as many format as `serde` can.
+* Provide case conversion of field names, skipping serialization/deserialization, structure flattening.
+* Strict type checking.
+* Very fast.
 
 ### Install
 
@@ -11,72 +18,97 @@ pip install perde
 ### Usage
 
 ```python
-from perde import json
+from perde import json, yaml, msgpack
 
 @dataclass
 class A:
     key: int
     value: str
 
-# Serialize json as data class (member types are verified before writing)
-json.dumps(A(300, "hoge"))
+# Serialize objects into json, yaml, msgpack
+json.dumps(A(300, "json"))
+yaml.dumps(A(300, "yaml"))
+msgpack.dumps(A(300, "msgpack"))
 
-# Deserialize json as data class (with type checking)
+# Deserialize as dataclasses
 json.loads_as(A, '{"key": 300, "value": "hoge"}')
+yaml.loads_as(A, '''key: 300
+value: hoge
+''')
+msgpack.loads_as(A, b'\x82\xA3\x6B\x65\x79\xCD\x01\x2C\xA5\x76\x61\x6C\x75\x65\xCD\x01\x90')
 
-# Deserialize json as objects (without type checking)
-json.loads('{"key": 300, "value": "hoge"}')
+# Deserialize as objects
+json.loads_as(A, '{"key": 300, "value": "hoge"}')
+yaml.loads_as(A, '''key: 300
+value: hoge
+''')
+msgpack.loads_as(A, b'\x82\xA3\x6B\x65\x79\xCD\x01\x2C\xA5\x76\x61\x6C\x75\x65\xCD\x01\x90')
 ```
 
-### Develop
+### Supported formats
 
-1. Install [`maturin`](https://pypi.org/project/maturin/).
-
-    ```sh
-    pip install maturin
-    ```
-
-2. Create a virtualenv. (e.g. using [`pyenv`](https://github.com/pyenv/pyenv))
-
-    ```sh
-    pyenv virtualenv myenv
-    pyenv activate myenv
-    ```
-
-3. Build and install `perde` locally with `maturin`.
-
-    ```sh
-    maturin develop --release
-    ```
-
-4. Do something.
-
-    ```sh
-    # Run tests
-    pytest
-    
-    # Run benchmark
-    python benches/compare.py
-    ```
+* [x] JSON
+* [x] YAML
+* [x] MessagePack
+* [ ] CBOR
+* [ ] Toml
+* [ ] Pickle
+* [ ] RON
+* [ ] BSON
+* [ ] Avro
+* [ ] JSON5
+* [ ] Postcard
+* [ ] URL
+* [ ] Environment variables
+* [ ] AWS Parameter Store
+* [ ] S-expressions
+* [ ] D-Bus
+* [ ] FlexBuffer
+* [ ] XML
 
 ### Benchmark
 
 ```
----------- de -----------
-json      = [0.26801170399999996, 0.2677857140000002, 0.26969751200000003, 0.26798411899999985, 0.26833023800000033]
-perde as  = [0.211489977, 0.179649139, 0.18023794699999995, 0.1804793090000001, 0.186093984]
-perde     = [0.13880599800000004, 0.14001113600000004, 0.13964565800000006, 0.14055392300000014, 0.14022343800000003]
-ujson     = [0.05726369500000006, 0.05905630499999992, 0.057515596, 0.05737184300000031, 0.05719437999999988]
-orjson    = [0.048624420000000335, 0.04795801799999966, 0.048007664999999644, 0.048000748000000204, 0.04796366700000032]
----------- ser -----------
-json      = [0.3255122990000001, 0.31933131099999956, 0.31206383300000073, 0.3152893850000007, 0.4371285949999999]
-ujson     = [0.06691166299999995, 0.06797659700000036, 0.0665169419999998, 0.06802924099999963, 0.06653239099999997]
-perde     = [0.1784434509999997, 0.1777624530000006, 0.187134715, 0.1896725160000008, 0.19498700100000033]
-orjson    = [0.046137584999999426, 0.04493453699999961, 0.04459659599999988, 0.04568931200000037, 0.04486202400000039]
+json(de) -------------------
+json      = [0.1892565581947565, 0.1789955347776413, 0.19771194644272327, 0.17869805544614792, 0.1817416027188301]
+perde as  = [0.07256896048784256, 0.06387559697031975, 0.06289006397128105, 0.06492204032838345, 0.06444761715829372]
+perde     = [0.03787072375416756, 0.03849206678569317, 0.03701256774365902, 0.03784210607409477, 0.03712223842740059]
+ujson     = [0.03571947664022446, 0.0350071769207716, 0.035524480044841766, 0.03537473827600479, 0.03500896133482456]
+orjson    = [0.024663090705871582, 0.026005828753113747, 0.025051748380064964, 0.0264505036175251, 0.024867044761776924]
+
+yaml(de) -------------------
+yaml      = [1.8657512124627829, 1.8705988600850105, 1.8599027246236801, 1.8804237693548203, 1.8527513016015291]
+perde as  = [0.29090225137770176, 0.27482700906693935, 0.2708629425615072, 0.2854452319443226, 0.28280119970440865]
+perde     = [0.22424191236495972, 0.2495588045567274, 0.22433684580028057, 0.22169128619134426, 0.22160297632217407]
+
+msgpack(de) ----------------
+msgpack   = [0.03487630747258663, 0.035033950582146645, 0.03426872752606869, 0.03444667346775532, 0.03443203307688236]
+perde as  = [0.07079600915312767, 0.05985707975924015, 0.06260973773896694, 0.060033876448869705, 0.0608107578009367]
+perde     = [0.03339817374944687, 0.033870622515678406, 0.033603109419345856, 0.034254319965839386, 0.034998660907149315]
 ```
 
-* `json`: Built-in `json`.
-* `ujson`: [ujson](https://github.com/ultrajson/ultrajson).
-* `orjson`: [orjson](https://github.com/ijl/orjson) (serialize data class, deserialize as objects without type checking)
-* `perde as`: By `perde`. (serialize data class, deserialize as data class with type checking)
-* `perde`: By `perde`. (serialize/deserialize as objects; no type checking)
+```
+json(ser) ------------------
+json      = [0.2153916023671627, 0.20939842239022255, 0.2292985152453184, 0.20938796736299992, 0.20893244817852974]
+ujson     = [0.04131609573960304, 0.04082906246185303, 0.04345548339188099, 0.040903979912400246, 0.04144351929426193]
+perde     = [0.053302960470318794, 0.053485700860619545, 0.054095394909381866, 0.05770992115139961, 0.05336238816380501]
+orjson    = [0.04534510709345341, 0.045184383168816566, 0.046133121475577354, 0.0456595029681921, 0.04615986533463001]
+
+yaml(ser) ------------------
+yaml      = [1.8657512124627829, 1.8705988600850105, 1.8599027246236801, 1.8804237693548203, 1.8527513016015291]
+perde     = [0.01173756830394268, 0.011586908251047134, 0.011359155178070068, 0.011403439566493034, 0.013109922409057617]
+
+msgpack(ser) ---------------
+msgpack   = [0.03487630747258663, 0.035033950582146645, 0.03426872752606869, 0.03444667346775532, 0.03443203307688236]
+perde     = [0.054882919415831566, 0.05104514956474304, 0.05093616619706154, 0.050708770751953125, 0.05338519997894764]
+```
+
+#### Benchmark note
+
+* Deserialization
+    * `perde`: Deserialize to `dict`. (non-dataclass)
+    * `perde as`: Deserialize to `dataclass`.
+    * Others: Deserialize to `dict`. (non-dataclass)
+* Serialization
+    * `perde`, `orjson`: Serialize `dataclasses`.
+    * Others: Serialize `dict`.
