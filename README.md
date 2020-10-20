@@ -12,21 +12,17 @@ Python wrapper around [the powerful Rust serialization framework](https://github
 ### Install
 
 ```sh
-pip install perde
-```
-
-`perde` includes all the packages. If you want only a specific format,
-
-```sh
 pip install perde-json
 pip install perde-yaml
-...
+pip install perde-msgpack
 ```
 
 ### Usage
 
 ```python
-from perde import json, yaml, msgpack
+import perde_json
+import perde_yaml
+import perde_msgpack
 
 @dataclass
 class A:
@@ -34,23 +30,23 @@ class A:
     value: str
 
 # Serialize objects into json, yaml, msgpack
-json.dumps(A(300, "json"))
-yaml.dumps(A(300, "yaml"))
-msgpack.dumps(A(300, "msgpack"))
+perde_json.dumps(A(300, "json"))
+perde_yaml.dumps(A(300, "yaml"))
+perde_msgpack.dumps(A(300, "msgpack"))
 
 # Deserialize as dataclasses
-json.loads_as(A, '{"key": 300, "value": "hoge"}')
-yaml.loads_as(A, '''key: 300
+perde_json.loads_as(A, '{"key": 300, "value": "hoge"}')
+perde_yaml.loads_as(A, '''key: 300
 value: hoge
 ''')
-msgpack.loads_as(A, b'\x82\xA3\x6B\x65\x79\xCD\x01\x2C\xA5\x76\x61\x6C\x75\x65\xCD\x01\x90')
+perde_msgpack.loads_as(A, b'\x82\xA3\x6B\x65\x79\xCD\x01\x2C\xA5\x76\x61\x6C\x75\x65\xCD\x01\x90')
 
 # Deserialize as objects
-json.loads_as(A, '{"key": 300, "value": "hoge"}')
-yaml.loads_as(A, '''key: 300
+perde_json.loads_as(A, '{"key": 300, "value": "hoge"}')
+perde_yaml.loads_as(A, '''key: 300
 value: hoge
 ''')
-msgpack.loads_as(A, b'\x82\xA3\x6B\x65\x79\xCD\x01\x2C\xA5\x76\x61\x6C\x75\x65\xCD\x01\x90')
+perde_msgpack.loads_as(A, b'\x82\xA3\x6B\x65\x79\xCD\x01\x2C\xA5\x76\x61\x6C\x75\x65\xCD\x01\x90')
 ```
 
 ### Supported formats
