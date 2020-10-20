@@ -1,60 +1,9 @@
-[package]
-authors = ["Yushi Omote <yushiomote@gmail.com>"]
-name = "perde"
-version = "0.1.0"
-edition = "2018"
-
-[dependencies]
-pyo3 = { version = "0.12", features = ["extension-module"] }
-inflections = "1.1"
-lazy_static = "1.4"
-derive-new = "0.5"
-serde = "1.0"
-serde_json = { version = "1.0", optional = true }
-serde_yaml = { version = "0.8", optional = true }
-serde_toml = { version = "0.5", package = "toml", optional = true }
-rmp-serde = { version = "0.14", optional = true }
-indexmap = "1.6"
-bytecount = "0.6"
-smallvec = "1.4"
-fnv = "1.0"
-
-[lib]
-name = "perde"
-crate-type = ["cdylib"]
-
-[features]
-default = ["json", "yaml", "msgpack"]
-json = ["serde_json"]
-yaml = ["serde_yaml"]
-toml = ["serde_toml"]
-msgpack = ["rmp-serde"]
-
-[profile.release]
-codegen-units = 1
-debug = false
-incremental = false
-lto = "thin"
-opt-level = 3
-panic = "abort"
-
-[package.metadata.maturin]
-requires-python = ">=3.6"
-requires-dist = [
-    "typing-insepct>=0.6.0",
-]
-classifier = [
-    "Development Status :: 3 - Alpha",
-    "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
-    "Operating System :: MacOS",
-    "Operating System :: Microsoft :: Windows",
-    "Operating System :: POSIX :: Linux",
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.7",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python",
-    "Programming Language :: Rust",
-    "Typing :: Typed",
+[workspace]
+members = [
+  "perde/",
+  "perde-core/",
+  "tool/",
+  "perde-json/",
+  "perde-yaml/",
+  "perde-msgpack/"
 ]

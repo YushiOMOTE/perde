@@ -1,11 +1,12 @@
-use crate::{
+use perde_core::{
+    bail,
     error::{Convert, Error},
+    method_fastcall, method_varargs, module,
     types::{FastArgs, Object, TupleRef},
 };
 use pyo3::ffi::*;
 use serde::ser::Serialize;
 use serde::Deserialize;
-use std::os::raw::c_char;
 
 pub extern "C" fn loads_as(_self: *mut PyObject, args: *mut PyObject) -> *mut PyObject {
     let inner = || {
@@ -68,7 +69,7 @@ pub extern "C" fn loads(
 }
 
 module!(
-    json,
+    perde_json,
     method_fastcall!(loads, ""),
     method_fastcall!(dumps, ""),
     method_varargs!(loads_as, "")

@@ -10,15 +10,17 @@ pub struct Error {
     hints: Vec<String>,
 }
 
+#[macro_export]
 macro_rules! err {
     ($($t:tt)*) => {
-        crate::error::Error::new(format!($($t)*))
+        $crate::error::Error::new(format!($($t)*))
     }
 }
 
+#[macro_export]
 macro_rules! bail {
     ($($t:tt)*) => {
-        return Err(err!($($t)*));
+        return Err($crate::err!($($t)*));
     }
 }
 

@@ -15,6 +15,14 @@ Python wrapper around [the powerful Rust serialization framework](https://github
 pip install perde
 ```
 
+`perde` includes all the packages. If you want only a specific format,
+
+```sh
+pip install perde-json
+pip install perde-yaml
+...
+```
+
 ### Usage
 
 ```python

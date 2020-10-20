@@ -1,25 +1,11 @@
-use crate::{
+use perde_core::method_fastcall;
+use perde_core::{
+    bail,
     error::Convert,
     types::{FastArgs, Object},
 };
-use pyo3::{conversion::AsPyPointer, ffi::*, prelude::*};
-use std::{collections::HashMap, os::raw::c_char};
-
-#[macro_use]
-mod error;
-
-#[macro_use]
-mod types;
-
-#[macro_use]
-mod methods;
-
-mod format;
-mod resolve;
-mod schema;
-
-mod decode;
-mod encode;
+use pyo3::{ffi::*, prelude::*};
+use std::collections::HashMap;
 
 pub extern "C" fn resolve(
     _self: *mut pyo3::ffi::PyObject,
@@ -57,9 +43,6 @@ pub extern "C" fn resolve(
 
 #[pymodule]
 fn perde(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
-    format::import(m)?;
-
     method_fastcall!(resolve, "")(m);
-
     Ok(())
 }

@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from typing import List, Dict, Optional, Union, Tuple, TypeVar
 from typing_inspect import get_origin
 import enum
-import perde
+import perde_json
 import pytest
 
 from util import repack
