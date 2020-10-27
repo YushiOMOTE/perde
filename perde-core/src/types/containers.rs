@@ -204,7 +204,7 @@ impl<'a> ClassRef<'a> {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Class(Object);
 
 impl Class {

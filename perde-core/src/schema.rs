@@ -36,7 +36,7 @@ impl FromStr for StrCase {
     }
 }
 
-#[derive(Clone, Debug, Default, new)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, new)]
 pub struct FieldAttr {
     pub flatten: bool,
     pub rename: Option<String>,
@@ -104,12 +104,12 @@ impl FieldAttr {
     }
 }
 
-#[derive(Clone, Debug, Default, new)]
+#[derive(Clone, Debug, Default, new, PartialEq, Eq)]
 pub struct VariantAttr {
     pub rename: Option<String>,
 }
 
-#[derive(Clone, Debug, Default, new)]
+#[derive(Clone, Debug, Default, new, PartialEq, Eq)]
 pub struct ClassAttr {
     pub rename_all: Option<StrCase>,
     pub rename: Option<String>,
@@ -128,7 +128,7 @@ impl ClassAttr {
     }
 }
 
-#[derive(Clone, Debug, Default, new)]
+#[derive(Clone, Debug, Default, new, PartialEq, Eq)]
 pub struct EnumAttr {
     pub rename_all: Option<StrCase>,
     pub rename: Option<String>,
@@ -143,12 +143,7 @@ impl EnumAttr {
     }
 }
 
-#[derive(Debug, Clone, new)]
-pub struct Bytes {
-    pub is_byte_array: bool,
-}
-
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Primitive {
     Bool,
     Int,
@@ -171,7 +166,7 @@ impl Primitive {
     }
 }
 
-#[derive(Debug, Clone, new)]
+#[derive(Debug, Clone, new, PartialEq, Eq)]
 pub struct Dict {
     pub key: Box<Schema>,
     pub value: Box<Schema>,
@@ -183,7 +178,7 @@ impl Dict {
     }
 }
 
-#[derive(Debug, Clone, new)]
+#[derive(Debug, Clone, new, PartialEq, Eq)]
 pub struct List {
     pub value: Box<Schema>,
 }
@@ -194,7 +189,7 @@ impl List {
     }
 }
 
-#[derive(Debug, Clone, new)]
+#[derive(Debug, Clone, new, PartialEq, Eq)]
 pub struct Set {
     pub value: Box<Schema>,
 }
@@ -205,7 +200,7 @@ impl Set {
     }
 }
 
-#[derive(Debug, Clone, new)]
+#[derive(Debug, Clone, new, PartialEq, Eq)]
 pub struct FrozenSet {
     pub value: Box<Schema>,
 }
@@ -216,7 +211,7 @@ impl FrozenSet {
     }
 }
 
-#[derive(Debug, Clone, new)]
+#[derive(Debug, Clone, new, PartialEq, Eq)]
 pub struct Tuple {
     pub args: Vec<Schema>,
 }
@@ -227,7 +222,7 @@ impl Tuple {
     }
 }
 
-#[derive(Debug, Clone, new)]
+#[derive(Debug, Clone, new, PartialEq, Eq)]
 pub struct Enum {
     pub attr: EnumAttr,
     pub variants: IndexMap<String, VariantSchema>,
@@ -239,14 +234,14 @@ impl Enum {
     }
 }
 
-#[derive(Debug, Clone, new)]
+#[derive(Debug, Clone, new, PartialEq, Eq)]
 pub struct VariantSchema {
     pub name: String,
     pub attr: VariantAttr,
     pub value: Object,
 }
 
-#[derive(Debug, Clone, new)]
+#[derive(Debug, Clone, new, PartialEq, Eq)]
 pub struct Class {
     pub ty: types::Class,
     pub name: String,
@@ -261,7 +256,7 @@ impl Class {
     }
 }
 
-#[derive(Debug, Clone, new)]
+#[derive(Debug, Clone, new, PartialEq, Eq)]
 pub struct FieldSchema {
     pub name: AttrStr,
     pub pos: usize,
@@ -269,7 +264,7 @@ pub struct FieldSchema {
     pub schema: Schema,
 }
 
-#[derive(Debug, Clone, new)]
+#[derive(Debug, Clone, new, PartialEq, Eq)]
 pub struct Optional {
     pub value: Box<Schema>,
 }
@@ -280,7 +275,7 @@ impl Optional {
     }
 }
 
-#[derive(Debug, Clone, new)]
+#[derive(Debug, Clone, new, PartialEq, Eq)]
 pub struct Union {
     pub variants: Vec<Schema>,
 }
@@ -291,10 +286,10 @@ impl Union {
     }
 }
 
-#[derive(Debug, Clone, new)]
+#[derive(Debug, Clone, new, PartialEq, Eq)]
 pub struct Any;
 
-#[derive(Debug, Clone, new)]
+#[derive(Debug, Clone, new, PartialEq, Eq)]
 pub enum Schema {
     Primitive(Primitive),
     Dict(Dict),

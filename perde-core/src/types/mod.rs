@@ -14,7 +14,7 @@ use std::{
     os::raw::c_char,
 };
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AttrStr(String);
 
 impl AttrStr {

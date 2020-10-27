@@ -104,7 +104,15 @@ impl<'a> Serialize for WithSchema<'a> {
                     s.serialize_some(&w)
                 }
             }
-            Schema::Union(_u) => unimplemented!(),
+            Schema::Union(u) => {
+                let vs = self.object.get_type().ser()?.resolve(None).ser()?;
+                let vs = match u.variants.iter().find(|v| v == &vs) {
+                    Some(vs) => vs,
+                    None => return Err(S::Error::custom(format!("no such variant"))),
+                };
+                let v = self.object.with_schema(vs);
+                v.serialize(s)
+            }
             Schema::Any(_) => self.object.resolved_object().ser()?.serialize(s),
         }
     }

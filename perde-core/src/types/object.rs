@@ -282,7 +282,7 @@ impl Iterator for ObjectIter {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Object(NonNull<ObjectRef>);
 
 impl Object {
