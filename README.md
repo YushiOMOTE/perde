@@ -1,5 +1,7 @@
 # perde: python-wrapped serde
 
+![](https://github.com/YushiOMOTE/perde/blob/master/assets/logo.png)
+
 Python wrapper around [the powerful Rust serialization framework](https://github.com/serde-rs/serde).
 
 * Serialization & deserialization of python data structures.
