@@ -1,0 +1,16 @@
+[package]
+name = "perde-core"
+version = "0.1.0"
+authors = ["YushiOMOTE <yushiomote@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+pyo3 = { version = "0.12", features = ["extension-module"] }
+inflections = "1.1"
+lazy_static = "1.4"
+derive-new = "0.5"
+serde = "1.0"
+indexmap = "1.6"
+bytecount = "0.6"
+smallvec = "1.4"
+fnv = "1.0"
