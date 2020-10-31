@@ -14,3 +14,6 @@ build:
 
 publish:
 	pipenv run scripts/maturin.sh publish
+
+manifests:
+	cd manifest-gen; cargo run templates manifests.yml ..
