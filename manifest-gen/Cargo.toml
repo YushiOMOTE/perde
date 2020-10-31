@@ -1,5 +1,5 @@
 [package]
-name = "tool"
+name = "manifest-gen"
 version = "0.1.0"
 authors = ["YushiOMOTE <yushiomote@gmail.com>"]
 edition = "2018"

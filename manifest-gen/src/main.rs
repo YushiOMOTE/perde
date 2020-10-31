@@ -27,7 +27,12 @@ struct Opt {
     templates: String,
     #[structopt(name = "config", default_value = "tool/cfg/tool.yml")]
     config: String,
+    #[structopt(name = "output_dir", default_value = ".")]
+    output_dir: String,
 }
+
+const GENERATOR_NOTE: &'static str =
+    "The file is generated. Don't modify manually. Run `make manifests` to regenerate";
 
 fn main() -> Result<()> {
     let opt = Opt::from_args();
@@ -39,6 +44,7 @@ fn main() -> Result<()> {
 
     for format in &cfg.formats {
         let mut context = Context::new();
+        context.insert("generator_note", &GENERATOR_NOTE);
         context.insert("vars", &cfg);
         context.insert("format", &format);
 
@@ -53,7 +59,7 @@ fn main() -> Result<()> {
         {
             let name = e.file_name().to_string_lossy();
             let rendered = tera.render(&name, &context)?;
-            let path = format!("{}/{}", format.crate_name, name);
+            let path = format!("{}/{}/{}", opt.output_dir, format.crate_name, name);
             println!("Rendering file: {}", path);
             std::fs::write(&path, rendered)?;
         }
