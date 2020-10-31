@@ -1,6 +1,8 @@
 /target
 **/*.rs.bk
 *.so
+**/Cargo.lock
+**/target
 
 flame-graph.html
 
@@ -8,3 +10,4 @@ flame-graph.html
 __pycache__/
 *.py[cod]
 *$py.class
+Pipfile.lock
