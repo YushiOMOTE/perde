@@ -1,9 +1,0 @@
-[workspace]
-members = [
-  "perde/",
-  "perde-core/",
-  "tool/",
-  "perde-json/",
-  "perde-yaml/",
-  "perde-msgpack/"
-]
