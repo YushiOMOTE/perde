@@ -8,3 +8,4 @@ flame-graph.html
 __pycache__/
 *.py[cod]
 *$py.class
+Pipfile.lock
