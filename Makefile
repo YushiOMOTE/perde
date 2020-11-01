@@ -4,19 +4,19 @@ install-deps:
 	pipenv install --dev --skip-lock
 
 install-perde:
-	pipenv run scripts/maturin.sh develop
+	pipenv run scripts/for-each.sh develop
 
 test:
 	pipenv run pytest -s
 
 build:
-	pipenv run scripts/maturin.sh build
+	pipenv run scripts/for-each.sh build
 
 publish:
-	pipenv run scripts/maturin.sh publish
+	pipenv run scripts/for-each.sh publish
 
 test-publish:
-	pipenv run scripts/maturin.sh test-publish
+	pipenv run scripts/for-each.sh test-publish
 
 manifests:
 	cd manifest-gen; cargo run templates manifests.yml ..
