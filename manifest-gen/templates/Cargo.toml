@@ -5,6 +5,13 @@ authors = ["Yushi Omote <yushiomote@gmail.com>"]
 name = "{{ format.crate_name }}"
 version = "{{ format.version }}"
 edition = "2018"
+description = "{{ format.description }}"
+homepage = "https://github.com/yushiomote/perde"
+repository = "https://github.com/yushiomote/perde"
+license = "MIT"
+keywords = ["python", "serde", "serialization"]
+categories = ["encoding"]
+readme = "README.md"
 
 [dependencies]
 pyo3 = { version = "{{ vars.pyo3_version }}", features = ["extension-module"] }

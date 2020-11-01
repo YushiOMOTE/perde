@@ -3,8 +3,15 @@
 [package]
 authors = ["Yushi Omote <yushiomote@gmail.com>"]
 name = "perde"
-version = "0.0.1"
+version = "0.0.4"
 edition = "2018"
+description = "Fast and flexible serialization library."
+homepage = "https://github.com/yushiomote/perde"
+repository = "https://github.com/yushiomote/perde"
+license = "MIT"
+keywords = ["python", "serde", "serialization"]
+categories = ["encoding"]
+readme = "README.md"
 
 [dependencies]
 pyo3 = { version = "0.12", features = ["extension-module"] }

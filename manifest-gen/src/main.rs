@@ -10,8 +10,11 @@ use walkdir::WalkDir;
 struct Format {
     crate_name: String,
     version: String,
+    description: String,
     #[serde(default)]
     deps: HashMap<String, String>,
+    #[serde(flatten)]
+    extra: serde_yaml::Value,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
