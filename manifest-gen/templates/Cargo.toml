@@ -27,10 +27,8 @@ opt-level = 3
 panic = "abort"
 
 [package.metadata.maturin]
-requires-python = ">=3.6"
-requires-dist = [
-    "typing-inspect>=0.6.0",
-]
+requires-python = ">=3.7"
+requires-dist = []
 classifier = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
