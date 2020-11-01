@@ -3,7 +3,7 @@
 [package]
 authors = ["Yushi Omote <yushiomote@gmail.com>"]
 name = "{{ format.crate_name }}"
-version = "0.1.0"
+version = "{{ format.version }}"
 edition = "2018"
 
 [dependencies]
