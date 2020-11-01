@@ -16,7 +16,8 @@ publish:
 	pipenv run scripts/for-each.sh publish
 
 test-publish:
+	cd manifest-gen; cargo run -- -t -T templates manifests.yml ..
 	pipenv run scripts/for-each.sh test-publish
 
 manifests:
-	cd manifest-gen; cargo run templates manifests.yml ..
+	cd manifest-gen; cargo run -- -T templates manifests.yml ..

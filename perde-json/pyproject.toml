@@ -1,4 +1,4 @@
-# The file is generated. Don't modify manually. Run `make manifests` to regenerate
+# The file is generated. Don't modify manually. Run `make manifests` to regenerate.
 
 [project]
 name = "perde-json"
