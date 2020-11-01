@@ -3,7 +3,7 @@
 [package]
 authors = ["Yushi Omote <yushiomote@gmail.com>"]
 name = "perde-yaml"
-version = "0.0.6"
+version = "0.0.1"
 edition = "2018"
 description = "Fast and flexible YAML serialization library based on perde."
 homepage = "https://github.com/yushiomote/perde"

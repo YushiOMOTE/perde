@@ -3,7 +3,7 @@
 [package]
 authors = ["Yushi Omote <yushiomote@gmail.com>"]
 name = "perde"
-version = "0.0.6"
+version = "0.0.1"
 edition = "2018"
 description = "Fast and flexible serialization library."
 homepage = "https://github.com/yushiomote/perde"
