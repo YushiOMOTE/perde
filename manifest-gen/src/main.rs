@@ -6,27 +6,40 @@ use tera::{Context, Tera};
 use tera_text_filters::snake_case;
 use walkdir::WalkDir;
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 struct Format {
     crate_name: String,
     version: String,
+    description: String,
     #[serde(default)]
     deps: HashMap<String, String>,
+    #[serde(flatten)]
+    extra: serde_yaml::Value,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 struct Config {
+    generator_note: String,
     pyo3_version: String,
     perde_core_version: String,
+    formats_test_version: String,
     formats: Vec<Format>,
 }
 
 #[derive(StructOpt)]
 struct Opt {
-    #[structopt(name = "templates", default_value = "tool/templates")]
+    /// Templates directory.
+    #[structopt(short = "T", long = "templates")]
     templates: String,
-    #[structopt(name = "config", default_value = "tool/cfg/tool.yml")]
+    /// Temporarily override formats versions for publish testing.
+    #[structopt(short = "t", long = "test_version")]
+    test_version: bool,
+    /// Config file.
+    #[structopt(name = "config")]
     config: String,
+    /// Output directory.
+    #[structopt(name = "output_dir", default_value = ".")]
+    output_dir: String,
 }
 
 fn main() -> Result<()> {
@@ -38,7 +51,13 @@ fn main() -> Result<()> {
     tera.register_filter("snake_case", snake_case);
 
     for format in &cfg.formats {
+        let mut format = format.clone();
+        if opt.test_version {
+            format.version = cfg.formats_test_version.clone();
+        }
+
         let mut context = Context::new();
+        context.insert("generator_note", &cfg.generator_note);
         context.insert("vars", &cfg);
         context.insert("format", &format);
 
@@ -53,7 +72,7 @@ fn main() -> Result<()> {
         {
             let name = e.file_name().to_string_lossy();
             let rendered = tera.render(&name, &context)?;
-            let path = format!("{}/{}", format.crate_name, name);
+            let path = format!("{}/{}/{}", opt.output_dir, format.crate_name, name);
             println!("Rendering file: {}", path);
             std::fs::write(&path, rendered)?;
         }

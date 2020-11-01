@@ -1,8 +1,15 @@
 [package]
 name = "perde-core"
-version = "0.1.0"
+version = "0.0.1"
 authors = ["YushiOMOTE <yushiomote@gmail.com>"]
 edition = "2018"
+description = "Unleash the power of serde serialization to Python world"
+homepage = "https://github.com/yushiomote/perde"
+repository = "https://github.com/yushiomote/perde"
+license = "MIT"
+keywords = ["python", "serialization", "serde"]
+categories = ["encoding"]
+readme = "README.md"
 
 [dependencies]
 pyo3 = { version = "0.12", features = ["extension-module"] }
