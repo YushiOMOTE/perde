@@ -15,7 +15,7 @@ for d in "perde" "perde-json" "perde-msgpack" "perde-yaml"; do
       "publish")
           maturin publish -u $PYPI_USER -p $PYPI_PASSWORD;;
       "test-publish")
-          maturin publish -u $PYPI_USER -p $PYPI_PASSWORD -r https://test.pypi.org/legacy/;;
+          maturin publish -u $TEST_PYPI_USER -p $TEST_PYPI_PASSWORD -r https://test.pypi.org/legacy/;;
       "link-readme")
           ln -s ../README.md README.md
   esac
