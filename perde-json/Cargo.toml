@@ -3,13 +3,13 @@
 [package]
 authors = ["Yushi Omote <yushiomote@gmail.com>"]
 name = "perde-json"
-version = "0.0.4"
+version = "0.0.5"
 edition = "2018"
 description = "Fast and flexible JSON serialization library based on perde."
 homepage = "https://github.com/yushiomote/perde"
 repository = "https://github.com/yushiomote/perde"
 license = "MIT"
-keywords = ["python", "serde", "serialization"]
+keywords = ["dataclass", "dataclasses", "serialization", "serde"]
 categories = ["encoding"]
 readme = "README.md"
 
@@ -34,7 +34,6 @@ panic = "abort"
 
 [package.metadata.maturin]
 requires-python = ">=3.7"
-requires-dist = []
 classifier = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
