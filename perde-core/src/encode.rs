@@ -45,7 +45,7 @@ impl<'a> Serialize for WithSchema<'a> {
                 let len = set.len();
                 let mut seq = s.serialize_seq(Some(len))?;
 
-                while let Some(item) = set.pop() {
+                for item in set.iter().ser()? {
                     let w = item.with_schema(&l.value);
                     seq.serialize_element(&w)?;
                 }
@@ -56,7 +56,7 @@ impl<'a> Serialize for WithSchema<'a> {
                 let len = set.len();
                 let mut seq = s.serialize_seq(Some(len))?;
 
-                while let Some(item) = set.pop() {
+                for item in set.iter().ser()? {
                     let w = item.with_schema(&l.value);
                     seq.serialize_element(&w)?;
                 }
