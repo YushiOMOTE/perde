@@ -91,3 +91,7 @@ def test_enum():
 def test_optional():
     repack_as(typing.Optional[int], 3)
     repack_as(typing.Optional[str], "lel")
+
+
+def test_union():
+    repack_as(typing.Union[int, str, bytes], b"abyte")
