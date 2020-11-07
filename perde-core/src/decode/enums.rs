@@ -13,17 +13,18 @@ impl<'a> EnumVisitor<'a> {
     where
         E: de::Error,
     {
-        self.0
-            .variants
-            .get(s)
-            .map(|v| v.value.clone())
-            .ok_or_else(|| {
-                de::Error::custom(format!(
-                    "the enum value must be any of {:?}: got `{}`",
-                    self.vars(),
-                    s
-                ))
-            })
+        if !self.0.variants.contains_key(s) {
+            return Err(de::Error::custom(format!(
+                "the enum value must be any of {:?}: got `{}`",
+                self.vars(),
+                s
+            )));
+        }
+
+        self.0.object.get(s).ok_or(de::Error::custom(format!(
+            "cannot construct enum from value {}",
+            s
+        )))
     }
 }
 

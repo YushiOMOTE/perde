@@ -186,6 +186,7 @@ fn maybe_enum(p: &ObjectRef, attr: &Option<HashMap<&str, &ObjectRef>>) -> Result
         .collect();
 
     Ok(Some(Schema::Enum(Enum::new(
+        p.owned(),
         EnumAttr::parse(&attr)?,
         variants?,
     ))))

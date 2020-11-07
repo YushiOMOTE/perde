@@ -233,6 +233,7 @@ impl Tuple {
 
 #[derive(Debug, Clone, new, PartialEq, Eq)]
 pub struct Enum {
+    pub object: Object,
     pub attr: EnumAttr,
     pub variants: IndexMap<String, VariantSchema>,
 }
