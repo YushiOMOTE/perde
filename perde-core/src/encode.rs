@@ -1,6 +1,6 @@
 use crate::{
     error::Convert,
-    schema::{FieldSchema, Primitive, Schema, WithSchema},
+    schema::{Any, FieldSchema, Primitive, Schema, WithSchema},
     types::{AttrStr, DictRef, ListRef, ObjectRef, Set, SetRef, TupleRef},
 };
 use indexmap::IndexMap;
@@ -67,9 +67,16 @@ impl<'a> Serialize for WithSchema<'a> {
                 let iter = tuple.iter();
                 let len = iter.len();
                 let mut seq = s.serialize_seq(Some(len))?;
-                for (obj, schema) in iter.zip(t.args.iter()) {
-                    let w = obj.with_schema(schema);
-                    seq.serialize_element(&w)?;
+                if t.any {
+                    for obj in iter {
+                        let w = obj.with_schema(&Schema::Any(Any));
+                        seq.serialize_element(&w)?;
+                    }
+                } else {
+                    for (obj, schema) in iter.zip(t.args.iter()) {
+                        let w = obj.with_schema(schema);
+                        seq.serialize_element(&w)?;
+                    }
                 }
                 seq.end()
             }

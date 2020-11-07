@@ -22,19 +22,25 @@ impl<'a, 'de> Visitor<'de> for TupleVisitor<'a> {
     {
         let mut items = SmallVec::<[_; 16]>::new();
 
-        let mut args = self.0.args.iter().fuse();
+        if self.0.any {
+            while let Some(value) = seq.next_element_seed(&Schema::Any(Any))? {
+                items.push(value);
+            }
+        } else {
+            let mut args = self.0.args.iter().fuse();
 
-        loop {
-            if let Some(schema) = args.next() {
-                match seq.next_element_seed(schema)? {
-                    Some(value) => items.push(value),
-                    None => break,
+            loop {
+                if let Some(schema) = args.next() {
+                    match seq.next_element_seed(schema)? {
+                        Some(value) => items.push(value),
+                        None => break,
+                    }
+                } else {
+                    let _: IgnoredAny = match seq.next_element()? {
+                        Some(value) => value,
+                        None => break,
+                    };
                 }
-            } else {
-                let _: IgnoredAny = match seq.next_element()? {
-                    Some(value) => value,
-                    None => break,
-                };
             }
         }
 

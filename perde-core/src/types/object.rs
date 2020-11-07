@@ -212,6 +212,10 @@ impl ObjectRef {
         self.is(cast!(PyDict_Type))
     }
 
+    pub fn is_tuple(&self) -> bool {
+        self.is(cast!(PyTuple_Type))
+    }
+
     pub fn is_set(&self) -> bool {
         self.is(cast!(PySet_Type))
     }
