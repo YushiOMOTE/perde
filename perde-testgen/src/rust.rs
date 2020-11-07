@@ -1,6 +1,14 @@
 use crate::schema::*;
 use indexmap::IndexMap;
 
+trait CodeGen {
+    fn define_enum(&mut self, u: Union, context: &mut Context) -> (String, String);
+
+    fn define_class(&mut self, c: Class, context: &mut Context) -> String;
+
+    fn gen(&mut self, schema: &Schema, context: &mut Context) -> String;
+}
+
 struct Context {
     enumid: usize,
     types: IndexMap<String, String>,
@@ -13,17 +21,21 @@ impl Context {
             types: IndexMap::new(),
         }
     }
+}
 
-    fn define_enum(&mut self, u: Union) -> String {
-        let name = format!("Enum{}", self.enumid);
-        self.enumid += 1;
+struct Rust;
+
+impl CodeGen for Rust {
+    fn define_enum(&mut self, u: Union, context: &mut Context) -> (String, String) {
+        let name = format!("Enum{}", context.enumid);
+        context.enumid += 1;
 
         let mut s = "".to_string();
         s.push_str("#[derive(Serialize, Deserialize, Debug, Clone)]\n");
         s.push_str("#[serde(untagged)]\n");
         s.push_str(&format!("pub enum {} {{\n", name));
         for v in &u.variants {
-            s.push_str(&format!("  {},\n", v.to_rust_code(self)));
+            s.push_str(&format!("  {},\n", self.gen(&v, context)));
         }
         s.push_str("}\n");
         s.push_str("\n");
@@ -49,20 +61,21 @@ impl Context {
             s.push_str(&format!(
                 "      {} => {{ let v: {} = {}; v }},\n",
                 i,
-                v.to_rust_code(self),
+                self.gen(&v, context),
                 gen
             ));
         }
+        s.push_str("      _ => unreachable!(),\n");
         s.push_str("    }\n");
         s.push_str("  }\n");
         s.push_str("}\n");
 
-        self.types.insert(name.clone(), s);
+        context.types.insert(name.clone(), s.clone());
 
-        name
+        (name, s)
     }
 
-    fn define_class(&mut self, c: Class) -> String {
+    fn define_class(&mut self, c: Class, context: &mut Context) -> String {
         let mut s = "#[derive(Serialize, Deserialize, Debug, Clone, new)]\n".to_string();
 
         let mut cls_attr = vec![];
@@ -100,7 +113,7 @@ impl Context {
             if !field_attr.is_empty() {
                 s.push_str(&format!("  #[serde({})]\n", field_attr.join(", ")))
             }
-            s.push_str(&format!("  {}: {},\n", name, f.schema.to_rust_code(self)));
+            s.push_str(&format!("  {}: {},\n", name, self.gen(&f.schema, context)));
         }
         s.push_str("}\n");
         s.push_str("\n");
@@ -125,60 +138,72 @@ impl Context {
         s.push_str("  }\n");
         s.push_str("}\n");
 
-        self.types.insert(c.name.clone(), s);
+        context.types.insert(c.name.clone(), s);
 
         c.name.clone()
     }
-}
 
-trait ToRustCode {
-    fn to_rust_code(&self, context: &mut Context) -> String;
-}
-
-impl ToRustCode for Schema {
-    fn to_rust_code(&self, context: &mut Context) -> String {
-        match self {
-            Self::Bool => "bool".into(),
-            Self::Int => "i64".into(),
-            Self::Float => "f64".into(),
-            Self::Str => "String".into(),
-            Self::Bytes => "Vec<u8>".into(),
-            Self::Dict(d) => format!(
+    fn gen(&mut self, schema: &Schema, context: &mut Context) -> String {
+        match schema {
+            Schema::Bool => "bool".into(),
+            Schema::Int => "i64".into(),
+            Schema::Float => "f64".into(),
+            Schema::Str => "String".into(),
+            Schema::Bytes => "Vec<u8>".into(),
+            Schema::Dict(d) => format!(
                 "HashMap<{}, {}>",
-                d.key.to_rust_code(context),
-                d.value.to_rust_code(context)
+                self.gen(&d.key, context),
+                self.gen(&d.value, context),
             ),
-            Self::List(l) => format!("Vec<{}>", l.value.to_rust_code(context)),
-            Self::Set(s) => format!("HashSet<{}>", s.value.to_rust_code(context)),
-            Self::Tuple(t) => {
+            Schema::List(l) => format!("Vec<{}>", self.gen(&l.value, context)),
+            Schema::Set(s) => format!("HashSet<{}>", self.gen(&s.value, context)),
+            Schema::Tuple(t) => {
                 let mut s = "(".to_string();
                 for t in &t.args {
-                    s.push_str(&format!("{}, ", t.to_rust_code(context)));
+                    s.push_str(&format!("{}, ", self.gen(&t, context)));
                 }
                 s.push_str(")");
                 s
             }
-            Self::Class(c) => context.define_class(c.clone()),
-            Self::Enum(e) => unimplemented!(),
-            Self::Optional(o) => format!("Option<{}>", o.value.to_rust_code(context)),
-            Self::Union(u) => context.define_enum(u.clone()),
+            Schema::Class(c) => self.define_class(c.clone(), context),
+            Schema::Enum(e) => unimplemented!(),
+            Schema::Optional(o) => format!("Option<{}>", self.gen(&o.value, context)),
+            Schema::Union(u) => self.define_enum(u.clone(), context).0,
         }
     }
 }
 
-pub fn to_rust_code(s: &Schema) -> (String, String) {
-    let mut context = Context::new();
-    let mut code = "".to_string();
+#[derive(Debug, Clone)]
+pub struct Code {
+    pub typename: String,
+    pub definitions: String,
+}
 
-    let s = s.to_rust_code(&mut context);
+fn gen<T: CodeGen>(mut codegen: T, s: &Schema) -> Code {
+    let mut context = Context::new();
+
+    let mut definitions = "".to_string();
+
+    let typename = codegen.gen(s, &mut context);
 
     for (_, deps) in &context.types {
-        code.push_str(deps);
-        code.push_str("\n");
+        definitions.push_str(deps);
+        definitions.push_str("\n");
     }
 
-    (s, code)
+    Code {
+        typename,
+        definitions,
+    }
 }
+
+pub fn gen_rust_code(s: &Schema) -> Code {
+    gen(Rust, s)
+}
+
+// pub fn gen_python_code(s: &Schema) -> Code {
+//     gen(Python, s)
+// }
 
 #[cfg(test)]
 mod test {
@@ -217,8 +242,8 @@ mod test {
             ),
         ));
 
-        let (_, code) = to_rust_code(&s);
-        println!("{}", code);
+        let code = gen_rust_code(&s);
+        println!("{}", code.definitions);
     }
 
     #[test]
@@ -227,9 +252,9 @@ mod test {
 
         for _ in 0..50 {
             let schema: Schema = gen_schema(5);
-            let (s, code) = to_rust_code(&schema);
-            println!("--- {} ---", s);
-            println!("{}", code);
+            let code = gen_rust_code(&schema);
+            println!("--- {} ---", code.typename);
+            println!("{}", code.definitions);
             println!("----------");
         }
     }
