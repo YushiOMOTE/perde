@@ -28,6 +28,10 @@ fn go_deep() -> bool {
     })
 }
 
+fn go_up() {
+    DEPTH.with(|d| d.fetch_add(1, Ordering::Relaxed));
+}
+
 fn set_init() {
     INIT.with(|b| b.swap(true, Ordering::Relaxed));
 }
@@ -237,8 +241,7 @@ pub struct Union {
 
 impl Distribution<Union> for Standard {
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Union {
-        let v: usize = rng.gen_range(0, 3);
-        Union::new((0..v).map(|_| rng.gen()).collect())
+        Union::new(gen_unique_schema(5, rng))
     }
 }
 
@@ -259,26 +262,76 @@ pub enum Schema {
     Union(Union),
 }
 
+impl Schema {
+    fn is_map(&self) -> bool {
+        match self {
+            Self::Dict(_) => true,
+            _ => false,
+        }
+    }
+
+    fn is_vec(&self) -> bool {
+        match self {
+            Self::Bytes => true,
+            Self::List(_) => true,
+            _ => false,
+        }
+    }
+
+    fn is_set(&self) -> bool {
+        match self {
+            Self::Set(_) => true,
+            _ => false,
+        }
+    }
+
+    fn is_opt(&self) -> bool {
+        match self {
+            Self::Optional(_) => true,
+            _ => false,
+        }
+    }
+}
+
+fn num_to_random_schema<R: Rng + ?Sized>(num: usize, rng: &mut R) -> Schema {
+    match num {
+        0 => Schema::Bool,
+        1 => Schema::Int,
+        2 => Schema::Float,
+        3 => Schema::Str,
+        4 => Schema::Bytes,
+        5 => Schema::Dict(rng.gen()),
+        6 => Schema::List(rng.gen()),
+        7 => Schema::Set(rng.gen()),
+        8 => Schema::Tuple(rng.gen()),
+        9 | 10 => Schema::Class(rng.gen()),
+        // 10 => Schema::Enum(rng.gen()),
+        11 => Schema::Optional(rng.gen()),
+        12 => Schema::Union(rng.gen()),
+        _ => unreachable!(),
+    }
+}
+
+fn gen_unique_schema<R: Rng + ?Sized>(count: usize, rng: &mut R) -> Vec<Schema> {
+    let m = if go_deep() { 13 } else { 5 };
+    let mut nums: Vec<_> = (1..count).map(|_| rng.gen_range(0, m)).collect();
+    nums.sort();
+    nums.dedup();
+    let s = nums
+        .into_iter()
+        .map(|n| num_to_random_schema(n, rng))
+        .collect();
+    go_up();
+    s
+}
+
 impl Distribution<Schema> for Standard {
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Schema {
         let m = if go_deep() { 13 } else { 5 };
         let v: usize = rng.gen_range(0, m);
-        match v {
-            0 => Schema::Bool,
-            1 => Schema::Int,
-            2 => Schema::Float,
-            3 => Schema::Str,
-            4 => Schema::Bytes,
-            5 => Schema::Dict(rng.gen()),
-            6 => Schema::List(rng.gen()),
-            7 => Schema::Set(rng.gen()),
-            8 => Schema::Tuple(rng.gen()),
-            9 | 10 => Schema::Class(rng.gen()),
-            // 10 => Schema::Enum(rng.gen()),
-            11 => Schema::Optional(rng.gen()),
-            12 => Schema::Union(rng.gen()),
-            _ => unreachable!(),
-        }
+        let s = num_to_random_schema(v, rng);
+        go_up();
+        s
     }
 }
 

@@ -26,6 +26,36 @@ impl Context {
             s.push_str(&format!("  {},\n", v.to_rust_code(self)));
         }
         s.push_str("}\n");
+        s.push_str("\n");
+        s.push_str(&format!("impl Distribution<{}> for Standard {{\n", name));
+        s.push_str(&format!(
+            "  fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> {} {{\n",
+            name
+        ));
+        s.push_str(&format!(
+            "    let v: usize = rng.gen_range(0, {});\n",
+            u.variants.len()
+        ));
+        s.push_str("    match v {\n");
+        for (i, v) in u.variants.iter().enumerate() {
+            let gen = match v {
+                Schema::Bytes => "gen_vec(rng)",
+                Schema::Dict(_) => "gen_map(rng)",
+                Schema::List(_) => "gen_vec(rng)",
+                Schema::Set(_) => "gen_set(rng)",
+                Schema::Optional(_) => "gen_opt(rng)",
+                _ => "rng.gen()",
+            };
+            s.push_str(&format!(
+                "      {} => {{ let v: {} = {}; v }},\n",
+                i,
+                v.to_rust_code(self),
+                gen
+            ));
+        }
+        s.push_str("    }\n");
+        s.push_str("  }\n");
+        s.push_str("}\n");
 
         self.types.insert(name.clone(), s);
 
@@ -33,7 +63,7 @@ impl Context {
     }
 
     fn define_class(&mut self, c: Class) -> String {
-        let mut s = "#[derive(Serialize, Deserialize, Debug, Clone)]\n".to_string();
+        let mut s = "#[derive(Serialize, Deserialize, Debug, Clone, new)]\n".to_string();
 
         let mut cls_attr = vec![];
         if let Some(rename_all) = &c.attr.rename_all {
@@ -49,7 +79,7 @@ impl Context {
             cls_attr.push("default".into());
         }
         if !cls_attr.is_empty() {
-            s.push_str(&format!("#[serde({})]\n", cls_attr.join(",")));
+            s.push_str(&format!("#[serde({})]\n", cls_attr.join(", ")));
         }
 
         s.push_str(&format!("pub struct {} {{\n", c.name));
@@ -68,10 +98,31 @@ impl Context {
                 field_attr.push(format!("skip_deserializing"));
             }
             if !field_attr.is_empty() {
-                s.push_str(&format!("  #[serde({})]\n", field_attr.join(",")))
+                s.push_str(&format!("  #[serde({})]\n", field_attr.join(", ")))
             }
             s.push_str(&format!("  {}: {},\n", name, f.schema.to_rust_code(self)));
         }
+        s.push_str("}\n");
+        s.push_str("\n");
+        s.push_str(&format!("impl Distribution<{}> for Standard {{\n", c.name));
+        s.push_str(&format!(
+            "  fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> {} {{\n",
+            c.name
+        ));
+        s.push_str(&format!("    {}::new(\n", c.name));
+        for (name, f) in &c.fields {
+            let gen = match f.schema {
+                Schema::Bytes => "gen_vec(rng)",
+                Schema::Dict(_) => "gen_map(rng)",
+                Schema::List(_) => "gen_vec(rng)",
+                Schema::Set(_) => "gen_set(rng)",
+                Schema::Optional(_) => "gen_opt(rng)",
+                _ => "rng.gen()",
+            };
+            s.push_str(&format!("      {},\n", gen));
+        }
+        s.push_str("    )\n");
+        s.push_str("  }\n");
         s.push_str("}\n");
 
         self.types.insert(c.name.clone(), s);
@@ -174,8 +225,8 @@ mod test {
     fn more_gen() {
         let mut rng = rand::thread_rng();
 
-        for _ in 0..20 {
-            let schema: Schema = gen_schema(3);
+        for _ in 0..50 {
+            let schema: Schema = gen_schema(5);
             let (s, code) = to_rust_code(&schema);
             println!("--- {} ---", s);
             println!("{}", code);
