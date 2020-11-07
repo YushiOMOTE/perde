@@ -1,3 +1,4 @@
+use crate::data::{random_field_name, random_type_name};
 use derive_new::new;
 use indexmap::IndexMap;
 use rand::{
@@ -50,16 +51,6 @@ macro_rules! opt {
     };
 }
 
-fn random_type_name<R: Rng + ?Sized>(rng: &mut R) -> String {
-    let tail: String = rng.sample_iter(&Alphanumeric).take(5).collect();
-    format!("T{}", tail)
-}
-
-fn random_field_name<R: Rng + ?Sized>(rng: &mut R) -> String {
-    let tail: String = rng.sample_iter(&Alphanumeric).take(5).collect();
-    format!("f{}", tail.to_lowercase())
-}
-
 #[derive(Clone, Debug, Default, PartialEq, Eq, new)]
 pub struct FieldAttr {
     pub flatten: bool,
@@ -67,6 +58,29 @@ pub struct FieldAttr {
     pub default: bool,
     pub skip: bool,
     pub skip_deserializing: bool,
+}
+
+impl FieldAttr {
+    fn constraint(mut self, can_flatten: bool, can_skip: bool) -> Self {
+        if !can_flatten {
+            self.flatten = false;
+        }
+        if !can_skip && !self.default {
+            self.skip = false;
+            self.skip_deserializing = false;
+        }
+        if self.flatten {
+            self.rename = None;
+            self.default = false;
+            self.skip = false;
+            self.skip_deserializing = false;
+        }
+        if self.skip {
+            self.rename = None;
+            self.skip_deserializing = false;
+        }
+        self
+    }
 }
 
 impl Distribution<FieldAttr> for Standard {
@@ -201,11 +215,19 @@ impl Distribution<Class> for Standard {
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Class {
         let v: usize = rng.gen_range(0, 3);
 
+        let class_attr: ClassAttr = rng.gen();
+        let can_skip = class_attr.default;
+
         Class::new(
             random_type_name(rng),
-            rng.gen(),
+            class_attr,
             (0..v)
-                .map(|_| (random_field_name(rng), rng.gen()))
+                .map(|_| {
+                    (
+                        random_field_name(rng),
+                        rng.gen::<FieldSchema>().constraint(can_skip),
+                    )
+                })
                 .collect(),
         )
     }
@@ -215,6 +237,18 @@ impl Distribution<Class> for Standard {
 pub struct FieldSchema {
     pub attr: FieldAttr,
     pub schema: Schema,
+}
+
+impl FieldSchema {
+    fn constraint(mut self, can_skip: bool) -> Self {
+        let can_flatten = match &self.schema {
+            Schema::Dict(_) => true,
+            Schema::Class(_) => true,
+            _ => false,
+        };
+        self.attr = self.attr.clone().constraint(can_flatten, can_skip);
+        self
+    }
 }
 
 impl Distribution<FieldSchema> for Standard {
@@ -236,12 +270,13 @@ impl Distribution<Optional> for Standard {
 
 #[derive(Debug, Clone, new, PartialEq, Eq)]
 pub struct Union {
+    pub name: String,
     pub variants: Vec<Schema>,
 }
 
 impl Distribution<Union> for Standard {
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Union {
-        Union::new(gen_unique_schema(5, rng))
+        Union::new(random_type_name(rng), gen_unique_schema(5, rng))
     }
 }
 
