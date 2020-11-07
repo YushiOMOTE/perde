@@ -93,6 +93,8 @@ pub fn resolve_schema<'a>(
         Ok(&static_schema().list)
     } else if p.is_set() {
         Ok(&static_schema().set)
+    } else if p.is_frozen_set() {
+        Ok(&static_schema().frozenset)
     } else if let Some(s) = maybe_dataclass(p, &attr)? {
         p.set_capsule(&SCHEMA_CACHE, s)
     } else if let Some(s) = maybe_generic(p)? {
@@ -278,7 +280,7 @@ fn maybe_generic(p: &ObjectRef) -> Result<Option<Schema>> {
         to_set(p)?
     } else if origin.is_list() {
         to_list(p)?
-    } else if origin.is_fronzen_set() {
+    } else if origin.is_frozen_set() {
         to_frozen_set(p)?
     } else {
         return Ok(None);

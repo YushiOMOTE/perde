@@ -220,7 +220,7 @@ impl ObjectRef {
         self.is(cast!(PyList_Type))
     }
 
-    pub fn is_fronzen_set(&self) -> bool {
+    pub fn is_frozen_set(&self) -> bool {
         self.is(cast!(PyFrozenSet_Type))
     }
 
