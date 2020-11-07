@@ -3,11 +3,16 @@ setup: install-deps install-perde
 install-deps:
 	pipenv install --dev --skip-lock
 
-install-perde:
-	pipenv run scripts/for-each.sh develop
+install-perde: develop
 
 test:
 	pipenv run pytest -s
+
+develop:
+	pipenv run scripts/for-each.sh develop
+
+develop-json:
+	pipenv run scripts/for-each.sh develop perde-json
 
 build:
 	pipenv run scripts/for-each.sh build

@@ -53,13 +53,32 @@ impl<'a> SetRef<'a> {
         Self(obj)
     }
 
+    pub fn iter(&self) -> Result<SetRefIter> {
+        Ok(SetRefIter(objnew!(PyObject_GetIter(self.0.as_ptr()))?))
+    }
+
     pub fn len(&self) -> usize {
         unsafe { PySet_Size(self.0.as_ptr()) as usize }
     }
+}
 
-    pub fn pop(&self) -> Option<Object> {
-        let p = unsafe { PySet_Pop(self.0.as_ptr()) };
-        Object::new(p).ok()
+#[derive(Debug, Clone)]
+pub struct SetRefIter(Object);
+
+impl Iterator for SetRefIter {
+    type Item = Object;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        Some(
+            objnew!({
+                let p = PyIter_Next(self.0.as_ptr());
+                if p.is_null() {
+                    return None;
+                }
+                p
+            })
+            .ok()?,
+        )
     }
 }
 
@@ -85,13 +104,12 @@ impl Set {
         Ok(())
     }
 
-    pub fn len(&self) -> usize {
-        unsafe { PySet_Size(self.0.as_ptr()) as usize }
+    pub fn iter(&self) -> Result<SetRefIter> {
+        Ok(SetRefIter(objnew!(PyObject_GetIter(self.0.as_ptr()))?))
     }
 
-    pub fn pop(&self) -> Option<Object> {
-        let p = unsafe { PySet_Pop(self.0.as_ptr()) };
-        Object::new(p).ok()
+    pub fn len(&self) -> usize {
+        unsafe { PySet_Size(self.0.as_ptr()) as usize }
     }
 
     pub fn into_inner(self) -> Object {

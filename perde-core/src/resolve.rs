@@ -93,6 +93,10 @@ pub fn resolve_schema<'a>(
         Ok(&static_schema().list)
     } else if p.is_set() {
         Ok(&static_schema().set)
+    } else if p.is_frozen_set() {
+        Ok(&static_schema().frozenset)
+    } else if p.is_tuple() {
+        Ok(&static_schema().tuple)
     } else if let Some(s) = maybe_dataclass(p, &attr)? {
         p.set_capsule(&SCHEMA_CACHE, s)
     } else if let Some(s) = maybe_generic(p)? {
@@ -151,10 +155,6 @@ fn maybe_dataclass(
     let class = types::Class::new(p.owned());
     let flatten_members = collect_flatten_members(&members);
 
-    if !flatten_members.is_empty() {
-        println!("{:#?}", flatten_members);
-    }
-
     Ok(Some(Schema::Class(Class::new(
         class,
         name.into(),
@@ -186,6 +186,7 @@ fn maybe_enum(p: &ObjectRef, attr: &Option<HashMap<&str, &ObjectRef>>) -> Result
         .collect();
 
     Ok(Some(Schema::Enum(Enum::new(
+        p.owned(),
         EnumAttr::parse(&attr)?,
         variants?,
     ))))
@@ -270,7 +271,7 @@ fn maybe_generic(p: &ObjectRef) -> Result<Option<Schema>> {
 
     let s = if origin.is(static_objects()?.union.as_ptr()) {
         to_union(p)?
-    } else if origin.is(static_objects()?.tuple.as_ptr()) {
+    } else if origin.is_tuple() {
         to_tuple(p)?
     } else if origin.is_dict() {
         to_dict(p)?
@@ -278,7 +279,7 @@ fn maybe_generic(p: &ObjectRef) -> Result<Option<Schema>> {
         to_set(p)?
     } else if origin.is_list() {
         to_list(p)?
-    } else if origin.is_fronzen_set() {
+    } else if origin.is_frozen_set() {
         to_frozen_set(p)?
     } else {
         return Ok(None);

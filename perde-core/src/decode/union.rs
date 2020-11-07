@@ -190,9 +190,27 @@ impl<'a, 'de> Visitor<'de> for UnionVisitor<'a> {
     where
         A: SeqAccess<'de>,
     {
-        let schema = find!(self, Unexpected::Seq, List, Tuple, Set)?;
+        let schema =
+            self.0
+                .variants
+                .iter()
+                .find(|s| match s {
+                    Schema::Primitive(Primitive::Bytes)
+                    | Schema::Primitive(Primitive::ByteArray) => true,
+                    Schema::List(_) => true,
+                    Schema::Tuple(_) => true,
+                    Schema::Set(_) => true,
+                    _ => false,
+                })
+                .ok_or_else(|| de::Error::invalid_type(Unexpected::Seq, &self))?;
 
         match schema {
+            Schema::Primitive(Primitive::Bytes) => {
+                decode::primitive::BytesVisitor(false).visit_seq(seq)
+            }
+            Schema::Primitive(Primitive::ByteArray) => {
+                decode::primitive::BytesVisitor(true).visit_seq(seq)
+            }
             Schema::List(l) => decode::list::ListVisitor(l).visit_seq(seq),
             Schema::Tuple(t) => decode::tuple::TupleVisitor(t).visit_seq(seq),
             Schema::Set(s) => decode::set::SetVisitor(s).visit_seq(seq),

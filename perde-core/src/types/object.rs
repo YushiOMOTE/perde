@@ -212,6 +212,10 @@ impl ObjectRef {
         self.is(cast!(PyDict_Type))
     }
 
+    pub fn is_tuple(&self) -> bool {
+        self.is(cast!(PyTuple_Type))
+    }
+
     pub fn is_set(&self) -> bool {
         self.is(cast!(PySet_Type))
     }
@@ -220,7 +224,7 @@ impl ObjectRef {
         self.is(cast!(PyList_Type))
     }
 
-    pub fn is_fronzen_set(&self) -> bool {
+    pub fn is_frozen_set(&self) -> bool {
         self.is(cast!(PyFrozenSet_Type))
     }
 

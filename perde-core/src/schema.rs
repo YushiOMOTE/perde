@@ -214,9 +214,18 @@ impl FrozenSet {
 #[derive(Debug, Clone, new, PartialEq, Eq)]
 pub struct Tuple {
     pub args: Vec<Schema>,
+    #[new(default)]
+    pub any: bool,
 }
 
 impl Tuple {
+    pub fn any_tuple() -> Self {
+        Self {
+            args: vec![],
+            any: true,
+        }
+    }
+
     pub fn name(&self) -> &str {
         "tuple"
     }
@@ -224,6 +233,7 @@ impl Tuple {
 
 #[derive(Debug, Clone, new, PartialEq, Eq)]
 pub struct Enum {
+    pub object: Object,
     pub attr: EnumAttr,
     pub variants: IndexMap<String, VariantSchema>,
 }
@@ -337,6 +347,7 @@ pub struct StaticSchema {
     pub bytearray: Schema,
     pub dict: Schema,
     pub list: Schema,
+    pub tuple: Schema,
     pub set: Schema,
     pub frozenset: Schema,
 }
@@ -356,6 +367,7 @@ lazy_static::lazy_static! {
             bytearray: Schema::Primitive(Primitive::ByteArray),
             dict: Schema::Dict(Dict::new(Box::new(Schema::Any(Any::new())), Box::new(Schema::Any(Any::new())))),
             list: Schema::List(List::new(Box::new(Schema::Any(Any::new())))),
+            tuple: Schema::Tuple(Tuple::any_tuple()),
             set: Schema::Set(Set::new(Box::new(Schema::Any(Any::new())))),
             frozenset: Schema::FrozenSet(FrozenSet::new(Box::new(Schema::Any(Any::new())))),
         }
