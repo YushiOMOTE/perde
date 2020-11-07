@@ -17,6 +17,16 @@ macro_rules! find {
     }
 }
 
+macro_rules! find_p {
+    ($s:expr, $unx:expr, $($kind:tt),*) => {
+        $s.0.variants.iter().find(|s| match s {
+            $(Schema::Primitive(Primitive::$kind) => true,)*
+                _ => false,
+        })
+            .ok_or_else(|| de::Error::invalid_type($unx, &$s))
+    }
+}
+
 impl<'a, 'de> Visitor<'de> for UnionVisitor<'a> {
     type Value = Object;
 
@@ -29,7 +39,7 @@ impl<'a, 'de> Visitor<'de> for UnionVisitor<'a> {
     where
         E: de::Error,
     {
-        let schema = find!(self, Unexpected::Bool(v), Primitive)?;
+        let schema = find_p!(self, Unexpected::Bool(v), Bool)?;
         schema.deserialize(v.into_deserializer())
     }
 
@@ -58,7 +68,7 @@ impl<'a, 'de> Visitor<'de> for UnionVisitor<'a> {
     where
         E: de::Error,
     {
-        let schema = find!(self, Unexpected::Signed(v), Primitive)?;
+        let schema = find_p!(self, Unexpected::Signed(v), Int)?;
         schema.deserialize(v.into_deserializer())
     }
 
@@ -87,7 +97,7 @@ impl<'a, 'de> Visitor<'de> for UnionVisitor<'a> {
     where
         E: de::Error,
     {
-        let schema = find!(self, Unexpected::Unsigned(v), Primitive)?;
+        let schema = find_p!(self, Unexpected::Unsigned(v), Int)?;
         schema.deserialize(v.into_deserializer())
     }
 
@@ -102,7 +112,7 @@ impl<'a, 'de> Visitor<'de> for UnionVisitor<'a> {
     where
         E: de::Error,
     {
-        let schema = find!(self, Unexpected::Float(v), Primitive)?;
+        let schema = find_p!(self, Unexpected::Float(v), Float)?;
         schema.deserialize(v.into_deserializer())
     }
 
@@ -124,7 +134,7 @@ impl<'a, 'de> Visitor<'de> for UnionVisitor<'a> {
     where
         E: de::Error,
     {
-        let schema = find!(self, Unexpected::Str(v), Primitive)?;
+        let schema = find_p!(self, Unexpected::Str(v), Str)?;
         schema.deserialize(v.into_deserializer())
     }
 
@@ -146,7 +156,7 @@ impl<'a, 'de> Visitor<'de> for UnionVisitor<'a> {
     where
         E: de::Error,
     {
-        let schema = find!(self, Unexpected::Bytes(v), Primitive)?;
+        let schema = find_p!(self, Unexpected::Bytes(v), Bytes, ByteArray)?;
 
         match schema {
             Schema::Primitive(Primitive::Bytes) => {

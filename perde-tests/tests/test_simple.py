@@ -94,4 +94,6 @@ def test_optional():
 
 
 def test_union():
+    repack_as(typing.Union[int, str, bytes], 3)
     repack_as(typing.Union[int, str, bytes], b"abyte")
+    repack_as(typing.Union[int, str, bytes], "hage")
