@@ -8,7 +8,9 @@ pub trait CodeGen {
 
     fn construct(&mut self, schema: &Schema) -> String;
 
-    fn gen(&mut self, schema: &Schema, context: &mut Context) -> (String, String);
+    fn construct_line(&mut self, typename: &str, schema: &Schema) -> String;
+
+    fn gen(&mut self, schema: &Schema, context: &mut Context) -> String;
 }
 
 pub struct Context {
@@ -39,7 +41,8 @@ pub fn gen<T: CodeGen>(mut codegen: T, s: &Schema) -> Code {
 
     let mut definitions = "".to_string();
 
-    let (typename, construct) = codegen.gen(s, &mut context);
+    let typename = codegen.gen(s, &mut context);
+    let construct = codegen.construct_line(&typename, s);
 
     for (_, deps) in &context.types {
         definitions.push_str(deps);

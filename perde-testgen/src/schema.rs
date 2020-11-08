@@ -116,12 +116,20 @@ pub struct ClassAttr {
 
 impl Distribution<ClassAttr> for Standard {
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> ClassAttr {
-        ClassAttr::new(
-            opt!(rng, random_type_name(rng)),
-            opt!(rng, random_type_name(rng)),
-            rng.gen(),
-            rng.gen(),
-        )
+        let v: usize = rng.gen_range(0, 9);
+        let attr = match v {
+            0 => Some("lowercase".into()),
+            1 => Some("UPPERCASE".into()),
+            2 => Some("PascalCase".into()),
+            3 => Some("camelCase".into()),
+            4 => Some("snake_case".into()),
+            5 => Some("SCREAMING_SNAKE_CASE".into()),
+            6 => Some("kebab-case".into()),
+            7 => Some("SCREAMING-KEBAB-CASE".into()),
+            _ => None,
+        };
+
+        ClassAttr::new(attr, opt!(rng, random_type_name(rng)), rng.gen(), rng.gen())
     }
 }
 
@@ -148,7 +156,7 @@ pub struct Dict {
 
 impl Distribution<Dict> for Standard {
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Dict {
-        Dict::new(Box::new(rng.gen()), Box::new(rng.gen()))
+        Dict::new(Box::new(Schema::Str), Box::new(rng.gen()))
     }
 }
 
@@ -170,7 +178,19 @@ pub struct Set {
 
 impl Distribution<Set> for Standard {
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Set {
-        Set::new(Box::new(rng.gen()))
+        let set = loop {
+            let s = rng.gen();
+            match s {
+                Schema::List(_) => continue,
+                Schema::Class(_) => continue,
+                Schema::Tuple(_) => continue,
+                Schema::Optional(_) => continue,
+                Schema::Dict(_) => continue,
+                Schema::Set(_) => continue,
+                _ => break s,
+            }
+        };
+        Set::new(Box::new(set))
     }
 }
 
@@ -216,7 +236,6 @@ impl Distribution<Class> for Standard {
         let v: usize = rng.gen_range(0, 3);
 
         let class_attr: ClassAttr = rng.gen();
-        let can_skip = class_attr.default;
 
         Class::new(
             random_type_name(rng),
@@ -225,7 +244,7 @@ impl Distribution<Class> for Standard {
                 .map(|_| {
                     (
                         random_field_name(rng),
-                        rng.gen::<FieldSchema>().constraint(can_skip),
+                        rng.gen::<FieldSchema>().constraint(false),
                     )
                 })
                 .collect(),
@@ -246,6 +265,11 @@ impl FieldSchema {
             Schema::Class(_) => true,
             _ => false,
         };
+        let can_skip = can_skip
+            || match &self.schema {
+                Schema::Optional(_) => true,
+                _ => false,
+            };
         self.attr = self.attr.clone().constraint(can_flatten, can_skip);
         self
     }

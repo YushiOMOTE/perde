@@ -15,14 +15,14 @@ impl CodeGen for Rust {
             s.push_str(&format!(
                 "  {}({}),\n",
                 (i as u8 + 'A' as u8) as char,
-                self.gen(&v, context).0
+                self.gen(&v, context)
             ));
         }
         s.push_str("}\n");
         s.push_str("\n");
-        s.push_str(&format!("impl Distribution<{}> for Standard {{\n", u.name));
+        s.push_str(&format!("impl Random for {} {{\n", u.name));
         s.push_str(&format!(
-            "  fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> {} {{\n",
+            "  fn random<R: Rng + ?Sized>(rng: &mut R) -> {} {{\n",
             u.name
         ));
         s.push_str(&format!(
@@ -35,7 +35,7 @@ impl CodeGen for Rust {
                 "      {} => Self::{}({{ let v: {} = {}; v }}),\n",
                 i,
                 (i as u8 + 'A' as u8) as char,
-                self.gen(&v, context).0,
+                self.gen(&v, context),
                 self.construct(v)
             ));
         }
@@ -62,9 +62,10 @@ impl CodeGen for Rust {
         if c.attr.deny_unknown_fields {
             cls_attr.push("deny_unknown_fields".into());
         }
-        if c.attr.default {
-            cls_attr.push("default".into());
-        }
+        // TODO: Default
+        // if c.attr.default {
+        //     cls_attr.push("default".into());
+        // }
         if !cls_attr.is_empty() {
             s.push_str(&format!("#[serde({})]\n", cls_attr.join(", ")));
         }
@@ -87,17 +88,13 @@ impl CodeGen for Rust {
             if !field_attr.is_empty() {
                 s.push_str(&format!("  #[serde({})]\n", field_attr.join(", ")))
             }
-            s.push_str(&format!(
-                "  {}: {},\n",
-                name,
-                self.gen(&f.schema, context).0
-            ));
+            s.push_str(&format!("  {}: {},\n", name, self.gen(&f.schema, context)));
         }
         s.push_str("}\n");
         s.push_str("\n");
-        s.push_str(&format!("impl Distribution<{}> for Standard {{\n", c.name));
+        s.push_str(&format!("impl Random for {} {{\n", c.name));
         s.push_str(&format!(
-            "  fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> {} {{\n",
+            "  fn random<R: Rng + ?Sized>(rng: &mut R) -> {} {{\n",
             c.name
         ));
         s.push_str(&format!("    {}::new(\n", c.name));
@@ -114,18 +111,14 @@ impl CodeGen for Rust {
     }
 
     fn construct(&mut self, schema: &Schema) -> String {
-        match schema {
-            Schema::Bytes => "gen_vec(rng)",
-            Schema::Dict(_) => "gen_map(rng)",
-            Schema::List(_) => "gen_vec(rng)",
-            Schema::Set(_) => "gen_set(rng)",
-            Schema::Optional(_) => "gen_opt(rng)",
-            _ => "rng.gen()",
-        }
-        .into()
+        "rng.gen_ext()".into()
     }
 
-    fn gen(&mut self, schema: &Schema, context: &mut Context) -> (String, String) {
+    fn construct_line(&mut self, typename: &str, schema: &Schema) -> String {
+        format!("let v: {} = {};", typename, self.construct(schema))
+    }
+
+    fn gen(&mut self, schema: &Schema, context: &mut Context) -> String {
         let typename = match schema {
             Schema::Bool => "bool".into(),
             Schema::Int => "i64".into(),
@@ -134,15 +127,15 @@ impl CodeGen for Rust {
             Schema::Bytes => "Vec<u8>".into(),
             Schema::Dict(d) => format!(
                 "HashMap<{}, {}>",
-                self.gen(&d.key, context).0,
-                self.gen(&d.value, context).0,
+                self.gen(&d.key, context),
+                self.gen(&d.value, context),
             ),
-            Schema::List(l) => format!("Vec<{}>", self.gen(&l.value, context).0),
-            Schema::Set(s) => format!("HashSet<{}>", self.gen(&s.value, context).0),
+            Schema::List(l) => format!("Vec<{}>", self.gen(&l.value, context)),
+            Schema::Set(s) => format!("HashSet<{}>", self.gen(&s.value, context)),
             Schema::Tuple(t) => {
                 let mut s = "(".to_string();
                 for t in &t.args {
-                    s.push_str(&format!("{}, ", self.gen(&t, context).0));
+                    s.push_str(&format!("{}, ", self.gen(&t, context)));
                 }
                 s.push_str(")");
                 s
@@ -152,16 +145,14 @@ impl CodeGen for Rust {
                 c.name.clone()
             }
             Schema::Enum(e) => unimplemented!(),
-            Schema::Optional(o) => format!("Option<{}>", self.gen(&o.value, context).0),
+            Schema::Optional(o) => format!("Option<{}>", self.gen(&o.value, context)),
             Schema::Union(u) => {
                 self.define_enum(u.clone(), context);
                 u.name.clone()
             }
         };
 
-        let construct = format!("let v: {} = {};\n", typename, self.construct(schema));
-
-        (typename, construct)
+        typename
     }
 }
 

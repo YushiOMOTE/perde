@@ -72,7 +72,6 @@ const KEYWORDS: &'static [&'static str] = &[
     "Boss",
     "Bottle",
     "Bowl",
-    "Box",
     "Boy",
     "Brain",
     "Bridge",
