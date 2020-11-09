@@ -5,9 +5,30 @@ import enum
 import perde_json
 import pytest
 import json
+import perde_json, perde_yaml, perde_msgpack
+
+FORMATS = [perde_json, perde_yaml, perde_msgpack]
 
 
-def repack(ty, *args, **kwargs):
+def repack(m, v):
+    print(f'repacking {v}...')
+    s = m.dumps(v)
+    print(f'packed: {s}')
+    r = m.loads(s)
+    print(f'unpacked: {r}')
+    assert r == v
+
+
+def repack_as(m, t, v):
+    print(f'repacking {v} as {t}...')
+    s = m.dumps(v)
+    print(f'packed: {s}')
+    r = m.loads_as(t, s)
+    print(f'unpacked: {r}')
+    assert r == v
+
+
+def repack_json(ty, *args, **kwargs):
     oty = get_origin(ty) or ty
     e = oty(*args, **kwargs)
     assert e is not None
