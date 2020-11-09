@@ -11,7 +11,7 @@
 Python wrapper around [the powerful Rust serialization framework](https://github.com/serde-rs/serde).
 
 * Serialization & deserialization of python data structures.
-* Supports dataclasses and most generics.
+* Supports dataclasses and most generic types.
 * Supports various format. By design, `perde` can support as many format as `serde` can.
 * Provide case conversion of field names, skipping serialization/deserialization, structure flattening.
 * Strict type checking.
@@ -57,6 +57,38 @@ value: hoge
 perde_msgpack.loads_as(A, b'\x82\xA3\x6B\x65\x79\xCD\x01\x2C\xA5\x76\x61\x6C\x75\x65\xCD\x01\x90')
 ```
 
+### Supported types
+
+* `dataclass`
+* Generic types (`typing`)
+    * [x] `Dict`
+    * [x] `List`
+    * [x] `Set`
+    * [x] `FrozenSet`
+    * [x] `Tuple`
+    * [x] `Optional`
+    * [x] `Any`
+* Enum types
+    * [x] `Enum`
+    * [ ] `IntEnum`
+* Built-in types
+    * [x] `int`
+    * [x] `str`
+    * [x] `float`
+    * [x] `bool`
+    * [x] `bytes`
+    * [x] `bytearray`
+    * [x] `dict`
+    * [x] `list`
+    * [x] `set`
+    * [x] `frozenset`
+    * [x] `tuple`
+* Chrono types
+    * [ ] `datetime`
+    * [ ] `date`
+    * [ ] `time`
+    * [ ] `timedelta`
+
 ### Supported formats
 
 * [x] JSON
@@ -77,6 +109,23 @@ perde_msgpack.loads_as(A, b'\x82\xA3\x6B\x65\x79\xCD\x01\x2C\xA5\x76\x61\x6C\x75
 * [ ] D-Bus
 * [ ] FlexBuffer
 * [ ] XML
+
+### Supported attributes
+
+* Class-level attributes
+    * [x] `rename_all`
+    * [x] `rename`
+    * [ ] `deny_unknown_fields`
+    * [ ] `default`
+* Field-level attributes
+    * [x] `flatten`
+    * [x] `rename`
+    * [ ] `default`
+    * [ ] `default_factory`
+    * [ ] `skip`
+    * [ ] `skip_deserializing`
+* Variant-level attributes
+    * [ ] `rename`
 
 ### Benchmark
 
