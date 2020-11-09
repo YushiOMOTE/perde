@@ -104,7 +104,7 @@ pub fn resolve_schema<'a>(
     } else if let Some(s) = maybe_enum(p, &attr)? {
         p.set_capsule(&SCHEMA_CACHE, s)
     } else {
-        bail!("unsupported type")
+        bail!("unsupported type: {}", p.name())
     }
 }
 
