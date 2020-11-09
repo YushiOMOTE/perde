@@ -233,7 +233,14 @@ fn to_tuple(p: &ObjectRef) -> Result<Schema> {
     let iter = args.iter();
 
     let args: Result<_> = iter.map(|arg| to_schema(arg)).collect();
-    Ok(Schema::Tuple(Tuple::new(args?)))
+    let args: Vec<_> = args?;
+    if args.is_empty() {
+        // typing.Tuple[] is syntax error.
+        // i.e. empty args always means typing.Tuple.
+        // It accepts any types.
+        return Ok(Schema::Tuple(Tuple::any_tuple()));
+    }
+    Ok(Schema::Tuple(Tuple::new(args)))
 }
 
 fn to_dict(p: &ObjectRef) -> Result<Schema> {
@@ -270,7 +277,9 @@ fn get_args(p: &ObjectRef) -> Result<types::Tuple> {
 }
 
 fn maybe_generic(p: &ObjectRef) -> Result<Option<Schema>> {
-    if !p.is_instance(static_objects()?.generic_alias.as_ptr()) {
+    if !p.is_instance(static_objects()?.generic_alias.as_ptr())
+        && !p.is(static_objects()?.tuple.as_ptr())
+    {
         return Ok(None);
     }
 

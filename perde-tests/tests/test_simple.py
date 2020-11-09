@@ -111,7 +111,7 @@ def test_tuple(m):
     repack_as(m, tuple, (33, {"a": 10}))
     repack_as(m, tuple, ("hage",))
     repack_as(m, tuple, ())
-    repack_as(m, typing.Tuple, (3, "abc", b"def"))
+    repack_as(m, typing.Tuple, (3, "abc", "def"))
     repack_as(m, typing.Tuple[int, str, bytes], (3, "abc", b"def"))
     repack_as(m, typing.Tuple[str, dict], ("hage", {"a": -10}))
     repack_as(m, typing.Tuple[str], ("foo",))
