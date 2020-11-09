@@ -248,14 +248,14 @@ fn to_list(p: &ObjectRef) -> Result<Schema> {
 fn to_set(p: &ObjectRef) -> Result<Schema> {
     let args = get_args(p)?;
     let args = args.as_ref();
-    let value = to_schema(args.get(1)?)?;
+    let value = to_schema(args.get(0)?)?;
     Ok(Schema::Set(Set::new(Box::new(value))))
 }
 
 fn to_frozen_set(p: &ObjectRef) -> Result<Schema> {
     let args = get_args(p)?;
     let args = args.as_ref();
-    let value = to_schema(args.get(1)?)?;
+    let value = to_schema(args.get(0)?)?;
     Ok(Schema::FrozenSet(FrozenSet::new(Box::new(value))))
 }
 
