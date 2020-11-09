@@ -412,6 +412,7 @@ impl From<pyo3::PyObject> for StaticObject {
 pub struct StaticObjects {
     pub fields: StaticObject,
     pub generic_alias: StaticObject,
+    pub type_var: StaticObject,
     pub union: StaticObject,
     pub tuple: StaticObject,
     pub enum_meta: StaticObject,
@@ -447,6 +448,7 @@ lazy_static::lazy_static! {
 
         let fields = getattr!(dataclasses, "fields")?;
         let generic_alias = getattr!(typing, "_GenericAlias")?;
+        let type_var = getattr!(typing, "TypeVar")?;
         let union = getattr!(typing, "Union")?;
         let tuple = getattr!(typing, "Tuple")?;
         let enum_meta = getattr!(enum_, "EnumMeta")?;
@@ -454,6 +456,7 @@ lazy_static::lazy_static! {
         Ok(StaticObjects {
             fields,
             generic_alias,
+            type_var,
             union,
             tuple,
             enum_meta,

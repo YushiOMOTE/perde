@@ -297,6 +297,8 @@ impl Union {
     }
 }
 
+pub const SCHEMA_ANY: &'static Schema = &Schema::Any(Any);
+
 #[derive(Debug, Clone, new, PartialEq, Eq)]
 pub struct Any;
 

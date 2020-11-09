@@ -103,13 +103,19 @@ pub fn resolve_schema<'a>(
         p.set_capsule(&SCHEMA_CACHE, s)
     } else if let Some(s) = maybe_enum(p, &attr)? {
         p.set_capsule(&SCHEMA_CACHE, s)
+    } else if is_type_var(p)? {
+        Ok(&SCHEMA_ANY)
     } else {
-        bail!("unsupported type: {}", p.name())
+        bail!("unsupported type")
     }
 }
 
 pub fn to_schema(p: &ObjectRef) -> Result<Schema> {
     resolve_schema(p, None).map(|s| s.clone())
+}
+
+fn is_type_var(p: &ObjectRef) -> Result<bool> {
+    Ok(p.is_instance(static_objects()?.type_var.as_ptr()))
 }
 
 fn maybe_dataclass(
