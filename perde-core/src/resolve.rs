@@ -103,7 +103,7 @@ pub fn resolve_schema<'a>(
         p.set_capsule(&SCHEMA_CACHE, s)
     } else if let Some(s) = maybe_enum(p, &attr)? {
         p.set_capsule(&SCHEMA_CACHE, s)
-    } else if is_type_var(p)? {
+    } else if is_type_var_instance(p)? || is_any_type(p)? {
         Ok(&SCHEMA_ANY)
     } else {
         bail!("unsupported type")
@@ -114,8 +114,12 @@ pub fn to_schema(p: &ObjectRef) -> Result<Schema> {
     resolve_schema(p, None).map(|s| s.clone())
 }
 
-fn is_type_var(p: &ObjectRef) -> Result<bool> {
+fn is_type_var_instance(p: &ObjectRef) -> Result<bool> {
     Ok(p.is_instance(static_objects()?.type_var.as_ptr()))
+}
+
+fn is_any_type(p: &ObjectRef) -> Result<bool> {
+    Ok(p.is(static_objects()?.any.as_ptr()))
 }
 
 fn maybe_dataclass(
@@ -235,7 +239,8 @@ fn to_tuple(p: &ObjectRef) -> Result<Schema> {
     let args: Result<_> = iter.map(|arg| to_schema(arg)).collect();
     let args: Vec<_> = args?;
     if args.is_empty() {
-        // typing.Tuple[] is syntax error.
+        // Here is for Tuple without subscription.
+        // `typing.Tuple[]` is syntax error.
         // i.e. empty args always means typing.Tuple.
         // It accepts any types.
         return Ok(Schema::Tuple(Tuple::any_tuple()));
@@ -280,6 +285,15 @@ fn maybe_generic(p: &ObjectRef) -> Result<Option<Schema>> {
     if !p.is_instance(static_objects()?.generic_alias.as_ptr())
         && !p.is(static_objects()?.tuple.as_ptr())
     {
+        if p.is(static_objects()?.optional.as_ptr()) {
+            // Here is for Optional without subscription.
+            return Ok(Some(Schema::Optional(Optional::new(Box::new(
+                Schema::Any(Any),
+            )))));
+        } else if p.is(static_objects()?.union.as_ptr()) {
+            // Here is for Union without subscription.
+            return Ok(Some(Schema::Any(Any)));
+        }
         return Ok(None);
     }
 
