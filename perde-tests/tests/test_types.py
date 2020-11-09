@@ -2,13 +2,15 @@ from dataclasses import dataclass, field
 from typing import List, Dict, Optional, Union, Tuple, TypeVar
 from typing_inspect import get_origin
 import enum
-import perde_json
 import pytest
+from util import FORMATS, repack_as
 
-from util import repack
 
 @dataclass
 class Entry:
+    """
+    The type `ty` and its possible values `valus`
+    """
     ty: TypeVar
     values: List[object]
 
@@ -59,32 +61,53 @@ FEW_DICTS_SK = [
     Entry(Dict[str, str], [{"v": "avc", "p": ""}, {"n": "x"}, {}]),
 ]
 
-@pytest.mark.parametrize("t1,v1", expand(PRIMITIVES + LISTS + DICTS_SK))
-def test_primitives(t1, v1):
-    repack(t1, v1)
 
+@pytest.mark.parametrize("m", FORMATS)
+@pytest.mark.parametrize("t1,v1", expand(PRIMITIVES + LISTS + DICTS_SK))
+def test_primitives(m, t1, v1):
+    repack_as(m, t1, v1)
+
+
+@pytest.mark.parametrize("m", FORMATS)
 @pytest.mark.parametrize("t1,v1", expand(PRIMITIVES + LISTS + DICTS_SK))
 @pytest.mark.parametrize("t2,v2", expand(PRIMITIVES + LISTS + DICTS_SK))
-def test_simple_classes(t1, t2, v1, v2):
+def test_simple_classes(m, t1, t2, v1, v2):
     @dataclass
     class Test:
         a: t1
         b: t2
 
-    repack(Test, v1, v2)
+    repack_as(m, Test, Test(v1, v2))
 
+
+@pytest.mark.parametrize("m", FORMATS)
 @pytest.mark.parametrize("t1,v1", expand(FEW_PRIMITIVES))
 @pytest.mark.parametrize("t2,v2", expand(FEW_PRIMITIVES + FEW_LISTS + FEW_DICTS_SK))
 @pytest.mark.parametrize("t3,v3", expand(FEW_PRIMITIVES + FEW_LISTS + FEW_DICTS_SK))
-def test_nested_classes(t1, t2, t3, v1, v2, v3):
+def test_nested_classes(m, t1, t2, t3, v1, v2, v3):
     @dataclass
-    class Test2:
+    class Child:
         a: t1
         b: t2
 
     @dataclass
-    class Test:
+    class Test1:
         x: t3
-        y: Test2
+        y: Child
 
-    repack(Test, v3, Test2(v1, v2))
+    repack_as(m, Test1, Test1(v3, Child(v1, v2)))
+
+    @dataclass
+    class Test2:
+        x: Child
+        y: t3
+
+    repack_as(m, Test2, Test2(Child(v1, v2), v3))
+
+    @dataclass
+    class Test3:
+        p: t1
+        q: Child
+        r: t3
+
+    repack_as(m, Test3, Test3(v1, Child(v1, v2), v3))

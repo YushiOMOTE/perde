@@ -4,7 +4,7 @@ import enum
 import perde, perde_json
 import pytest
 
-from util import repack, comp
+from util import repack_json, comp
 
 
 def test_rename():
@@ -14,7 +14,7 @@ def test_rename():
         b: str = field(metadata = {"perde_rename": "x"})
         c: int
 
-    comp(repack(Test, "yes", "no", 3), {"a":"yes","x":"no","c":3})
+    comp(repack_json(Test, "yes", "no", 3), {"a":"yes","x":"no","c":3})
 
 
 def test_rename_all():
@@ -25,7 +25,7 @@ def test_rename_all():
         that_is_what: str
         this_was_that: int
 
-    comp(repack(Test, "yes", "no", 3), {"thisIsIt":"yes","thatIsWhat":"no","thisWasThat":3})
+    comp(repack_json(Test, "yes", "no", 3), {"thisIsIt":"yes","thatIsWhat":"no","thisWasThat":3})
 
 
 def test_rename_all_and_rename():
@@ -36,7 +36,7 @@ def test_rename_all_and_rename():
         that_is_what: str = field(metadata = {"perde_rename": "that_is_which"})
         this_was_that: int
 
-    comp(repack(Test, "yes", "no", 3), {"thisIsIt":"yes","that_is_which":"no","thisWasThat":3})
+    comp(repack_json(Test, "yes", "no", 3), {"thisIsIt":"yes","that_is_which":"no","thisWasThat":3})
 
 
 def test_nested_rename():
@@ -52,7 +52,7 @@ def test_nested_rename():
         y: Test2 = field(metadata = {"perde_rename": "w"})
         z: int
 
-    comp(repack(Test, "yes", Test2("faa", "foo", -10), 3), {"x":"yes","w":{"a":"faa","d":"foo","c":-10},"z":3})
+    comp(repack_json(Test, "yes", Test2("faa", "foo", -10), 3), {"x":"yes","w":{"a":"faa","d":"foo","c":-10},"z":3})
 
 
 def test_nested_rename_all():
@@ -69,7 +69,7 @@ def test_nested_rename_all():
         b: Test2
         c: int
 
-    comp(repack(Test, "yes", Test2("he", "she", 0), 3), {"a":"yes","b":{"aK":"he","bK":"she","cK":0},"c":3})
+    comp(repack_json(Test, "yes", Test2("he", "she", 0), 3), {"a":"yes","b":{"aK":"he","bK":"she","cK":0},"c":3})
 
 
 def test_flatten():
@@ -86,4 +86,4 @@ def test_flatten():
         b: Test2 = field(metadata = {"perde_flatten": True})
         c: int
 
-    comp(repack(Test, "yes", Test2("he", "she", 0), 3), {"a":"yes","x":"he","y":"she","z":0,"c":3})
+    comp(repack_json(Test, "yes", Test2("he", "she", 0), 3), {"a":"yes","x":"he","y":"she","z":0,"c":3})

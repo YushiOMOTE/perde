@@ -233,6 +233,7 @@ impl Tuple {
 
 #[derive(Debug, Clone, new, PartialEq, Eq)]
 pub struct Enum {
+    pub name: String,
     pub object: Object,
     pub attr: EnumAttr,
     pub variants: IndexMap<String, VariantSchema>,
@@ -295,6 +296,8 @@ impl Union {
         "union"
     }
 }
+
+pub const SCHEMA_ANY: &'static Schema = &Schema::Any(Any);
 
 #[derive(Debug, Clone, new, PartialEq, Eq)]
 pub struct Any;
