@@ -60,29 +60,6 @@ pub struct FieldAttr {
     pub skip_deserializing: bool,
 }
 
-impl FieldAttr {
-    fn constraint(mut self, can_flatten: bool, can_skip: bool) -> Self {
-        if !can_flatten {
-            self.flatten = false;
-        }
-        if !can_skip && !self.default {
-            self.skip = false;
-            self.skip_deserializing = false;
-        }
-        if self.flatten {
-            self.rename = None;
-            self.default = false;
-            self.skip = false;
-            self.skip_deserializing = false;
-        }
-        if self.skip {
-            self.rename = None;
-            self.skip_deserializing = false;
-        }
-        self
-    }
-}
-
 impl Distribution<FieldAttr> for Standard {
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> FieldAttr {
         FieldAttr::new(
@@ -181,6 +158,7 @@ impl Distribution<Set> for Standard {
         let set = loop {
             let s = rng.gen();
             match s {
+                Schema::Float => continue,
                 Schema::List(_) => continue,
                 Schema::Class(_) => continue,
                 Schema::Tuple(_) => continue,
@@ -241,12 +219,7 @@ impl Distribution<Class> for Standard {
             random_type_name(rng),
             class_attr,
             (0..v)
-                .map(|_| {
-                    (
-                        random_field_name(rng),
-                        rng.gen::<FieldSchema>().constraint(false),
-                    )
-                })
+                .map(|_| (random_field_name(rng), rng.gen::<FieldSchema>()))
                 .collect(),
         )
     }
@@ -256,23 +229,6 @@ impl Distribution<Class> for Standard {
 pub struct FieldSchema {
     pub attr: FieldAttr,
     pub schema: Schema,
-}
-
-impl FieldSchema {
-    fn constraint(mut self, can_skip: bool) -> Self {
-        let can_flatten = match &self.schema {
-            Schema::Dict(_) => true,
-            Schema::Class(_) => true,
-            _ => false,
-        };
-        let can_skip = can_skip
-            || match &self.schema {
-                Schema::Optional(_) => true,
-                _ => false,
-            };
-        self.attr = self.attr.clone().constraint(can_flatten, can_skip);
-        self
-    }
 }
 
 impl Distribution<FieldSchema> for Standard {
@@ -322,6 +278,143 @@ pub enum Schema {
 }
 
 impl Schema {
+    fn constraint(&mut self) {
+        let s = self.clone();
+
+        match self {
+            Self::Dict(d) => {
+                d.key.constraint();
+                d.value.constraint();
+            }
+            Self::List(l) => {
+                l.value.constraint();
+            }
+            Self::Set(s) => {
+                s.value.constraint();
+            }
+            Self::Tuple(t) => t.args.iter_mut().for_each(|v| v.constraint()),
+            Self::Class(c) => {
+                if !s.has_default() {
+                    c.attr.default = false;
+                }
+                let mut num = c.fields.len();
+                c.fields.iter_mut().for_each(|(_, v)| {
+                    let can_flatten = match &v.schema {
+                        Schema::Dict(_) => true,
+                        Schema::Class(_) => true,
+                        _ => false,
+                    };
+
+                    if !can_flatten {
+                        v.attr.flatten = false;
+                    }
+                    if !v.schema.has_default() {
+                        v.attr.default = false;
+                        v.attr.skip = false;
+                        v.attr.skip_deserializing = false;
+                    }
+                    if v.attr.flatten {
+                        v.attr.rename = None;
+                    }
+                    if v.attr.skip {
+                        v.attr.flatten = false;
+                        v.attr.rename = None;
+                        v.attr.default = false;
+                        v.attr.skip_deserializing = false;
+                    }
+                    if num == 1 {
+                        v.attr.skip = false;
+                    }
+
+                    if v.attr.skip || v.attr.skip_deserializing || v.attr.flatten {
+                        num -= 1;
+                    }
+
+                    v.schema.constraint()
+                });
+
+                if num == 0 {
+                    c.attr.deny_unknown_fields = false;
+                }
+            }
+            Self::Optional(o) => o.value.constraint(),
+            Self::Union(u) => u.variants.iter_mut().for_each(|u| u.constraint()),
+            _ => {}
+        }
+    }
+
+    fn valid(&self) -> bool {
+        match self {
+            Self::Bool => true,
+            Self::Int => true,
+            Self::Float => true,
+            Self::Str => true,
+            Self::Bytes => true,
+            Self::Dict(d) => d.key.valid() && d.key.has_hash() && d.value.valid(),
+            Self::List(l) => l.value.valid(),
+            Self::Set(s) => s.value.valid() && s.value.has_hash(),
+            Self::Tuple(t) => t.args.iter().all(|v| v.valid()),
+            Self::Class(c) => c.fields.iter().all(|(_, v)| v.schema.valid()),
+            Self::Enum(e) => true,
+            Self::Optional(o) => o.value.valid(),
+            Self::Union(u) => u.variants.iter().all(|u| u.valid()),
+        }
+    }
+
+    pub fn has_default(&self) -> bool {
+        match self {
+            Self::Bool => true,
+            Self::Int => true,
+            Self::Float => true,
+            Self::Str => true,
+            Self::Bytes => true,
+            Self::Dict(d) => true,
+            Self::List(l) => true,
+            Self::Set(s) => true,
+            Self::Tuple(t) => t.args.iter().all(|v| v.has_default()),
+            Self::Class(c) => c.fields.iter().all(|(_, v)| v.schema.has_default()),
+            Self::Enum(e) => false,
+            Self::Optional(o) => o.value.has_default(),
+            Self::Union(u) => false,
+        }
+    }
+
+    pub fn has_hash(&self) -> bool {
+        match self {
+            Self::Bool => true,
+            Self::Int => true,
+            Self::Float => false,
+            Self::Str => true,
+            Self::Bytes => true,
+            Self::Dict(d) => false,
+            Self::List(l) => l.value.has_hash(),
+            Self::Set(s) => false,
+            Self::Tuple(t) => t.args.iter().all(|v| v.has_hash()),
+            Self::Class(c) => c.fields.iter().all(|(_, v)| v.schema.has_hash()),
+            Self::Enum(e) => true,
+            Self::Optional(o) => o.value.has_hash(),
+            Self::Union(u) => u.variants.iter().all(|u| u.has_hash()),
+        }
+    }
+
+    pub fn has_eq(&self) -> bool {
+        match self {
+            Self::Bool => true,
+            Self::Int => true,
+            Self::Float => false,
+            Self::Str => true,
+            Self::Bytes => true,
+            Self::Dict(d) => d.key.has_eq() && d.value.has_eq(),
+            Self::List(l) => l.value.has_eq(),
+            Self::Set(s) => s.value.has_eq(),
+            Self::Tuple(t) => t.args.iter().all(|v| v.has_eq()),
+            Self::Class(c) => c.fields.iter().all(|(_, v)| v.schema.has_eq()),
+            Self::Enum(e) => true,
+            Self::Optional(o) => o.value.has_eq(),
+            Self::Union(u) => u.variants.iter().all(|u| u.has_eq()),
+        }
+    }
+
     fn is_map(&self) -> bool {
         match self {
             Self::Dict(_) => true,
@@ -387,8 +480,15 @@ fn gen_unique_schema<R: Rng + ?Sized>(count: usize, rng: &mut R) -> Vec<Schema> 
 impl Distribution<Schema> for Standard {
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Schema {
         let m = if go_deep() { 13 } else { 5 };
-        let v: usize = rng.gen_range(0, m);
-        let s = num_to_random_schema(v, rng);
+        let s = loop {
+            let v: usize = rng.gen_range(0, m);
+            let s = num_to_random_schema(v, rng);
+            if s.valid() {
+                let mut s = s;
+                s.constraint();
+                break s;
+            }
+        };
         go_up();
         s
     }

@@ -1,0 +1,12 @@
+[package]
+name = "codegen"
+version = "0.0.1"
+authors = ["YushiOMOTE <yushiomote@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+derive-new = "0.5"
+indexmap = "1.6"
+pyo3 = "0.12"
+rand = "0.7"
+chrono = "0.4"

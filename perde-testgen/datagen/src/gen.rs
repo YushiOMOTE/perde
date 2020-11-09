@@ -74,7 +74,7 @@ where
 
 impl<K, V> Random for HashMap<K, V>
 where
-    K: Random,
+    K: Random + std::hash::Hash + Eq,
     V: Random,
 {
     fn random<R: Rng + ?Sized>(rng: &mut R) -> HashMap<K, V> {
@@ -85,7 +85,7 @@ where
 
 impl<T> Random for HashSet<T>
 where
-    T: Random,
+    T: Random + std::hash::Hash + Eq,
 {
     fn random<R: Rng + ?Sized>(rng: &mut R) -> HashSet<T> {
         let len: usize = rng.gen_range(0, 10);
@@ -107,31 +107,29 @@ where
 }
 
 impl Random for () {
-    fn random<R: Rng + ?Sized>(rng: &mut R) -> () {
+    fn random<R: Rng + ?Sized>(_: &mut R) -> () {
         ()
     }
 }
 
 macro_rules! impl_tuple {
-    ($($($tp:tt),*;)*) => {
-        $(impl<$($tp),q*> Random for ($($tp),*)
+    ($(($($tp:tt),*);)*) => {
+        $(impl<$($tp),*> Random for ($($tp,)*)
         where
             $($tp: Random),*
         {
-            fn random<R: Rng + ?Sized>(rng: &mut R) -> ($($tp),*) {
-                ($(
-                    {
-                        type _Unused = $tp;
-                        rng.gen_ext()
-                    }
-                ),*)
+            fn random<R: Rng + ?Sized>(rng: &mut R) -> Self {
+                ($({ let v: $tp = rng.gen_ext(); v },)*)
             }
         })*
     }
 }
 
-impl_tuple! (
+impl_tuple!(
     (A);
     (A, B);
     (A, B, C);
+    (A, B, C, D);
+    (A, B, C, D, E);
+    (A, B, C, D, E, F);
 );
