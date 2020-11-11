@@ -80,15 +80,18 @@ impl ObjectRef {
         }
     }
 
-    pub fn get_capsule<'a, T>(&self, s: &AttrStr) -> Result<&'a T> {
-        let obj = self.get_attr(s)?;
+    pub fn get_capsule<'a, T>(&self, s: &AttrStr) -> Option<&'a T> {
+        if !self.has_attr(s) {
+            return None;
+        }
+        let obj = self.get_attr(s).ok()?;
 
         let p = unsafe { PyCapsule_GetPointer(obj.as_ptr(), std::ptr::null_mut()) };
 
         if p.is_null() {
-            bail!("cannot get capsule pointer")
+            None
         } else {
-            Ok(unsafe { &*(p as *mut T) })
+            Some(unsafe { &*(p as *mut T) })
         }
     }
 

@@ -71,7 +71,7 @@ pub fn resolve_schema<'a>(
     attr: Option<HashMap<&str, &ObjectRef>>,
 ) -> Result<&'a Schema> {
     match p.get_capsule(&SCHEMA_CACHE) {
-        Ok(p) => return Ok(p),
+        Some(p) => return Ok(p),
         _ => {}
     }
 
