@@ -247,8 +247,15 @@ fn to_union(p: &ObjectRef) -> Result<Schema> {
 fn to_tuple(p: &ObjectRef) -> Result<Schema> {
     let args = get_args(p)?;
     let args = args.as_ref();
-    let iter = args.iter();
 
+    if args.len() == 1 {
+        let p = args.get(0).unwrap();
+        if p.is(static_objects()?.empty_tuple.as_ptr()) {
+            return Ok(Schema::Tuple(Tuple::new(vec![])));
+        }
+    }
+
+    let iter = args.iter();
     let args: Result<_> = iter.map(|arg| to_schema(arg)).collect();
     let args: Vec<_> = args?;
     if args.is_empty() {

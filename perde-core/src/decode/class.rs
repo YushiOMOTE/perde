@@ -121,7 +121,6 @@ impl Class {
                         Schema::Class(cls) => return cls.call(map),
                         Schema::Dict(_) => {
                             let map = std::mem::replace(map, HashMap::new());
-
                             let mut dict = types::Dict::new()?;
                             for (k, v) in map {
                                 dict.set(Object::new_str(&k)?, v)?;

@@ -416,6 +416,7 @@ pub struct StaticObjects {
     pub any: StaticObject,
     pub union: StaticObject,
     pub tuple: StaticObject,
+    pub empty_tuple: StaticObject,
     pub optional: StaticObject,
     pub enum_meta: StaticObject,
 }
@@ -457,6 +458,9 @@ lazy_static::lazy_static! {
         let optional = getattr!(typing, "Optional")?;
         let enum_meta = getattr!(enum_, "EnumMeta")?;
 
+        let tuple_type = ObjectRef::new(cast!(PyTuple_Type))?;
+        let empty_tuple = StaticObject(tuple_type.call_noarg()?);
+
         Ok(StaticObjects {
             fields,
             generic_alias,
@@ -464,6 +468,7 @@ lazy_static::lazy_static! {
             any,
             union,
             tuple,
+            empty_tuple,
             optional,
             enum_meta,
         })
