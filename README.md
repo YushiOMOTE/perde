@@ -135,7 +135,7 @@ Provides two ways of serialization.
 
 ```python
 @perde.attr(as_value = True)
-class E(Enum):
+class E(enum.Enum):
    A = 1
    B = 2
 
@@ -151,7 +151,7 @@ Attributes can configure the behavior of serialization/deserialization.
 @perde.attr(rename_all = "camelCase")
 class A:
   foo_bar: int
-  bar_bar: int = field(metadata = {"skip": True})
+  bar_bar: int = field(metadata = {"perde_skip": True})
 
 perde_json.dumps(A(1, 2))
 # -> {"FooBar": 1}
@@ -167,11 +167,11 @@ perde_json.dumps(A.BarBar)
 # -> "bar_bar"
 ```
 
-To set attributes for the members of `Enum` or `IntEnum`. Use `perde.Enum` or `perde.IntEnum`.
+To set attributes for the members of `Enum` or `IntEnum`. Use `perde.Enum` or `perde.IntEnum` and add dictionaries after enum members.
 
 ```python
 enum A(perde.Enum):
-   FooBar: 1, {"rename": "BooBoo"}
+   FooBar: 1, {"perde_rename": "BooBoo"}
    BarBar: 2
 
 perde_json.dumps(A.FooBar)
