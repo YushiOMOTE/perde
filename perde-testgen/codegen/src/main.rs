@@ -65,9 +65,11 @@ fn main() {
     let mut rs_constructs = vec![];
     let mut rs_definitions = vec![];
     let mut py_definitions = vec![];
+    let mut py_types = vec![];
 
     for (rs_code, py_code) in gen_code(100, 5) {
         py_definitions.push(py_code.definitions);
+        py_types.push(format!("{}", py_code.typename));
         rs_definitions.push(rs_code.definitions);
         rs_constructs.push(format!(
             r#"
@@ -115,13 +117,16 @@ ret
         &opt.python_file,
         yapf(&format!(
             r#"
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import perde
 import typing
 
-{}
+{definitions}
+
+TYPES = [{types}]
 "#,
-            py_definitions.join("\n")
+            definitions = py_definitions.join("\n"),
+            types = py_types.join(","),
         )),
     )
     .unwrap();

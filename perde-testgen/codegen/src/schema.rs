@@ -5,6 +5,7 @@ use rand::{
     distributions::{Alphanumeric, Distribution, Standard},
     Rng,
 };
+use serde::{Deserialize, Serialize};
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 
 thread_local! {
@@ -51,7 +52,7 @@ macro_rules! opt {
     };
 }
 
-#[derive(Clone, Debug, Default, PartialEq, Eq, new)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, new, Serialize, Deserialize)]
 pub struct FieldAttr {
     pub flatten: bool,
     pub rename: Option<String>,
@@ -72,7 +73,7 @@ impl Distribution<FieldAttr> for Standard {
     }
 }
 
-#[derive(Clone, Debug, Default, new, PartialEq, Eq)]
+#[derive(Clone, Debug, Default, new, PartialEq, Eq, Serialize, Deserialize)]
 pub struct VariantAttr {
     pub rename: Option<String>,
 }
@@ -83,7 +84,7 @@ impl Distribution<VariantAttr> for Standard {
     }
 }
 
-#[derive(Clone, Debug, Default, new, PartialEq, Eq)]
+#[derive(Clone, Debug, Default, new, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ClassAttr {
     pub rename_all: Option<String>,
     pub rename: Option<String>,
@@ -110,7 +111,7 @@ impl Distribution<ClassAttr> for Standard {
     }
 }
 
-#[derive(Clone, Debug, Default, new, PartialEq, Eq)]
+#[derive(Clone, Debug, Default, new, PartialEq, Eq, Serialize, Deserialize)]
 pub struct EnumAttr {
     pub rename_all: Option<String>,
     pub rename: Option<String>,
@@ -125,7 +126,7 @@ impl Distribution<EnumAttr> for Standard {
     }
 }
 
-#[derive(Debug, Clone, new, PartialEq, Eq)]
+#[derive(Debug, Clone, new, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Dict {
     pub key: Box<Schema>,
     pub value: Box<Schema>,
@@ -137,7 +138,7 @@ impl Distribution<Dict> for Standard {
     }
 }
 
-#[derive(Debug, Clone, new, PartialEq, Eq)]
+#[derive(Debug, Clone, new, PartialEq, Eq, Serialize, Deserialize)]
 pub struct List {
     pub value: Box<Schema>,
 }
@@ -148,7 +149,7 @@ impl Distribution<List> for Standard {
     }
 }
 
-#[derive(Debug, Clone, new, PartialEq, Eq)]
+#[derive(Debug, Clone, new, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Set {
     pub value: Box<Schema>,
 }
@@ -172,7 +173,7 @@ impl Distribution<Set> for Standard {
     }
 }
 
-#[derive(Debug, Clone, new, PartialEq, Eq)]
+#[derive(Debug, Clone, new, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Tuple {
     pub args: Vec<Schema>,
 }
@@ -184,7 +185,7 @@ impl Distribution<Tuple> for Standard {
     }
 }
 
-#[derive(Debug, Clone, new, PartialEq, Eq)]
+#[derive(Debug, Clone, new, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Enum {
     pub name: String,
     pub attr: EnumAttr,
@@ -202,7 +203,7 @@ impl Distribution<Enum> for Standard {
     }
 }
 
-#[derive(Debug, Clone, new, PartialEq, Eq)]
+#[derive(Debug, Clone, new, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Class {
     pub name: String,
     pub attr: ClassAttr,
@@ -225,7 +226,7 @@ impl Distribution<Class> for Standard {
     }
 }
 
-#[derive(Debug, Clone, new, PartialEq, Eq)]
+#[derive(Debug, Clone, new, PartialEq, Eq, Serialize, Deserialize)]
 pub struct FieldSchema {
     pub attr: FieldAttr,
     pub schema: Schema,
@@ -237,7 +238,7 @@ impl Distribution<FieldSchema> for Standard {
     }
 }
 
-#[derive(Debug, Clone, new, PartialEq, Eq)]
+#[derive(Debug, Clone, new, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Optional {
     pub value: Box<Schema>,
 }
@@ -248,7 +249,7 @@ impl Distribution<Optional> for Standard {
     }
 }
 
-#[derive(Debug, Clone, new, PartialEq, Eq)]
+#[derive(Debug, Clone, new, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Union {
     pub name: String,
     pub variants: Vec<Schema>,
@@ -260,7 +261,7 @@ impl Distribution<Union> for Standard {
     }
 }
 
-#[derive(Debug, Clone, new, PartialEq, Eq)]
+#[derive(Debug, Clone, new, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Schema {
     Bool,
     Int,
