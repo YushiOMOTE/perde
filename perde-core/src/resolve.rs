@@ -97,6 +97,8 @@ pub fn resolve_schema<'a>(
         Ok(&static_schema().frozenset)
     } else if p.is_tuple() {
         Ok(&static_schema().tuple)
+    } else if p.is_none_type() {
+        Ok(&SCHEMA_ANY)
     } else if let Some(s) = maybe_dataclass(p, &attr)? {
         p.set_capsule(&SCHEMA_CACHE, s)
     } else if let Some(s) = maybe_generic(p)? {
@@ -227,8 +229,19 @@ fn to_union(p: &ObjectRef) -> Result<Schema> {
         return maybe_option(args);
     }
 
-    let variants: Result<Vec<_>> = iter.map(|arg| to_schema(arg)).collect();
-    Ok(Schema::Union(Union::new(variants?)))
+    let mut optional = false;
+    let variants: Result<Vec<_>> = iter
+        .filter_map(|arg| {
+            if arg.is_none_type() {
+                optional = true;
+                None
+            } else {
+                Some(to_schema(arg))
+            }
+        })
+        .collect();
+
+    Ok(Schema::Union(Union::new_optional(variants?, optional)))
 }
 
 fn to_tuple(p: &ObjectRef) -> Result<Schema> {
