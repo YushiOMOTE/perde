@@ -1,14 +1,23 @@
 use crate::{
-    gen::{Code, CodeGen, Context},
+    gen::{Code, CodeGen, Context, Hint},
     schema::*,
 };
 
 pub struct Rust;
 
 impl CodeGen for Rust {
-    fn define_enum(&mut self, u: Union, context: &mut Context) -> String {
+    fn define_enum(&mut self, u: Union, hint: &Hint, context: &mut Context) -> String {
         let mut s = "".to_string();
-        s.push_str("#[derive(Serialize, Deserialize, Debug, Clone)]\n");
+
+        let mut derives = vec!["Serialize", "Deserialize", "Debug", "Clone", "new"];
+        if hint.eq {
+            derives.push("PartialEq");
+            derives.push("Eq");
+        }
+        if hint.hash {
+            derives.push("Hash");
+        }
+        s.push_str(&format!("#[derive({})]\n", derives.join(",")));
         s.push_str("#[serde(untagged)]\n");
         s.push_str(&format!("pub enum {} {{\n", u.name));
         for (i, v) in u.variants.iter().enumerate() {
@@ -49,8 +58,19 @@ impl CodeGen for Rust {
         s
     }
 
-    fn define_class(&mut self, c: Class, context: &mut Context) -> String {
-        let mut s = "#[derive(Serialize, Deserialize, Debug, Clone, new)]\n".to_string();
+    fn define_class(&mut self, c: Class, hint: &Hint, context: &mut Context) -> String {
+        let mut derives = vec!["Serialize", "Deserialize", "Debug", "Clone", "new"];
+        if hint.eq {
+            derives.push("PartialEq");
+            derives.push("Eq");
+        }
+        if hint.hash {
+            derives.push("Hash");
+        }
+        if hint.default {
+            derives.push("Default");
+        }
+        let mut s = format!("#[derive({})]\n", derives.join(","));
 
         let mut cls_attr = vec![];
         if let Some(rename_all) = &c.attr.rename_all {
@@ -62,10 +82,9 @@ impl CodeGen for Rust {
         if c.attr.deny_unknown_fields {
             cls_attr.push("deny_unknown_fields".into());
         }
-        // TODO: Default
-        // if c.attr.default {
-        //     cls_attr.push("default".into());
-        // }
+        if c.attr.default {
+            cls_attr.push("default".into());
+        }
         if !cls_attr.is_empty() {
             s.push_str(&format!("#[serde({})]\n", cls_attr.join(", ")));
         }
@@ -92,6 +111,7 @@ impl CodeGen for Rust {
         }
         s.push_str("}\n");
         s.push_str("\n");
+        s.push_str("#[allow(unused)]");
         s.push_str(&format!("impl Random for {} {{\n", c.name));
         s.push_str(&format!(
             "  fn random<R: Rng + ?Sized>(rng: &mut R) -> {} {{\n",
@@ -119,6 +139,8 @@ impl CodeGen for Rust {
     }
 
     fn gen(&mut self, schema: &Schema, context: &mut Context) -> String {
+        let hint = Hint::new(schema.has_eq(), schema.has_hash(), schema.has_default());
+
         let typename = match schema {
             Schema::Bool => "bool".into(),
             Schema::Int => "i64".into(),
@@ -141,13 +163,13 @@ impl CodeGen for Rust {
                 s
             }
             Schema::Class(c) => {
-                self.define_class(c.clone(), context);
+                self.define_class(c.clone(), &hint, context);
                 c.name.clone()
             }
             Schema::Enum(e) => unimplemented!(),
             Schema::Optional(o) => format!("Option<{}>", self.gen(&o.value, context)),
             Schema::Union(u) => {
-                self.define_enum(u.clone(), context);
+                self.define_enum(u.clone(), &hint, context);
                 u.name.clone()
             }
         };

@@ -80,15 +80,18 @@ impl ObjectRef {
         }
     }
 
-    pub fn get_capsule<'a, T>(&self, s: &AttrStr) -> Result<&'a T> {
-        let obj = self.get_attr(s)?;
+    pub fn get_capsule<'a, T>(&self, s: &AttrStr) -> Option<&'a T> {
+        if !self.has_attr(s) {
+            return None;
+        }
+        let obj = self.get_attr(s).ok()?;
 
         let p = unsafe { PyCapsule_GetPointer(obj.as_ptr(), std::ptr::null_mut()) };
 
         if p.is_null() {
-            bail!("cannot get capsule pointer")
+            None
         } else {
-            Ok(unsafe { &*(p as *mut T) })
+            Some(unsafe { &*(p as *mut T) })
         }
     }
 
@@ -416,6 +419,7 @@ pub struct StaticObjects {
     pub any: StaticObject,
     pub union: StaticObject,
     pub tuple: StaticObject,
+    pub empty_tuple: StaticObject,
     pub optional: StaticObject,
     pub enum_meta: StaticObject,
 }
@@ -457,6 +461,9 @@ lazy_static::lazy_static! {
         let optional = getattr!(typing, "Optional")?;
         let enum_meta = getattr!(enum_, "EnumMeta")?;
 
+        let tuple_type = ObjectRef::new(cast!(PyTuple_Type))?;
+        let empty_tuple = StaticObject(tuple_type.call_noarg()?);
+
         Ok(StaticObjects {
             fields,
             generic_alias,
@@ -464,6 +471,7 @@ lazy_static::lazy_static! {
             any,
             union,
             tuple,
+            empty_tuple,
             optional,
             enum_meta,
         })

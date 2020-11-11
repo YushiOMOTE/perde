@@ -289,9 +289,15 @@ impl Optional {
 #[derive(Debug, Clone, new, PartialEq, Eq)]
 pub struct Union {
     pub variants: Vec<Schema>,
+    #[new(default)]
+    pub optional: bool,
 }
 
 impl Union {
+    pub fn new_optional(variants: Vec<Schema>, optional: bool) -> Self {
+        Self { variants, optional }
+    }
+
     pub fn name(&self) -> &str {
         "union"
     }

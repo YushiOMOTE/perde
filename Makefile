@@ -6,7 +6,7 @@ install-deps:
 install-perde: develop
 
 test:
-	pipenv run pytest -s
+	pipenv run pytest
 
 develop:
 	pipenv run scripts/for-each.sh develop

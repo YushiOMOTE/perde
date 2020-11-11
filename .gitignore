@@ -6,6 +6,8 @@
 
 flame-graph.html
 
+perde-testgen/json
+
 .python-version
 __pycache__/
 *.py[cod]

@@ -154,6 +154,12 @@ def test_class(m):
 
     repack_as(m, C, C(3, "hello"))
 
+    @dataclass
+    class V:
+        pass
+
+    repack_as(m, V, V())
+
 
 @pytest.mark.parametrize("m", FORMATS)
 def test_enum(m):

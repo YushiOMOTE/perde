@@ -112,6 +112,9 @@ impl<'a> Serialize for WithSchema<'a> {
                 }
             }
             Schema::Union(u) => {
+                if self.object.is_none() && u.optional {
+                    return s.serialize_none();
+                }
                 let vs = self.object.get_type().ser()?.resolve(None).ser()?;
                 let vs = match u.variants.iter().find(|v| v == &vs) {
                     Some(vs) => vs,

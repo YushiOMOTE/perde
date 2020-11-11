@@ -1,6 +1,6 @@
 # perde: python-wrapped serde
 
-*Work-in-progress towards 0.1.0 🎅*
+### Heavily under construction towards 0.1.0 🎅
 
 [![Project Status: WIP – Initial development is in progress, but there has not yet been a stable, usable release suitable for the public.](https://www.repostatus.org/badges/latest/wip.svg)](https://www.repostatus.org/#wip)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
@@ -59,6 +59,17 @@ value: hoge
 perde_msgpack.loads_as(A, b'\x82\xA3\x6B\x65\x79\xCD\x01\x2C\xA5\x76\x61\x6C\x75\x65\xCD\x01\x90')
 ```
 
+### Supported Python
+
+* Interpreters (CPython)
+    * [x] 3.7
+    * [ ] 3.8
+    * [ ] 3.9
+* Platforms
+    * [x] Linux
+    * [ ] MacOS
+    * [ ] Windows
+
 ### Supported types
 
 * `dataclass`
@@ -67,12 +78,15 @@ perde_msgpack.loads_as(A, b'\x82\xA3\x6B\x65\x79\xCD\x01\x2C\xA5\x76\x61\x6C\x75
     * [x] `List`
     * [x] `Set`
     * [x] `FrozenSet`
-    * [x] `Tuple`
+    * [x] `Tuple` / `Tuple[()]`
     * [x] `Optional`
+    * [x] `Union`
     * [x] `Any`
 * Enum types
     * [x] `Enum`
     * [ ] `IntEnum`
+    * [ ] `Flag`
+    * [ ] `IntFlag`
 * Built-in types
     * [x] `int`
     * [x] `str`
@@ -112,22 +126,127 @@ perde_msgpack.loads_as(A, b'\x82\xA3\x6B\x65\x79\xCD\x01\x2C\xA5\x76\x61\x6C\x75
 * [ ] FlexBuffer
 * [ ] XML
 
-### Supported attributes
+### Enums
 
-* Class-level attributes
-    * [x] `rename_all`
-    * [x] `rename`
-    * [ ] `deny_unknown_fields`
-    * [ ] `default`
-* Field-level attributes
-    * [x] `flatten`
-    * [x] `rename`
-    * [ ] `default`
-    * [ ] `default_factory`
-    * [ ] `skip`
-    * [ ] `skip_deserializing`
-* Variant-level attributes
-    * [ ] `rename`
+Provides two ways of serialization.
+
+1. Serialize and deserialize as `name`. This is the default.
+2. Serialize and deserialize as `value`. Enabled by `as_value` attribute.
+
+```python
+@perde.attr(as_value = True)
+class E(enum.Enum):
+   A = 1
+   B = 2
+
+# This emits `1` instead of `"A"`.
+perde_json.dumps(E.A)
+```
+
+### Attributes
+
+Attributes can configure the behavior of serialization/deserialization.
+
+```python
+@perde.attr(rename_all = "camelCase")
+class A:
+  foo_bar: int
+  bar_bar: int = field(metadata = {"perde_skip": True})
+
+perde_json.dumps(A(1, 2))
+# -> {"FooBar": 1}
+```
+
+```python
+@perde.attr(rename_all = "snake_case")
+enum A(enum.Enum):
+   FooBar: 1
+   BarBar: 2
+
+perde_json.dumps(A.BarBar)
+# -> "bar_bar"
+```
+
+To set attributes for the members of `Enum` or `IntEnum`. Use `perde.Enum` or `perde.IntEnum` and add dictionaries after enum members.
+
+```python
+enum A(perde.Enum):
+   FooBar: 1, {"perde_rename": "BooBoo"}
+   BarBar: 2
+
+perde_json.dumps(A.FooBar)
+# -> "BooBoo"
+```
+
+#### Class attributes
+
+* `rename = "name"`
+    * Serialize and deserialize classes with the given name instead of the name in Python.
+* `rename_all = "string_case"`
+    * Convert the case of all the field names in the class.
+    * The possible values for `"string_case"` are:
+        * `lowercase`
+        * `UPPERCASE`
+        * `PascalCase`
+        * `camelCase`
+        * `snake_case`
+        * `SCREAMING_SNAKE_CASE`
+        * `kebab-case`
+        * `SCREAMING-KEBAB-CASE`
+* `rename_all_serialize = "string_case"`
+    * Convert the string case only when serialization.
+* `rename_all_deserialize = "string_case"`
+    * Convert the string case only when deserialization.
+* `deny_unknown_fields = True`
+    * Raises an error on deserialization if the input contains unknown fields.
+* `default = True`
+    * When deserialzing, any missing non-optional fields are set by its `default` or `default_factory`.
+    * Raises an error if non-optional fields are missing `default` and `default_factory`.
+
+#### Class fields attributes
+
+* `perde_rename: "name"`
+    * Serialize and deserialize the field with the given name instead of the name in Python.
+* `perde_default: True`
+    * When deserialzing, if the field is missing, the field is set by `default` or `default_factory`.
+* `perde_flatten: True`
+    * Flatten the content of this field.
+    * The type of the field can be either `dataclass` or dictionary.
+    * If the type is dictionary, all the remaining fields at that point of deserialization are consumed.
+* `perde_skip: True`
+    * Skip serializing or deserializing this field.
+    * The field must have `default` or `default_factory`.
+* `perde_skip_serializing: True`
+    * Skip serialzing this field.
+* `perde_skip_deserialzing: True`
+    * Skip deserializing this field.
+    * The field must have `default` or `default_factory`.
+
+#### Enum attributes
+
+* `rename = "name"`
+    * Serialize and deserialize enums with the given name instead of the name in Python.
+* `rename_all = "string_case"`
+    * Convert the case of all the members in the enum.
+    * The possible values are the same as ones for `class`.
+    * This option is ignored when `as_value` is set.
+* `as_value = True`
+    * Serialize and deserialize enum using the enum value instead of the name.
+
+#### Enum member attributes
+
+* `perde_rename: "name"`
+    * Serialize and deserialize the member with the given name instead of the name in Python.
+    * This option is ignored when `as_value` is set.
+* `perde_skip: True`
+    * Never serialize or deserialize this member.
+* `perde_skip_serializing: True`
+    * Never serialize this member. Serializing this member raises an error.
+* `perde_skip_deserialzing: True`
+    * Never deserialize this member.
+* `perde_other: True`
+    * When deserializing, any unknown members result in this member.
+    * This option is ignored when `as_value` is set.
 
 ### Benchmark
 

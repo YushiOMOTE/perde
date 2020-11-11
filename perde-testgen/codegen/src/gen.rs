@@ -1,10 +1,18 @@
 use crate::schema::*;
+use derive_new::new;
 use indexmap::IndexMap;
 
-pub trait CodeGen {
-    fn define_enum(&mut self, u: Union, context: &mut Context) -> String;
+#[derive(new, Clone, Debug)]
+pub struct Hint {
+    pub eq: bool,
+    pub hash: bool,
+    pub default: bool,
+}
 
-    fn define_class(&mut self, c: Class, context: &mut Context) -> String;
+pub trait CodeGen {
+    fn define_enum(&mut self, u: Union, hint: &Hint, context: &mut Context) -> String;
+
+    fn define_class(&mut self, c: Class, hint: &Hint, context: &mut Context) -> String;
 
     fn construct(&mut self, schema: &Schema) -> String;
 

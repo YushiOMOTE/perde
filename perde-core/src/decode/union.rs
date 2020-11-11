@@ -32,7 +32,11 @@ impl<'a, 'de> Visitor<'de> for UnionVisitor<'a> {
 
     fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let names: Vec<_> = self.0.variants.iter().map(|v| v.name()).collect();
-        write!(f, "any of {:?}", names)
+        if self.0.optional {
+            write!(f, "any of {:?} or None", names)
+        } else {
+            write!(f, "any of {:?}", names)
+        }
     }
 
     fn visit_bool<E>(self, v: bool) -> Result<Self::Value, E>
@@ -176,10 +180,25 @@ impl<'a, 'de> Visitor<'de> for UnionVisitor<'a> {
         self.visit_borrowed_bytes(&v)
     }
 
+    fn visit_unit<E>(self) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        if self.0.optional {
+            Ok(Object::new_none())
+        } else {
+            Err(de::Error::invalid_type(Unexpected::Unit, &self))
+        }
+    }
+
     fn visit_none<E>(self) -> Result<Self::Value, E>
     where
         E: de::Error,
     {
+        if self.0.optional {
+            return Ok(Object::new_none());
+        }
+
         let schema = find!(self, Unexpected::Option, Optional)?;
 
         match schema {
