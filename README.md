@@ -145,6 +145,39 @@ perde_json.dumps(E.A)
 
 ### Attributes
 
+Attributes can configure the behavior of serialization/deserialization.
+
+```python
+@perde.attr(rename_all = "camelCase")
+class A:
+  foo_bar: int
+  bar_bar: int = field(metadata = {"skip": True})
+
+perde_json.dumps(A(1, 2))
+# -> {"FooBar": 1}
+```
+
+```python
+@perde.attr(rename_all = "snake_case")
+enum A(enum.Enum):
+   FooBar: 1
+   BarBar: 2
+
+perde_json.dumps(A.BarBar)
+# -> "bar_bar"
+```
+
+To set attributes for the members of `Enum` or `IntEnum`. Use `perde.Enum` or `perde.IntEnum`.
+
+```python
+enum A(perde.Enum):
+   FooBar: 1, {"rename": "BooBoo"}
+   BarBar: 2
+
+perde_json.dumps(A.FooBar)
+# -> "BooBoo"
+```
+
 #### Class attributes
 
 * `rename = "name"`
