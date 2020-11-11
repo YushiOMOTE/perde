@@ -1,4 +1,4 @@
-// Generated 2020-11-10T10:30:34.894755067+09:00
+// Generated 2020-11-10T14:15:09.291414114+09:00
 
 use crate::gen::{GenExt, Random};
 use derive_new::new;
@@ -6,27 +6,45 @@ use rand::Rng;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 
-#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Hash, Default)]
-#[serde(rename = "Potato")]
-pub struct Water {}
+#[derive(Serialize, Deserialize, Debug, Clone, new, Default)]
+#[serde(rename_all = "UPPERCASE", deny_unknown_fields, default)]
+pub struct PaintBrush {
+    #[serde(rename = "ears")]
+    hieroglyph: HashMap<String, String>,
+    #[serde(rename = "chief", skip_deserializing)]
+    parachute: f64,
+}
 
 #[allow(unused)]
-impl Random for Water {
-    fn random<R: Rng + ?Sized>(rng: &mut R) -> Water {
-        Water::new()
+impl Random for PaintBrush {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> PaintBrush {
+        PaintBrush::new(rng.gen_ext(), rng.gen_ext())
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, new, Default)]
+#[serde(rename_all = "PascalCase")]
+pub struct Fire {
+    spice: PaintBrush,
+}
+
+#[allow(unused)]
+impl Random for Fire {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Fire {
+        Fire::new(rng.gen_ext())
     }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, new)]
 #[serde(untagged)]
-pub enum Child {
+pub enum Star {
     A(f64),
-    B(Water),
-    C(Option<f64>),
+    B(Vec<u8>),
+    C(Fire),
 }
 
-impl Random for Child {
-    fn random<R: Rng + ?Sized>(rng: &mut R) -> Child {
+impl Random for Star {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Star {
         let v: usize = rng.gen_range(0, 3);
         match v {
             0 => Self::A({
@@ -34,144 +52,80 @@ impl Random for Child {
                 v
             }),
             1 => Self::B({
-                let v: Water = rng.gen_ext();
+                let v: Vec<u8> = rng.gen_ext();
                 v
             }),
             2 => Self::C({
-                let v: Option<f64> = rng.gen_ext();
+                let v: Fire = rng.gen_ext();
                 v
             }),
             _ => unreachable!(),
         }
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, new)]
-#[serde(rename_all = "UPPERCASE", deny_unknown_fields)]
-pub struct Bed {
-    pebble: Child,
-}
-
-#[allow(unused)]
-impl Random for Bed {
-    fn random<R: Rng + ?Sized>(rng: &mut R) -> Bed {
-        Bed::new(rng.gen_ext())
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, new)]
-#[serde(untagged)]
-pub enum Arm {
-    A(HashSet<Vec<u8>>),
-    B(Bed),
-}
-
-impl Random for Arm {
-    fn random<R: Rng + ?Sized>(rng: &mut R) -> Arm {
-        let v: usize = rng.gen_range(0, 2);
-        match v {
-            0 => Self::A({
-                let v: HashSet<Vec<u8>> = rng.gen_ext();
-                v
-            }),
-            1 => Self::B({
-                let v: Bed = rng.gen_ext();
-                v
-            }),
-            _ => unreachable!(),
-        }
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, new)]
-#[serde(rename_all = "UPPERCASE", deny_unknown_fields)]
-pub struct Shower {
-    #[serde(rename = "egg")]
-    sword: Arm,
-}
-
-#[allow(unused)]
-impl Random for Shower {
-    fn random<R: Rng + ?Sized>(rng: &mut R) -> Shower {
-        Shower::new(rng.gen_ext())
     }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Hash, Default)]
-#[serde(rename_all = "lowercase", default)]
-pub struct Shower1 {}
+#[serde(rename_all = "UPPERCASE", rename = "Desk")]
+pub struct Perfume {}
 
 #[allow(unused)]
-impl Random for Shower1 {
-    fn random<R: Rng + ?Sized>(rng: &mut R) -> Shower1 {
-        Shower1::new()
+impl Random for Perfume {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Perfume {
+        Perfume::new()
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Default)]
-#[serde(rename_all = "SCREAMING-KEBAB-CASE", rename = "Kitchen", default)]
-pub struct Rifle {
+#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Hash, Default)]
+#[serde(rename_all = "UPPERCASE", rename = "Adult")]
+pub struct Boss {
     #[serde(skip)]
-    god: Option<Shower1>,
-    swimmingpool: HashSet<bool>,
+    parachute1: Option<(i64,)>,
+    square: Perfume,
 }
 
 #[allow(unused)]
-impl Random for Rifle {
-    fn random<R: Rng + ?Sized>(rng: &mut R) -> Rifle {
-        Rifle::new(rng.gen_ext(), rng.gen_ext())
+impl Random for Boss {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Boss {
+        Boss::new(rng.gen_ext(), rng.gen_ext())
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Hash)]
-#[serde(untagged)]
-pub enum SwimmingPool {
-    A(Vec<u8>),
-    B(Vec<Vec<u8>>),
-}
-
-impl Random for SwimmingPool {
-    fn random<R: Rng + ?Sized>(rng: &mut R) -> SwimmingPool {
-        let v: usize = rng.gen_range(0, 2);
-        match v {
-            0 => Self::A({
-                let v: Vec<u8> = rng.gen_ext();
-                v
-            }),
-            1 => Self::B({
-                let v: Vec<Vec<u8>> = rng.gen_ext();
-                v
-            }),
-            _ => unreachable!(),
-        }
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Default)]
-#[serde(rename = "Baby2")]
-pub struct Leg {
-    #[serde(rename = "carrier")]
-    backpack: HashMap<String, SwimmingPool>,
+#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Hash, Default)]
+#[serde(rename_all = "PascalCase", default)]
+pub struct Navy {
+    #[serde(rename = "child", skip_deserializing)]
+    sword: bool,
 }
 
 #[allow(unused)]
-impl Random for Leg {
-    fn random<R: Rng + ?Sized>(rng: &mut R) -> Leg {
-        Leg::new(rng.gen_ext())
+impl Random for Navy {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Navy {
+        Navy::new(rng.gen_ext())
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, new)]
+#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Hash, Default)]
+#[serde(rename_all = "lowercase")]
+pub struct Television {}
+
+#[allow(unused)]
+impl Random for Television {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Television {
+        Television::new()
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq)]
 #[serde(untagged)]
-pub enum Banana {
+pub enum Spectrum {
     A(bool),
-    B(f64),
-    C(HashMap<String, f64>),
-    D(HashSet<String>),
+    B(String),
+    C(HashSet<Vec<u8>>),
+    D(Television),
 }
 
-impl Random for Banana {
-    fn random<R: Rng + ?Sized>(rng: &mut R) -> Banana {
+impl Random for Spectrum {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Spectrum {
         let v: usize = rng.gen_range(0, 4);
         match v {
             0 => Self::A({
@@ -179,294 +133,57 @@ impl Random for Banana {
                 v
             }),
             1 => Self::B({
-                let v: f64 = rng.gen_ext();
+                let v: String = rng.gen_ext();
                 v
             }),
             2 => Self::C({
-                let v: HashMap<String, f64> = rng.gen_ext();
+                let v: HashSet<Vec<u8>> = rng.gen_ext();
                 v
             }),
             3 => Self::D({
-                let v: HashSet<String> = rng.gen_ext();
+                let v: Television = rng.gen_ext();
                 v
             }),
             _ => unreachable!(),
         }
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq)]
-#[serde(untagged)]
-pub enum Vulture {
-    A(bool),
-    B(i64),
-    C(HashMap<String, i64>),
-}
-
-impl Random for Vulture {
-    fn random<R: Rng + ?Sized>(rng: &mut R) -> Vulture {
-        let v: usize = rng.gen_range(0, 3);
-        match v {
-            0 => Self::A({
-                let v: bool = rng.gen_ext();
-                v
-            }),
-            1 => Self::B({
-                let v: i64 = rng.gen_ext();
-                v
-            }),
-            2 => Self::C({
-                let v: HashMap<String, i64> = rng.gen_ext();
-                v
-            }),
-            _ => unreachable!(),
-        }
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Hash, Default)]
-#[serde(rename_all = "lowercase", default)]
-pub struct Bathroom {}
-
-#[allow(unused)]
-impl Random for Bathroom {
-    fn random<R: Rng + ?Sized>(rng: &mut R) -> Bathroom {
-        Bathroom::new()
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Hash, Default)]
-#[serde(rename_all = "snake_case", rename = "Church", default)]
-pub struct LeatherJacket {
-    #[serde(skip)]
-    rope: Vec<u8>,
-    map: Bathroom,
-}
-
-#[allow(unused)]
-impl Random for LeatherJacket {
-    fn random<R: Rng + ?Sized>(rng: &mut R) -> LeatherJacket {
-        LeatherJacket::new(rng.gen_ext(), rng.gen_ext())
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, new, Default)]
-#[serde(rename_all = "PascalCase", deny_unknown_fields)]
-pub struct Planet1 {
-    ice: f64,
-}
-
-#[allow(unused)]
-impl Random for Planet1 {
-    fn random<R: Rng + ?Sized>(rng: &mut R) -> Planet1 {
-        Planet1::new(rng.gen_ext())
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, new)]
-#[serde(untagged)]
-pub enum Table {
-    A(bool),
-    B((HashMap<String, Vec<LeatherJacket>>,)),
-    C(Planet1),
-}
-
-impl Random for Table {
-    fn random<R: Rng + ?Sized>(rng: &mut R) -> Table {
-        let v: usize = rng.gen_range(0, 3);
-        match v {
-            0 => Self::A({
-                let v: bool = rng.gen_ext();
-                v
-            }),
-            1 => Self::B({
-                let v: (HashMap<String, Vec<LeatherJacket>>,) = rng.gen_ext();
-                v
-            }),
-            2 => Self::C({
-                let v: Planet1 = rng.gen_ext();
-                v
-            }),
-            _ => unreachable!(),
-        }
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, new, Default)]
-#[serde(rename = "Chisel", deny_unknown_fields)]
-pub struct Ears {
-    rope1: (),
-    computer: f64,
-}
-
-#[allow(unused)]
-impl Random for Ears {
-    fn random<R: Rng + ?Sized>(rng: &mut R) -> Ears {
-        Ears::new(rng.gen_ext(), rng.gen_ext())
     }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Default)]
 #[serde(rename_all = "kebab-case", deny_unknown_fields)]
-pub struct Gate {
-    chisel: HashMap<String, Vec<bool>>,
+pub struct Videotape {
+    prison: HashSet<bool>,
 }
 
 #[allow(unused)]
-impl Random for Gate {
-    fn random<R: Rng + ?Sized>(rng: &mut R) -> Gate {
-        Gate::new(rng.gen_ext())
+impl Random for Videotape {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Videotape {
+        Videotape::new(rng.gen_ext())
     }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Hash, Default)]
-#[serde(rename_all = "PascalCase", deny_unknown_fields)]
-pub struct Rainbow {
-    maze: String,
-}
+#[serde(rename_all = "lowercase", default)]
+pub struct Dung {}
 
 #[allow(unused)]
-impl Random for Rainbow {
-    fn random<R: Rng + ?Sized>(rng: &mut R) -> Rainbow {
-        Rainbow::new(rng.gen_ext())
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq)]
-#[serde(untagged)]
-pub enum Tiger {
-    A(Vec<u8>),
-    B(Vec<(Vec<u8>,)>),
-    C(Gate),
-    D(Option<Rainbow>),
-}
-
-impl Random for Tiger {
-    fn random<R: Rng + ?Sized>(rng: &mut R) -> Tiger {
-        let v: usize = rng.gen_range(0, 4);
-        match v {
-            0 => Self::A({
-                let v: Vec<u8> = rng.gen_ext();
-                v
-            }),
-            1 => Self::B({
-                let v: Vec<(Vec<u8>,)> = rng.gen_ext();
-                v
-            }),
-            2 => Self::C({
-                let v: Gate = rng.gen_ext();
-                v
-            }),
-            3 => Self::D({
-                let v: Option<Rainbow> = rng.gen_ext();
-                v
-            }),
-            _ => unreachable!(),
-        }
+impl Random for Dung {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Dung {
+        Dung::new()
     }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, new)]
 #[serde(untagged)]
-pub enum Bank {
-    A(HashMap<String, HashMap<String, f64>>),
-    B(Vec<Vec<HashSet<bool>>>),
-    C(Ears),
-    D(Tiger),
-}
-
-impl Random for Bank {
-    fn random<R: Rng + ?Sized>(rng: &mut R) -> Bank {
-        let v: usize = rng.gen_range(0, 4);
-        match v {
-            0 => Self::A({
-                let v: HashMap<String, HashMap<String, f64>> = rng.gen_ext();
-                v
-            }),
-            1 => Self::B({
-                let v: Vec<Vec<HashSet<bool>>> = rng.gen_ext();
-                v
-            }),
-            2 => Self::C({
-                let v: Ears = rng.gen_ext();
-                v
-            }),
-            3 => Self::D({
-                let v: Tiger = rng.gen_ext();
-                v
-            }),
-            _ => unreachable!(),
-        }
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, new)]
-#[serde(untagged)]
-pub enum Baby3 {
-    A(f64),
-    B(Vec<u8>),
-    C(Bank),
-}
-
-impl Random for Baby3 {
-    fn random<R: Rng + ?Sized>(rng: &mut R) -> Baby3 {
-        let v: usize = rng.gen_range(0, 3);
-        match v {
-            0 => Self::A({
-                let v: f64 = rng.gen_ext();
-                v
-            }),
-            1 => Self::B({
-                let v: Vec<u8> = rng.gen_ext();
-                v
-            }),
-            2 => Self::C({
-                let v: Bank = rng.gen_ext();
-                v
-            }),
-            _ => unreachable!(),
-        }
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Hash, Default)]
-#[serde(rename_all = "lowercase", rename = "Coffee", default)]
-pub struct Square {
-    #[serde(rename = "surveyor")]
-    slave: String,
-    #[serde(skip)]
-    parachute: Vec<u8>,
-}
-
-#[allow(unused)]
-impl Random for Square {
-    fn random<R: Rng + ?Sized>(rng: &mut R) -> Square {
-        Square::new(rng.gen_ext(), rng.gen_ext())
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Hash, Default)]
-#[serde(rename_all = "UPPERCASE")]
-pub struct Explosive {}
-
-#[allow(unused)]
-impl Random for Explosive {
-    fn random<R: Rng + ?Sized>(rng: &mut R) -> Explosive {
-        Explosive::new()
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, new)]
-#[serde(untagged)]
-pub enum Bridge1 {
+pub enum Horoscope {
     A(i64),
     B(f64),
-    C(HashMap<String, bool>),
-    D(Option<bool>),
+    C(Vec<bool>),
+    D(Dung),
 }
 
-impl Random for Bridge1 {
-    fn random<R: Rng + ?Sized>(rng: &mut R) -> Bridge1 {
+impl Random for Horoscope {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Horoscope {
         let v: usize = rng.gen_range(0, 4);
         match v {
             0 => Self::A({
@@ -478,11 +195,11 @@ impl Random for Bridge1 {
                 v
             }),
             2 => Self::C({
-                let v: HashMap<String, bool> = rng.gen_ext();
+                let v: Vec<bool> = rng.gen_ext();
                 v
             }),
             3 => Self::D({
-                let v: Option<bool> = rng.gen_ext();
+                let v: Dung = rng.gen_ext();
                 v
             }),
             _ => unreachable!(),
@@ -490,378 +207,20 @@ impl Random for Bridge1 {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Hash, Default)]
-#[serde(rename_all = "snake_case", default)]
-pub struct Liquid {}
-
-#[allow(unused)]
-impl Random for Liquid {
-    fn random<R: Rng + ?Sized>(rng: &mut R) -> Liquid {
-        Liquid::new()
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, Clone, new)]
 #[serde(untagged)]
-pub enum Eraser {
-    A(bool),
-    B(Vec<HashSet<String>>),
-    C((i64, Option<String>)),
-    D(Liquid),
+pub enum Pepper {
+    A(String),
+    B(HashMap<String, i64>),
+    C(Horoscope),
 }
 
-impl Random for Eraser {
-    fn random<R: Rng + ?Sized>(rng: &mut R) -> Eraser {
-        let v: usize = rng.gen_range(0, 4);
-        match v {
-            0 => Self::A({
-                let v: bool = rng.gen_ext();
-                v
-            }),
-            1 => Self::B({
-                let v: Vec<HashSet<String>> = rng.gen_ext();
-                v
-            }),
-            2 => Self::C({
-                let v: (i64, Option<String>) = rng.gen_ext();
-                v
-            }),
-            3 => Self::D({
-                let v: Liquid = rng.gen_ext();
-                v
-            }),
-            _ => unreachable!(),
-        }
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Hash, Default)]
-#[serde(rename_all = "SCREAMING-KEBAB-CASE", default)]
-pub struct Album {}
-
-#[allow(unused)]
-impl Random for Album {
-    fn random<R: Rng + ?Sized>(rng: &mut R) -> Album {
-        Album::new()
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Hash, Default)]
-#[serde(
-    rename_all = "SCREAMING-KEBAB-CASE",
-    rename = "Church2",
-    deny_unknown_fields
-)]
-pub struct Pepper {
-    #[serde(rename = "butterfly")]
-    circus: i64,
-    #[serde(skip)]
-    car: String,
-}
-
-#[allow(unused)]
 impl Random for Pepper {
     fn random<R: Rng + ?Sized>(rng: &mut R) -> Pepper {
-        Pepper::new(rng.gen_ext(), rng.gen_ext())
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Hash, Default)]
-#[serde(rename_all = "PascalCase", rename = "Rock")]
-pub struct Shower2 {
-    #[serde(skip)]
-    vampire1: Pepper,
-    woman: Vec<u8>,
-}
-
-#[allow(unused)]
-impl Random for Shower2 {
-    fn random<R: Rng + ?Sized>(rng: &mut R) -> Shower2 {
-        Shower2::new(rng.gen_ext(), rng.gen_ext())
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Hash, Default)]
-#[serde(rename_all = "lowercase", rename = "Shoes")]
-pub struct Spoon1 {
-    #[serde(skip)]
-    highway: i64,
-    hose: Shower2,
-}
-
-#[allow(unused)]
-impl Random for Spoon1 {
-    fn random<R: Rng + ?Sized>(rng: &mut R) -> Spoon1 {
-        Spoon1::new(rng.gen_ext(), rng.gen_ext())
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Hash)]
-#[serde(untagged)]
-pub enum IceCream {
-    A(bool),
-    B(Album),
-    C(Spoon1),
-}
-
-impl Random for IceCream {
-    fn random<R: Rng + ?Sized>(rng: &mut R) -> IceCream {
         let v: usize = rng.gen_range(0, 3);
         match v {
             0 => Self::A({
-                let v: bool = rng.gen_ext();
-                v
-            }),
-            1 => Self::B({
-                let v: Album = rng.gen_ext();
-                v
-            }),
-            2 => Self::C({
-                let v: Spoon1 = rng.gen_ext();
-                v
-            }),
-            _ => unreachable!(),
-        }
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Hash, Default)]
-#[serde(rename_all = "lowercase", rename = "Parachute")]
-pub struct Signature1 {}
-
-#[allow(unused)]
-impl Random for Signature1 {
-    fn random<R: Rng + ?Sized>(rng: &mut R) -> Signature1 {
-        Signature1::new()
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, new)]
-#[serde(untagged)]
-pub enum Thermometer {
-    A(bool),
-    B(i64),
-    C(f64),
-}
-
-impl Random for Thermometer {
-    fn random<R: Rng + ?Sized>(rng: &mut R) -> Thermometer {
-        let v: usize = rng.gen_range(0, 3);
-        match v {
-            0 => Self::A({
-                let v: bool = rng.gen_ext();
-                v
-            }),
-            1 => Self::B({
-                let v: i64 = rng.gen_ext();
-                v
-            }),
-            2 => Self::C({
-                let v: f64 = rng.gen_ext();
-                v
-            }),
-            _ => unreachable!(),
-        }
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Hash)]
-#[serde(untagged)]
-pub enum Treadmill {
-    A(i64),
-    B(Vec<u8>),
-    C(Option<String>),
-}
-
-impl Random for Treadmill {
-    fn random<R: Rng + ?Sized>(rng: &mut R) -> Treadmill {
-        let v: usize = rng.gen_range(0, 3);
-        match v {
-            0 => Self::A({
-                let v: i64 = rng.gen_ext();
-                v
-            }),
-            1 => Self::B({
-                let v: Vec<u8> = rng.gen_ext();
-                v
-            }),
-            2 => Self::C({
-                let v: Option<String> = rng.gen_ext();
-                v
-            }),
-            _ => unreachable!(),
-        }
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, new)]
-#[serde(untagged)]
-pub enum Sandwich {
-    A(i64),
-    B(Vec<HashMap<String, Thermometer>>),
-    C(Option<Treadmill>),
-}
-
-impl Random for Sandwich {
-    fn random<R: Rng + ?Sized>(rng: &mut R) -> Sandwich {
-        let v: usize = rng.gen_range(0, 3);
-        match v {
-            0 => Self::A({
-                let v: i64 = rng.gen_ext();
-                v
-            }),
-            1 => Self::B({
-                let v: Vec<HashMap<String, Thermometer>> = rng.gen_ext();
-                v
-            }),
-            2 => Self::C({
-                let v: Option<Treadmill> = rng.gen_ext();
-                v
-            }),
-            _ => unreachable!(),
-        }
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Hash, Default)]
-#[serde(rename_all = "SCREAMING-KEBAB-CASE", default)]
-pub struct Circle {}
-
-#[allow(unused)]
-impl Random for Circle {
-    fn random<R: Rng + ?Sized>(rng: &mut R) -> Circle {
-        Circle::new()
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, new)]
-#[serde(untagged)]
-pub enum Typewriter {
-    A(f64),
-    B(String),
-}
-
-impl Random for Typewriter {
-    fn random<R: Rng + ?Sized>(rng: &mut R) -> Typewriter {
-        let v: usize = rng.gen_range(0, 2);
-        match v {
-            0 => Self::A({
-                let v: f64 = rng.gen_ext();
-                v
-            }),
-            1 => Self::B({
                 let v: String = rng.gen_ext();
-                v
-            }),
-            _ => unreachable!(),
-        }
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, new)]
-#[serde(untagged)]
-pub enum Diamond1 {
-    A(i64),
-    B(()),
-    C(Typewriter),
-}
-
-impl Random for Diamond1 {
-    fn random<R: Rng + ?Sized>(rng: &mut R) -> Diamond1 {
-        let v: usize = rng.gen_range(0, 3);
-        match v {
-            0 => Self::A({
-                let v: i64 = rng.gen_ext();
-                v
-            }),
-            1 => Self::B({
-                let v: () = rng.gen_ext();
-                v
-            }),
-            2 => Self::C({
-                let v: Typewriter = rng.gen_ext();
-                v
-            }),
-            _ => unreachable!(),
-        }
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, new)]
-#[serde(untagged)]
-pub enum Boss {
-    A(i64),
-    B(String),
-    C(HashSet<bool>),
-    D(Option<Diamond1>),
-}
-
-impl Random for Boss {
-    fn random<R: Rng + ?Sized>(rng: &mut R) -> Boss {
-        let v: usize = rng.gen_range(0, 4);
-        match v {
-            0 => Self::A({
-                let v: i64 = rng.gen_ext();
-                v
-            }),
-            1 => Self::B({
-                let v: String = rng.gen_ext();
-                v
-            }),
-            2 => Self::C({
-                let v: HashSet<bool> = rng.gen_ext();
-                v
-            }),
-            3 => Self::D({
-                let v: Option<Diamond1> = rng.gen_ext();
-                v
-            }),
-            _ => unreachable!(),
-        }
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, new, Default)]
-#[serde(rename_all = "UPPERCASE", deny_unknown_fields)]
-pub struct Window {
-    icecream: HashMap<String, Boss>,
-}
-
-#[allow(unused)]
-impl Random for Window {
-    fn random<R: Rng + ?Sized>(rng: &mut R) -> Window {
-        Window::new(rng.gen_ext())
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, new, Default)]
-#[serde(rename_all = "SCREAMING_SNAKE_CASE", rename = "Potato1")]
-pub struct Bird {
-    flower1: f64,
-}
-
-#[allow(unused)]
-impl Random for Bird {
-    fn random<R: Rng + ?Sized>(rng: &mut R) -> Bird {
-        Bird::new(rng.gen_ext())
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, new)]
-#[serde(untagged)]
-pub enum Staircase {
-    A(bool),
-    B(HashMap<String, i64>),
-    C(HashSet<String>),
-    D(Bird),
-}
-
-impl Random for Staircase {
-    fn random<R: Rng + ?Sized>(rng: &mut R) -> Staircase {
-        let v: usize = rng.gen_range(0, 4);
-        match v {
-            0 => Self::A({
-                let v: bool = rng.gen_ext();
                 v
             }),
             1 => Self::B({
@@ -869,11 +228,7 @@ impl Random for Staircase {
                 v
             }),
             2 => Self::C({
-                let v: HashSet<String> = rng.gen_ext();
-                v
-            }),
-            3 => Self::D({
-                let v: Bird = rng.gen_ext();
+                let v: Horoscope = rng.gen_ext();
                 v
             }),
             _ => unreachable!(),
@@ -881,208 +236,33 @@ impl Random for Staircase {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Default)]
-#[serde(rename_all = "snake_case", default)]
-pub struct Meteor {
-    #[serde(rename = "diamond")]
-    tunnel: HashSet<String>,
-    #[serde(skip)]
-    highway1: i64,
-}
-
-#[allow(unused)]
-impl Random for Meteor {
-    fn random<R: Rng + ?Sized>(rng: &mut R) -> Meteor {
-        Meteor::new(rng.gen_ext(), rng.gen_ext())
-    }
-}
-
 #[derive(Serialize, Deserialize, Debug, Clone, new)]
 #[serde(untagged)]
-pub enum Girl {
+pub enum Sunglasses {
     A(f64),
-    B(Vec<u8>),
-    C(Meteor),
+    B(String),
+    C(Videotape),
+    D(Pepper),
 }
 
-impl Random for Girl {
-    fn random<R: Rng + ?Sized>(rng: &mut R) -> Girl {
-        let v: usize = rng.gen_range(0, 3);
+impl Random for Sunglasses {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Sunglasses {
+        let v: usize = rng.gen_range(0, 4);
         match v {
             0 => Self::A({
                 let v: f64 = rng.gen_ext();
                 v
             }),
             1 => Self::B({
-                let v: Vec<u8> = rng.gen_ext();
+                let v: String = rng.gen_ext();
                 v
             }),
             2 => Self::C({
-                let v: Meteor = rng.gen_ext();
-                v
-            }),
-            _ => unreachable!(),
-        }
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Hash)]
-#[serde(untagged)]
-pub enum Bank1 {
-    A(i64),
-    B(Vec<u8>),
-    C(()),
-}
-
-impl Random for Bank1 {
-    fn random<R: Rng + ?Sized>(rng: &mut R) -> Bank1 {
-        let v: usize = rng.gen_range(0, 3);
-        match v {
-            0 => Self::A({
-                let v: i64 = rng.gen_ext();
-                v
-            }),
-            1 => Self::B({
-                let v: Vec<u8> = rng.gen_ext();
-                v
-            }),
-            2 => Self::C({
-                let v: () = rng.gen_ext();
-                v
-            }),
-            _ => unreachable!(),
-        }
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Hash, Default)]
-#[serde(rename_all = "UPPERCASE")]
-pub struct Man {}
-
-#[allow(unused)]
-impl Random for Man {
-    fn random<R: Rng + ?Sized>(rng: &mut R) -> Man {
-        Man::new()
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Hash, Default)]
-#[serde(rename_all = "snake_case")]
-pub struct Sword {}
-
-#[allow(unused)]
-impl Random for Sword {
-    fn random<R: Rng + ?Sized>(rng: &mut R) -> Sword {
-        Sword::new()
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Hash)]
-#[serde(untagged)]
-pub enum Church3 {
-    A(bool),
-    B(i64),
-    C(Sword),
-    D(Option<Vec<String>>),
-}
-
-impl Random for Church3 {
-    fn random<R: Rng + ?Sized>(rng: &mut R) -> Church3 {
-        let v: usize = rng.gen_range(0, 4);
-        match v {
-            0 => Self::A({
-                let v: bool = rng.gen_ext();
-                v
-            }),
-            1 => Self::B({
-                let v: i64 = rng.gen_ext();
-                v
-            }),
-            2 => Self::C({
-                let v: Sword = rng.gen_ext();
+                let v: Videotape = rng.gen_ext();
                 v
             }),
             3 => Self::D({
-                let v: Option<Vec<String>> = rng.gen_ext();
-                v
-            }),
-            _ => unreachable!(),
-        }
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Hash)]
-#[serde(rename_all = "lowercase")]
-pub struct Feather1 {
-    #[serde(skip)]
-    tunnel1: bool,
-    #[serde(rename = "signature")]
-    planet2: Church3,
-}
-
-#[allow(unused)]
-impl Random for Feather1 {
-    fn random<R: Rng + ?Sized>(rng: &mut R) -> Feather1 {
-        Feather1::new(rng.gen_ext(), rng.gen_ext())
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Hash)]
-#[serde(untagged)]
-pub enum Pendulum {
-    A(bool),
-    B(i64),
-    C(Vec<u8>),
-    D(Option<Vec<bool>>),
-}
-
-impl Random for Pendulum {
-    fn random<R: Rng + ?Sized>(rng: &mut R) -> Pendulum {
-        let v: usize = rng.gen_range(0, 4);
-        match v {
-            0 => Self::A({
-                let v: bool = rng.gen_ext();
-                v
-            }),
-            1 => Self::B({
-                let v: i64 = rng.gen_ext();
-                v
-            }),
-            2 => Self::C({
-                let v: Vec<u8> = rng.gen_ext();
-                v
-            }),
-            3 => Self::D({
-                let v: Option<Vec<bool>> = rng.gen_ext();
-                v
-            }),
-            _ => unreachable!(),
-        }
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Hash)]
-#[serde(untagged)]
-pub enum Mist {
-    A(Vec<u8>),
-    B(Vec<Vec<u8>>),
-    C((i64, Vec<u8>)),
-}
-
-impl Random for Mist {
-    fn random<R: Rng + ?Sized>(rng: &mut R) -> Mist {
-        let v: usize = rng.gen_range(0, 3);
-        match v {
-            0 => Self::A({
-                let v: Vec<u8> = rng.gen_ext();
-                v
-            }),
-            1 => Self::B({
-                let v: Vec<Vec<u8>> = rng.gen_ext();
-                v
-            }),
-            2 => Self::C({
-                let v: (i64, Vec<u8>) = rng.gen_ext();
+                let v: Pepper = rng.gen_ext();
                 v
             }),
             _ => unreachable!(),
@@ -1091,12 +271,12 @@ impl Random for Mist {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Hash, Default)]
-#[serde(rename_all = "PascalCase", rename = "Printer")]
+#[serde(rename_all = "snake_case", rename = "Album", deny_unknown_fields)]
 pub struct Pillow {
-    #[serde(skip_deserializing)]
-    electricity: i64,
-    #[serde(skip_deserializing)]
-    aeroplane: Vec<u8>,
+    #[serde(rename = "sportscar")]
+    chocolates: i64,
+    #[serde(rename = "passport", skip_deserializing)]
+    parachute2: Vec<u8>,
 }
 
 #[allow(unused)]
@@ -1106,17 +286,137 @@ impl Random for Pillow {
     }
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Hash)]
+#[serde(untagged)]
+pub enum Adult1 {
+    A(bool),
+    B(String),
+    C(Pillow),
+}
+
+impl Random for Adult1 {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Adult1 {
+        let v: usize = rng.gen_range(0, 3);
+        match v {
+            0 => Self::A({
+                let v: bool = rng.gen_ext();
+                v
+            }),
+            1 => Self::B({
+                let v: String = rng.gen_ext();
+                v
+            }),
+            2 => Self::C({
+                let v: Pillow = rng.gen_ext();
+                v
+            }),
+            _ => unreachable!(),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Hash, Default)]
+#[serde(rename_all = "camelCase", rename = "Garden", default)]
+pub struct Sex {
+    #[serde(rename = "chair")]
+    star: Vec<u8>,
+}
+
+#[allow(unused)]
+impl Random for Sex {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Sex {
+        Sex::new(rng.gen_ext())
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Hash, Default)]
+#[serde(rename_all = "snake_case", deny_unknown_fields)]
+pub struct Planet {
+    electricity: Sex,
+}
+
+#[allow(unused)]
+impl Random for Planet {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Planet {
+        Planet::new(rng.gen_ext())
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone, new)]
 #[serde(untagged)]
-pub enum Dung {
+pub enum Bathtub {
+    A(Vec<u8>),
+    B(HashMap<String, Sunglasses>),
+    C(HashSet<Adult1>),
+    D((Planet, i64)),
+}
+
+impl Random for Bathtub {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Bathtub {
+        let v: usize = rng.gen_range(0, 4);
+        match v {
+            0 => Self::A({
+                let v: Vec<u8> = rng.gen_ext();
+                v
+            }),
+            1 => Self::B({
+                let v: HashMap<String, Sunglasses> = rng.gen_ext();
+                v
+            }),
+            2 => Self::C({
+                let v: HashSet<Adult1> = rng.gen_ext();
+                v
+            }),
+            3 => Self::D({
+                let v: (Planet, i64) = rng.gen_ext();
+                v
+            }),
+            _ => unreachable!(),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, new, Default)]
+#[serde(rename_all = "camelCase", rename = "Diamond", default)]
+pub struct Record {
+    #[serde(skip_deserializing)]
+    bee: f64,
+}
+
+#[allow(unused)]
+impl Random for Record {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Record {
+        Record::new(rng.gen_ext())
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, new, Default)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE", rename = "School", default)]
+pub struct Fork {
+    #[serde(rename = "dress")]
+    cycle: bool,
+    #[serde(skip)]
+    surveyor: Record,
+}
+
+#[allow(unused)]
+impl Random for Fork {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Fork {
+        Fork::new(rng.gen_ext(), rng.gen_ext())
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, new)]
+#[serde(untagged)]
+pub enum Navy1 {
     A(bool),
     B(f64),
     C(HashSet<String>),
-    D(Option<String>),
+    D((f64,)),
 }
 
-impl Random for Dung {
-    fn random<R: Rng + ?Sized>(rng: &mut R) -> Dung {
+impl Random for Navy1 {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Navy1 {
         let v: usize = rng.gen_range(0, 4);
         match v {
             0 => Self::A({
@@ -1132,7 +432,7 @@ impl Random for Dung {
                 v
             }),
             3 => Self::D({
-                let v: Option<String> = rng.gen_ext();
+                let v: (f64,) = rng.gen_ext();
                 v
             }),
             _ => unreachable!(),
@@ -1140,49 +440,150 @@ impl Random for Dung {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Default)]
-#[serde(rename_all = "PascalCase", rename = "Flower1", default)]
-pub struct Airforce {
-    #[serde(rename = "map1")]
-    car1: HashSet<bool>,
+#[derive(Serialize, Deserialize, Debug, Clone, new)]
+#[serde(untagged)]
+pub enum Ship {
+    A(Fork),
+    B(Navy1),
 }
 
-#[allow(unused)]
-impl Random for Airforce {
-    fn random<R: Rng + ?Sized>(rng: &mut R) -> Airforce {
-        Airforce::new(rng.gen_ext())
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Hash, Default)]
-#[serde(
-    rename_all = "lowercase",
-    rename = "Electricity1",
-    deny_unknown_fields,
-    default
-)]
-pub struct Library {
-    rifle: bool,
-}
-
-#[allow(unused)]
-impl Random for Library {
-    fn random<R: Rng + ?Sized>(rng: &mut R) -> Library {
-        Library::new(rng.gen_ext())
+impl Random for Ship {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Ship {
+        let v: usize = rng.gen_range(0, 2);
+        match v {
+            0 => Self::A({
+                let v: Fork = rng.gen_ext();
+                v
+            }),
+            1 => Self::B({
+                let v: Navy1 = rng.gen_ext();
+                v
+            }),
+            _ => unreachable!(),
+        }
     }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, new)]
 #[serde(untagged)]
-pub enum Garden {
-    A(i64),
-    B((f64, (bool,))),
-    C(Airforce),
-    D(Library),
+pub enum Typewriter {
+    A(bool),
+    B(Vec<String>),
+    C(Ship),
 }
 
-impl Random for Garden {
-    fn random<R: Rng + ?Sized>(rng: &mut R) -> Garden {
+impl Random for Typewriter {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Typewriter {
+        let v: usize = rng.gen_range(0, 3);
+        match v {
+            0 => Self::A({
+                let v: bool = rng.gen_ext();
+                v
+            }),
+            1 => Self::B({
+                let v: Vec<String> = rng.gen_ext();
+                v
+            }),
+            2 => Self::C({
+                let v: Ship = rng.gen_ext();
+                v
+            }),
+            _ => unreachable!(),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Hash, Default)]
+#[serde(rename_all = "UPPERCASE", deny_unknown_fields)]
+pub struct Rocket {
+    vampire: Option<Vec<bool>>,
+}
+
+#[allow(unused)]
+impl Random for Rocket {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Rocket {
+        Rocket::new(rng.gen_ext())
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Hash, Default)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE", rename = "Parachute", default)]
+pub struct Bible {}
+
+#[allow(unused)]
+impl Random for Bible {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Bible {
+        Bible::new()
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Hash, Default)]
+#[serde(rename_all = "kebab-case", deny_unknown_fields)]
+pub struct Vulture {
+    #[serde(skip)]
+    sandpaper: String,
+    wheelchair: Vec<i64>,
+}
+
+#[allow(unused)]
+impl Random for Vulture {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Vulture {
+        Vulture::new(rng.gen_ext(), rng.gen_ext())
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, new)]
+#[serde(untagged)]
+pub enum Church {
+    A(i64),
+    B(Vec<f64>),
+    C(Vulture),
+}
+
+impl Random for Church {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Church {
+        let v: usize = rng.gen_range(0, 3);
+        match v {
+            0 => Self::A({
+                let v: i64 = rng.gen_ext();
+                v
+            }),
+            1 => Self::B({
+                let v: Vec<f64> = rng.gen_ext();
+                v
+            }),
+            2 => Self::C({
+                let v: Vulture = rng.gen_ext();
+                v
+            }),
+            _ => unreachable!(),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Hash, Default)]
+pub struct Passport {
+    table: Option<(Vec<u8>,)>,
+}
+
+#[allow(unused)]
+impl Random for Passport {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Passport {
+        Passport::new(rng.gen_ext())
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq)]
+#[serde(untagged)]
+pub enum Drink {
+    A(i64),
+    B(String),
+    C(HashMap<String, i64>),
+    D(HashSet<i64>),
+}
+
+impl Random for Drink {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Drink {
         let v: usize = rng.gen_range(0, 4);
         match v {
             0 => Self::A({
@@ -1190,132 +591,11 @@ impl Random for Garden {
                 v
             }),
             1 => Self::B({
-                let v: (f64, (bool,)) = rng.gen_ext();
+                let v: String = rng.gen_ext();
                 v
             }),
             2 => Self::C({
-                let v: Airforce = rng.gen_ext();
-                v
-            }),
-            3 => Self::D({
-                let v: Library = rng.gen_ext();
-                v
-            }),
-            _ => unreachable!(),
-        }
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, new)]
-#[serde(rename_all = "lowercase", rename = "Aeroplane")]
-pub struct Milk {
-    #[serde(rename = "pillow")]
-    vulture1: Garden,
-    coffee: Vec<u8>,
-}
-
-#[allow(unused)]
-impl Random for Milk {
-    fn random<R: Rng + ?Sized>(rng: &mut R) -> Milk {
-        Milk::new(rng.gen_ext(), rng.gen_ext())
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, new)]
-#[serde(rename_all = "SCREAMING-KEBAB-CASE")]
-pub struct Horse1 {
-    #[serde(flatten)]
-    spectrum: Milk,
-}
-
-#[allow(unused)]
-impl Random for Horse1 {
-    fn random<R: Rng + ?Sized>(rng: &mut R) -> Horse1 {
-        Horse1::new(rng.gen_ext())
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Hash, Default)]
-#[serde(rename_all = "lowercase", rename = "Computer")]
-pub struct Button {
-    floodlight: bool,
-}
-
-#[allow(unused)]
-impl Random for Button {
-    fn random<R: Rng + ?Sized>(rng: &mut R) -> Button {
-        Button::new(rng.gen_ext())
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, new)]
-#[serde(untagged)]
-pub enum Hat {
-    A(bool),
-    B(HashMap<String, Option<Option<String>>>),
-    C(Horse1),
-    D(Button),
-}
-
-impl Random for Hat {
-    fn random<R: Rng + ?Sized>(rng: &mut R) -> Hat {
-        let v: usize = rng.gen_range(0, 4);
-        match v {
-            0 => Self::A({
-                let v: bool = rng.gen_ext();
-                v
-            }),
-            1 => Self::B({
-                let v: HashMap<String, Option<Option<String>>> = rng.gen_ext();
-                v
-            }),
-            2 => Self::C({
-                let v: Horse1 = rng.gen_ext();
-                v
-            }),
-            3 => Self::D({
-                let v: Button = rng.gen_ext();
-                v
-            }),
-            _ => unreachable!(),
-        }
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Hash, Default)]
-#[serde(rename_all = "UPPERCASE", rename = "Vacuum1")]
-pub struct Pendulum1 {}
-
-#[allow(unused)]
-impl Random for Pendulum1 {
-    fn random<R: Rng + ?Sized>(rng: &mut R) -> Pendulum1 {
-        Pendulum1::new()
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, new)]
-#[serde(untagged)]
-pub enum Pants2 {
-    A(bool),
-    B(f64),
-    C(Vec<u8>),
-    D(HashSet<i64>),
-}
-
-impl Random for Pants2 {
-    fn random<R: Rng + ?Sized>(rng: &mut R) -> Pants2 {
-        let v: usize = rng.gen_range(0, 4);
-        match v {
-            0 => Self::A({
-                let v: bool = rng.gen_ext();
-                v
-            }),
-            1 => Self::B({
-                let v: f64 = rng.gen_ext();
-                v
-            }),
-            2 => Self::C({
-                let v: Vec<u8> = rng.gen_ext();
+                let v: HashMap<String, i64> = rng.gen_ext();
                 v
             }),
             3 => Self::D({
@@ -1329,14 +609,200 @@ impl Random for Pants2 {
 
 #[derive(Serialize, Deserialize, Debug, Clone, new)]
 #[serde(untagged)]
-pub enum Clock {
-    A(i64),
-    B(Vec<u8>),
-    C(Pants2),
+pub enum Fan {
+    A(f64),
+    B(HashSet<bool>),
+    C(((Option<i64>, Vec<u8>), Passport)),
+    D(Drink),
 }
 
-impl Random for Clock {
-    fn random<R: Rng + ?Sized>(rng: &mut R) -> Clock {
+impl Random for Fan {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Fan {
+        let v: usize = rng.gen_range(0, 4);
+        match v {
+            0 => Self::A({
+                let v: f64 = rng.gen_ext();
+                v
+            }),
+            1 => Self::B({
+                let v: HashSet<bool> = rng.gen_ext();
+                v
+            }),
+            2 => Self::C({
+                let v: ((Option<i64>, Vec<u8>), Passport) = rng.gen_ext();
+                v
+            }),
+            3 => Self::D({
+                let v: Drink = rng.gen_ext();
+                v
+            }),
+            _ => unreachable!(),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Hash)]
+#[serde(untagged)]
+pub enum Comet {
+    A(bool),
+    B(i64),
+    C(String),
+    D(Vec<u8>),
+}
+
+impl Random for Comet {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Comet {
+        let v: usize = rng.gen_range(0, 4);
+        match v {
+            0 => Self::A({
+                let v: bool = rng.gen_ext();
+                v
+            }),
+            1 => Self::B({
+                let v: i64 = rng.gen_ext();
+                v
+            }),
+            2 => Self::C({
+                let v: String = rng.gen_ext();
+                v
+            }),
+            3 => Self::D({
+                let v: Vec<u8> = rng.gen_ext();
+                v
+            }),
+            _ => unreachable!(),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Hash, Default)]
+#[serde(rename_all = "UPPERCASE", deny_unknown_fields)]
+pub struct Drill {
+    #[serde(rename = "onion")]
+    triangle: (String,),
+}
+
+#[allow(unused)]
+impl Random for Drill {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Drill {
+        Drill::new(rng.gen_ext())
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Hash, Default)]
+#[serde(rename_all = "snake_case", default)]
+pub struct Flower1 {}
+
+#[allow(unused)]
+impl Random for Flower1 {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Flower1 {
+        Flower1::new()
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Default)]
+#[serde(rename_all = "PascalCase", rename = "Flower", default)]
+pub struct Circus {
+    #[serde(flatten)]
+    roof: HashMap<String, Flower1>,
+    #[serde(skip_deserializing)]
+    pebble: Vec<u8>,
+}
+
+#[allow(unused)]
+impl Random for Circus {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Circus {
+        Circus::new(rng.gen_ext(), rng.gen_ext())
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, new)]
+#[serde(untagged)]
+pub enum Boy {
+    A(bool),
+    B(f64),
+    C(HashSet<i64>),
+    D(Circus),
+}
+
+impl Random for Boy {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Boy {
+        let v: usize = rng.gen_range(0, 4);
+        match v {
+            0 => Self::A({
+                let v: bool = rng.gen_ext();
+                v
+            }),
+            1 => Self::B({
+                let v: f64 = rng.gen_ext();
+                v
+            }),
+            2 => Self::C({
+                let v: HashSet<i64> = rng.gen_ext();
+                v
+            }),
+            3 => Self::D({
+                let v: Circus = rng.gen_ext();
+                v
+            }),
+            _ => unreachable!(),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, new)]
+#[serde(rename_all = "kebab-case", deny_unknown_fields)]
+pub struct Girl {
+    web: Boy,
+    #[serde(skip_deserializing)]
+    airforce1: f64,
+}
+
+#[allow(unused)]
+impl Random for Girl {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Girl {
+        Girl::new(rng.gen_ext(), rng.gen_ext())
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Default)]
+#[serde(rename_all = "lowercase")]
+pub struct Sandwich {
+    #[serde(skip)]
+    carrot: HashSet<Vec<u8>>,
+    #[serde(rename = "sportscar1", skip_deserializing)]
+    money: bool,
+}
+
+#[allow(unused)]
+impl Random for Sandwich {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Sandwich {
+        Sandwich::new(rng.gen_ext(), rng.gen_ext())
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Hash, Default)]
+pub struct Butterfly {
+    table1: Vec<String>,
+}
+
+#[allow(unused)]
+impl Random for Butterfly {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Butterfly {
+        Butterfly::new(rng.gen_ext())
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, new)]
+#[serde(untagged)]
+pub enum Microscope {
+    A(i64),
+    B(f64),
+    C(Butterfly),
+}
+
+impl Random for Microscope {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Microscope {
         let v: usize = rng.gen_range(0, 3);
         match v {
             0 => Self::A({
@@ -1344,11 +810,436 @@ impl Random for Clock {
                 v
             }),
             1 => Self::B({
+                let v: f64 = rng.gen_ext();
+                v
+            }),
+            2 => Self::C({
+                let v: Butterfly = rng.gen_ext();
+                v
+            }),
+            _ => unreachable!(),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Hash, Default)]
+#[serde(rename_all = "SCREAMING-KEBAB-CASE")]
+pub struct Bed {
+    #[serde(rename = "meat", skip_deserializing)]
+    egg: Vec<u8>,
+}
+
+#[allow(unused)]
+impl Random for Bed {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Bed {
+        Bed::new(rng.gen_ext())
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, new)]
+#[serde(untagged)]
+pub enum Junk {
+    A(f64),
+    B(HashSet<i64>),
+    C(()),
+    D(Bed),
+}
+
+impl Random for Junk {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Junk {
+        let v: usize = rng.gen_range(0, 4);
+        match v {
+            0 => Self::A({
+                let v: f64 = rng.gen_ext();
+                v
+            }),
+            1 => Self::B({
+                let v: HashSet<i64> = rng.gen_ext();
+                v
+            }),
+            2 => Self::C({
+                let v: () = rng.gen_ext();
+                v
+            }),
+            3 => Self::D({
+                let v: Bed = rng.gen_ext();
+                v
+            }),
+            _ => unreachable!(),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, new)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE", deny_unknown_fields)]
+pub struct Fruit {
+    #[serde(rename = "man", skip_deserializing)]
+    staircase: HashMap<String, String>,
+    horoscope: Junk,
+}
+
+#[allow(unused)]
+impl Random for Fruit {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Fruit {
+        Fruit::new(rng.gen_ext(), rng.gen_ext())
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Hash, Default)]
+#[serde(rename_all = "lowercase", default)]
+pub struct Guitar {
+    #[serde(rename = "monster")]
+    carrier: String,
+}
+
+#[allow(unused)]
+impl Random for Guitar {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Guitar {
+        Guitar::new(rng.gen_ext())
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Hash)]
+#[serde(untagged)]
+pub enum Telescope {
+    A(bool),
+    B(String),
+    C(Guitar),
+}
+
+impl Random for Telescope {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Telescope {
+        let v: usize = rng.gen_range(0, 3);
+        match v {
+            0 => Self::A({
+                let v: bool = rng.gen_ext();
+                v
+            }),
+            1 => Self::B({
+                let v: String = rng.gen_ext();
+                v
+            }),
+            2 => Self::C({
+                let v: Guitar = rng.gen_ext();
+                v
+            }),
+            _ => unreachable!(),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Hash, Default)]
+#[serde(rename_all = "SCREAMING-KEBAB-CASE", rename = "Satellite", default)]
+pub struct Map {}
+
+#[allow(unused)]
+impl Random for Map {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Map {
+        Map::new()
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Hash, Default)]
+#[serde(rename_all = "snake_case", rename = "Hammer")]
+pub struct Table1 {}
+
+#[allow(unused)]
+impl Random for Table1 {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Table1 {
+        Table1::new()
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Default)]
+#[serde(rename_all = "kebab-case")]
+pub struct Tunnel {
+    #[serde(skip_deserializing)]
+    eyes: HashMap<String, HashMap<String, bool>>,
+}
+
+#[allow(unused)]
+impl Random for Tunnel {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Tunnel {
+        Tunnel::new(rng.gen_ext())
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq)]
+#[serde(untagged)]
+pub enum Passport1 {
+    A(bool),
+    B(i64),
+    C((String, Vec<u8>)),
+    D(Tunnel),
+}
+
+impl Random for Passport1 {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Passport1 {
+        let v: usize = rng.gen_range(0, 4);
+        match v {
+            0 => Self::A({
+                let v: bool = rng.gen_ext();
+                v
+            }),
+            1 => Self::B({
+                let v: i64 = rng.gen_ext();
+                v
+            }),
+            2 => Self::C({
+                let v: (String, Vec<u8>) = rng.gen_ext();
+                v
+            }),
+            3 => Self::D({
+                let v: Tunnel = rng.gen_ext();
+                v
+            }),
+            _ => unreachable!(),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, new)]
+#[serde(untagged)]
+pub enum Coffee {
+    A(bool),
+    B(f64),
+    C(Vec<u8>),
+}
+
+impl Random for Coffee {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Coffee {
+        let v: usize = rng.gen_range(0, 3);
+        match v {
+            0 => Self::A({
+                let v: bool = rng.gen_ext();
+                v
+            }),
+            1 => Self::B({
+                let v: f64 = rng.gen_ext();
+                v
+            }),
+            2 => Self::C({
+                let v: Vec<u8> = rng.gen_ext();
+                v
+            }),
+            _ => unreachable!(),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, new)]
+#[serde(untagged)]
+pub enum Finger {
+    A(bool),
+    B(i64),
+    C(f64),
+    D(HashMap<String, Coffee>),
+}
+
+impl Random for Finger {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Finger {
+        let v: usize = rng.gen_range(0, 4);
+        match v {
+            0 => Self::A({
+                let v: bool = rng.gen_ext();
+                v
+            }),
+            1 => Self::B({
+                let v: i64 = rng.gen_ext();
+                v
+            }),
+            2 => Self::C({
+                let v: f64 = rng.gen_ext();
+                v
+            }),
+            3 => Self::D({
+                let v: HashMap<String, Coffee> = rng.gen_ext();
+                v
+            }),
+            _ => unreachable!(),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, new)]
+#[serde(rename_all = "snake_case", rename = "Fan1", deny_unknown_fields)]
+pub struct Map1 {
+    #[serde(rename = "apple")]
+    flower: Option<Finger>,
+    #[serde(skip)]
+    onion1: String,
+}
+
+#[allow(unused)]
+impl Random for Map1 {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Map1 {
+        Map1::new(rng.gen_ext(), rng.gen_ext())
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Hash, Default)]
+pub struct Roof {}
+
+#[allow(unused)]
+impl Random for Roof {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Roof {
+        Roof::new()
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq)]
+#[serde(untagged)]
+pub enum Wheelchair {
+    A(bool),
+    B(Vec<u8>),
+    C(HashMap<String, Vec<u8>>),
+    D(HashSet<i64>),
+}
+
+impl Random for Wheelchair {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Wheelchair {
+        let v: usize = rng.gen_range(0, 4);
+        match v {
+            0 => Self::A({
+                let v: bool = rng.gen_ext();
+                v
+            }),
+            1 => Self::B({
                 let v: Vec<u8> = rng.gen_ext();
                 v
             }),
             2 => Self::C({
-                let v: Pants2 = rng.gen_ext();
+                let v: HashMap<String, Vec<u8>> = rng.gen_ext();
+                v
+            }),
+            3 => Self::D({
+                let v: HashSet<i64> = rng.gen_ext();
+                v
+            }),
+            _ => unreachable!(),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Hash, Default)]
+#[serde(
+    rename_all = "PascalCase",
+    rename = "Aeroplane",
+    deny_unknown_fields,
+    default
+)]
+pub struct Room {
+    balloon: i64,
+}
+
+#[allow(unused)]
+impl Random for Room {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Room {
+        Room::new(rng.gen_ext())
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Hash, Default)]
+#[serde(rename_all = "SCREAMING-KEBAB-CASE", deny_unknown_fields, default)]
+pub struct Circus1 {
+    spoon: i64,
+}
+
+#[allow(unused)]
+impl Random for Circus1 {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Circus1 {
+        Circus1::new(rng.gen_ext())
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Hash)]
+#[serde(untagged)]
+pub enum Pillow1 {
+    A(Vec<u8>),
+    B((Circus1,)),
+}
+
+impl Random for Pillow1 {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Pillow1 {
+        let v: usize = rng.gen_range(0, 2);
+        match v {
+            0 => Self::A({
+                let v: Vec<u8> = rng.gen_ext();
+                v
+            }),
+            1 => Self::B({
+                let v: (Circus1,) = rng.gen_ext();
+                v
+            }),
+            _ => unreachable!(),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq)]
+#[serde(rename_all = "UPPERCASE")]
+pub struct Explosive {
+    boy: Pillow1,
+    #[serde(rename = "sunglasses")]
+    rainbow: HashMap<String, Vec<u8>>,
+}
+
+#[allow(unused)]
+impl Random for Explosive {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Explosive {
+        Explosive::new(rng.gen_ext(), rng.gen_ext())
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Hash, Default)]
+#[serde(deny_unknown_fields)]
+pub struct Sex1 {
+    sword2: Vec<u8>,
+}
+
+#[allow(unused)]
+impl Random for Sex1 {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Sex1 {
+        Sex1::new(rng.gen_ext())
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Hash, Default)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub struct Solid1 {
+    #[serde(rename = "junk", skip_deserializing)]
+    alphabet: Vec<i64>,
+}
+
+#[allow(unused)]
+impl Random for Solid1 {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Solid1 {
+        Solid1::new(rng.gen_ext())
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, new)]
+#[serde(untagged)]
+pub enum Explosive1 {
+    A(HashSet<String>),
+    B((HashMap<String, f64>, Sex1)),
+    C(Solid1),
+}
+
+impl Random for Explosive1 {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Explosive1 {
+        let v: usize = rng.gen_range(0, 3);
+        match v {
+            0 => Self::A({
+                let v: HashSet<String> = rng.gen_ext();
+                v
+            }),
+            1 => Self::B({
+                let v: (HashMap<String, f64>, Sex1) = rng.gen_ext();
+                v
+            }),
+            2 => Self::C({
+                let v: Solid1 = rng.gen_ext();
                 v
             }),
             _ => unreachable!(),
@@ -1358,26 +1249,31 @@ impl Random for Clock {
 
 #[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq)]
 #[serde(untagged)]
-pub enum SpotLight1 {
-    A(i64),
-    B(Vec<u8>),
-    C(HashSet<bool>),
+pub enum PaintBrush2 {
+    A(bool),
+    B(String),
+    C(Vec<u8>),
+    D(HashMap<String, bool>),
 }
 
-impl Random for SpotLight1 {
-    fn random<R: Rng + ?Sized>(rng: &mut R) -> SpotLight1 {
-        let v: usize = rng.gen_range(0, 3);
+impl Random for PaintBrush2 {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> PaintBrush2 {
+        let v: usize = rng.gen_range(0, 4);
         match v {
             0 => Self::A({
-                let v: i64 = rng.gen_ext();
+                let v: bool = rng.gen_ext();
                 v
             }),
             1 => Self::B({
-                let v: Vec<u8> = rng.gen_ext();
+                let v: String = rng.gen_ext();
                 v
             }),
             2 => Self::C({
-                let v: HashSet<bool> = rng.gen_ext();
+                let v: Vec<u8> = rng.gen_ext();
+                v
+            }),
+            3 => Self::D({
+                let v: HashMap<String, bool> = rng.gen_ext();
                 v
             }),
             _ => unreachable!(),
@@ -1386,12 +1282,850 @@ impl Random for SpotLight1 {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Hash, Default)]
-pub struct Typewriter2 {}
+#[serde(rename_all = "UPPERCASE", rename = "School1")]
+pub struct Radar {}
 
 #[allow(unused)]
-impl Random for Typewriter2 {
-    fn random<R: Rng + ?Sized>(rng: &mut R) -> Typewriter2 {
-        Typewriter2::new()
+impl Random for Radar {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Radar {
+        Radar::new()
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq)]
+#[serde(untagged)]
+pub enum Milkshake1 {
+    A(Vec<u8>),
+    B((PaintBrush2,)),
+    C(Radar),
+}
+
+impl Random for Milkshake1 {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Milkshake1 {
+        let v: usize = rng.gen_range(0, 3);
+        match v {
+            0 => Self::A({
+                let v: Vec<u8> = rng.gen_ext();
+                v
+            }),
+            1 => Self::B({
+                let v: (PaintBrush2,) = rng.gen_ext();
+                v
+            }),
+            2 => Self::C({
+                let v: Radar = rng.gen_ext();
+                v
+            }),
+            _ => unreachable!(),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Hash, Default)]
+#[serde(rename_all = "kebab-case", rename = "Flower2", default)]
+pub struct Child1 {}
+
+#[allow(unused)]
+impl Random for Child1 {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Child1 {
+        Child1::new()
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Hash, Default)]
+#[serde(rename_all = "UPPERCASE", rename = "Apple", default)]
+pub struct Carrier {
+    #[serde(rename = "icecream")]
+    window: (),
+}
+
+#[allow(unused)]
+impl Random for Carrier {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Carrier {
+        Carrier::new(rng.gen_ext())
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Hash, Default)]
+#[serde(rename_all = "lowercase", rename = "Carpet")]
+pub struct Computer {}
+
+#[allow(unused)]
+impl Random for Computer {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Computer {
+        Computer::new()
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Hash, Default)]
+#[serde(
+    rename_all = "SCREAMING-KEBAB-CASE",
+    rename = "Radar1",
+    deny_unknown_fields
+)]
+pub struct Egg {
+    finger: Computer,
+}
+
+#[allow(unused)]
+impl Random for Egg {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Egg {
+        Egg::new(rng.gen_ext())
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, new)]
+#[serde(untagged)]
+pub enum Planet2 {
+    A(f64),
+    B(Child1),
+    C(Carrier),
+    D(Option<Egg>),
+}
+
+impl Random for Planet2 {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Planet2 {
+        let v: usize = rng.gen_range(0, 4);
+        match v {
+            0 => Self::A({
+                let v: f64 = rng.gen_ext();
+                v
+            }),
+            1 => Self::B({
+                let v: Child1 = rng.gen_ext();
+                v
+            }),
+            2 => Self::C({
+                let v: Carrier = rng.gen_ext();
+                v
+            }),
+            3 => Self::D({
+                let v: Option<Egg> = rng.gen_ext();
+                v
+            }),
+            _ => unreachable!(),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Hash, Default)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE", default)]
+pub struct Butterfly1 {
+    #[serde(skip)]
+    coffeeshop: Vec<u8>,
+    #[serde(rename = "explosive", skip_deserializing)]
+    meat1: bool,
+}
+
+#[allow(unused)]
+impl Random for Butterfly1 {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Butterfly1 {
+        Butterfly1::new(rng.gen_ext(), rng.gen_ext())
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Hash, Default)]
+#[serde(rename_all = "lowercase", default)]
+pub struct Bible1 {}
+
+#[allow(unused)]
+impl Random for Bible1 {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Bible1 {
+        Bible1::new()
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq)]
+#[serde(untagged)]
+pub enum Star1 {
+    A(HashMap<String, String>),
+    B(Vec<Vec<u8>>),
+    C(Bible1),
+    D(Option<Vec<u8>>),
+}
+
+impl Random for Star1 {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Star1 {
+        let v: usize = rng.gen_range(0, 4);
+        match v {
+            0 => Self::A({
+                let v: HashMap<String, String> = rng.gen_ext();
+                v
+            }),
+            1 => Self::B({
+                let v: Vec<Vec<u8>> = rng.gen_ext();
+                v
+            }),
+            2 => Self::C({
+                let v: Bible1 = rng.gen_ext();
+                v
+            }),
+            3 => Self::D({
+                let v: Option<Vec<u8>> = rng.gen_ext();
+                v
+            }),
+            _ => unreachable!(),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, new)]
+#[serde(untagged)]
+pub enum Crystal {
+    A(f64),
+    B(HashMap<String, f64>),
+    C(Butterfly1),
+    D(Star1),
+}
+
+impl Random for Crystal {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Crystal {
+        let v: usize = rng.gen_range(0, 4);
+        match v {
+            0 => Self::A({
+                let v: f64 = rng.gen_ext();
+                v
+            }),
+            1 => Self::B({
+                let v: HashMap<String, f64> = rng.gen_ext();
+                v
+            }),
+            2 => Self::C({
+                let v: Butterfly1 = rng.gen_ext();
+                v
+            }),
+            3 => Self::D({
+                let v: Star1 = rng.gen_ext();
+                v
+            }),
+            _ => unreachable!(),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, new)]
+#[serde(rename_all = "camelCase", rename = "Circus2", deny_unknown_fields)]
+pub struct Highway1 {
+    #[serde(rename = "passport1", skip_deserializing)]
+    signature: i64,
+    ring: Option<Crystal>,
+}
+
+#[allow(unused)]
+impl Random for Highway1 {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Highway1 {
+        Highway1::new(rng.gen_ext(), rng.gen_ext())
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq)]
+#[serde(untagged)]
+pub enum PostOffice {
+    A(String),
+    B(HashSet<String>),
+    C((bool,)),
+}
+
+impl Random for PostOffice {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> PostOffice {
+        let v: usize = rng.gen_range(0, 3);
+        match v {
+            0 => Self::A({
+                let v: String = rng.gen_ext();
+                v
+            }),
+            1 => Self::B({
+                let v: HashSet<String> = rng.gen_ext();
+                v
+            }),
+            2 => Self::C({
+                let v: (bool,) = rng.gen_ext();
+                v
+            }),
+            _ => unreachable!(),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Hash, Default)]
+#[serde(rename_all = "UPPERCASE", rename = "Chair", deny_unknown_fields)]
+pub struct Chocolates1 {
+    window1: bool,
+}
+
+#[allow(unused)]
+impl Random for Chocolates1 {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Chocolates1 {
+        Chocolates1::new(rng.gen_ext())
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Hash)]
+#[serde(untagged)]
+pub enum Fungus {
+    A(bool),
+    B(String),
+    C(Vec<i64>),
+    D(Option<String>),
+}
+
+impl Random for Fungus {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Fungus {
+        let v: usize = rng.gen_range(0, 4);
+        match v {
+            0 => Self::A({
+                let v: bool = rng.gen_ext();
+                v
+            }),
+            1 => Self::B({
+                let v: String = rng.gen_ext();
+                v
+            }),
+            2 => Self::C({
+                let v: Vec<i64> = rng.gen_ext();
+                v
+            }),
+            3 => Self::D({
+                let v: Option<String> = rng.gen_ext();
+                v
+            }),
+            _ => unreachable!(),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Hash, Default)]
+#[serde(rename_all = "snake_case")]
+pub struct Chair1 {}
+
+#[allow(unused)]
+impl Random for Chair1 {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Chair1 {
+        Chair1::new()
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Hash, Default)]
+#[serde(rename = "Hammer1")]
+pub struct Eyes {}
+
+#[allow(unused)]
+impl Random for Eyes {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Eyes {
+        Eyes::new()
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Hash, Default)]
+#[serde(rename_all = "UPPERCASE", rename = "Hat1", default)]
+pub struct Potato1 {}
+
+#[allow(unused)]
+impl Random for Potato1 {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Potato1 {
+        Potato1::new()
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Hash, Default)]
+#[serde(rename_all = "SCREAMING-KEBAB-CASE", default)]
+pub struct Gas {}
+
+#[allow(unused)]
+impl Random for Gas {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Gas {
+        Gas::new()
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, new)]
+#[serde(untagged)]
+pub enum Wheelchair2 {
+    A(f64),
+    B(String),
+    C(Gas),
+}
+
+impl Random for Wheelchair2 {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Wheelchair2 {
+        let v: usize = rng.gen_range(0, 3);
+        match v {
+            0 => Self::A({
+                let v: f64 = rng.gen_ext();
+                v
+            }),
+            1 => Self::B({
+                let v: String = rng.gen_ext();
+                v
+            }),
+            2 => Self::C({
+                let v: Gas = rng.gen_ext();
+                v
+            }),
+            _ => unreachable!(),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Hash, Default)]
+#[serde(rename_all = "kebab-case", rename = "Microscope1")]
+pub struct Meteor {}
+
+#[allow(unused)]
+impl Random for Meteor {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Meteor {
+        Meteor::new()
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, new, Default)]
+pub struct Passport2 {
+    #[serde(rename = "leatherjacket", skip_deserializing)]
+    spoon1: Meteor,
+    #[serde(rename = "robot")]
+    boy1: Vec<Vec<Option<Vec<f64>>>>,
+}
+
+#[allow(unused)]
+impl Random for Passport2 {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Passport2 {
+        Passport2::new(rng.gen_ext(), rng.gen_ext())
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Hash, Default)]
+#[serde(rename_all = "SCREAMING-KEBAB-CASE", rename = "Bible3", default)]
+pub struct Foot {}
+
+#[allow(unused)]
+impl Random for Foot {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Foot {
+        Foot::new()
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Default)]
+#[serde(rename_all = "kebab-case", default)]
+pub struct Gloves1 {
+    #[serde(flatten)]
+    pillow: Foot,
+    videotape: Vec<HashMap<String, Vec<Vec<u8>>>>,
+}
+
+#[allow(unused)]
+impl Random for Gloves1 {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Gloves1 {
+        Gloves1::new(rng.gen_ext(), rng.gen_ext())
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Hash, Default)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct SpotLight {
+    #[serde(rename = "bed", skip_deserializing)]
+    pillow1: Option<Option<Vec<Vec<i64>>>>,
+    monster1: Vec<u8>,
+}
+
+#[allow(unused)]
+impl Random for SpotLight {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> SpotLight {
+        SpotLight::new(rng.gen_ext(), rng.gen_ext())
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Default)]
+#[serde(rename_all = "PascalCase")]
+pub struct Sandpaper {
+    #[serde(rename = "comet", skip_deserializing)]
+    room: Option<((i64, HashMap<String, bool>),)>,
+}
+
+#[allow(unused)]
+impl Random for Sandpaper {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Sandpaper {
+        Sandpaper::new(rng.gen_ext())
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq)]
+#[serde(untagged)]
+pub enum Milk {
+    A(i64),
+    B(Sandpaper),
+}
+
+impl Random for Milk {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Milk {
+        let v: usize = rng.gen_range(0, 2);
+        match v {
+            0 => Self::A({
+                let v: i64 = rng.gen_ext();
+                v
+            }),
+            1 => Self::B({
+                let v: Sandpaper = rng.gen_ext();
+                v
+            }),
+            _ => unreachable!(),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Hash, Default)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE", rename = "Carrier1", default)]
+pub struct Tongue {}
+
+#[allow(unused)]
+impl Random for Tongue {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Tongue {
+        Tongue::new()
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Hash, Default)]
+#[serde(rename_all = "kebab-case")]
+pub struct Foot1 {
+    #[serde(rename = "dress1", skip_deserializing)]
+    finger1: Vec<bool>,
+}
+
+#[allow(unused)]
+impl Random for Foot1 {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Foot1 {
+        Foot1::new(rng.gen_ext())
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Hash, Default)]
+#[serde(rename_all = "camelCase", default)]
+pub struct Bank {
+    #[serde(skip_deserializing)]
+    sunglasses3: Option<bool>,
+}
+
+#[allow(unused)]
+impl Random for Bank {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Bank {
+        Bank::new(rng.gen_ext())
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Hash, Default)]
+pub struct Potato2 {}
+
+#[allow(unused)]
+impl Random for Potato2 {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Potato2 {
+        Potato2::new()
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Hash, Default)]
+#[serde(rename_all = "PascalCase", deny_unknown_fields, default)]
+pub struct Sandwich1 {
+    #[serde(skip)]
+    software1: Vec<u8>,
+    school1: bool,
+}
+
+#[allow(unused)]
+impl Random for Sandwich1 {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Sandwich1 {
+        Sandwich1::new(rng.gen_ext(), rng.gen_ext())
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Hash)]
+#[serde(untagged)]
+pub enum Button2 {
+    A(i64),
+    B(Potato2),
+    C(Sandwich1),
+    D(Option<String>),
+}
+
+impl Random for Button2 {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Button2 {
+        let v: usize = rng.gen_range(0, 4);
+        match v {
+            0 => Self::A({
+                let v: i64 = rng.gen_ext();
+                v
+            }),
+            1 => Self::B({
+                let v: Potato2 = rng.gen_ext();
+                v
+            }),
+            2 => Self::C({
+                let v: Sandwich1 = rng.gen_ext();
+                v
+            }),
+            3 => Self::D({
+                let v: Option<String> = rng.gen_ext();
+                v
+            }),
+            _ => unreachable!(),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, new, Default)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE", deny_unknown_fields)]
+pub struct Stomach {
+    #[serde(skip)]
+    explosive2: Vec<String>,
+    carrot1: f64,
+}
+
+#[allow(unused)]
+impl Random for Stomach {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Stomach {
+        Stomach::new(rng.gen_ext(), rng.gen_ext())
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, new)]
+#[serde(untagged)]
+pub enum Needle {
+    A(HashMap<String, i64>),
+    B((HashMap<String, HashMap<String, f64>>,)),
+    C(Stomach),
+}
+
+impl Random for Needle {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Needle {
+        let v: usize = rng.gen_range(0, 3);
+        match v {
+            0 => Self::A({
+                let v: HashMap<String, i64> = rng.gen_ext();
+                v
+            }),
+            1 => Self::B({
+                let v: (HashMap<String, HashMap<String, f64>>,) = rng.gen_ext();
+                v
+            }),
+            2 => Self::C({
+                let v: Stomach = rng.gen_ext();
+                v
+            }),
+            _ => unreachable!(),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, new)]
+#[serde(untagged)]
+pub enum Button1 {
+    A(HashMap<String, String>),
+    B(Vec<Option<bool>>),
+    C(HashSet<Button2>),
+    D(Needle),
+}
+
+impl Random for Button1 {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Button1 {
+        let v: usize = rng.gen_range(0, 4);
+        match v {
+            0 => Self::A({
+                let v: HashMap<String, String> = rng.gen_ext();
+                v
+            }),
+            1 => Self::B({
+                let v: Vec<Option<bool>> = rng.gen_ext();
+                v
+            }),
+            2 => Self::C({
+                let v: HashSet<Button2> = rng.gen_ext();
+                v
+            }),
+            3 => Self::D({
+                let v: Needle = rng.gen_ext();
+                v
+            }),
+            _ => unreachable!(),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, new)]
+#[serde(untagged)]
+pub enum Navy3 {
+    A(String),
+    B(Bank),
+    C(Button1),
+}
+
+impl Random for Navy3 {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Navy3 {
+        let v: usize = rng.gen_range(0, 3);
+        match v {
+            0 => Self::A({
+                let v: String = rng.gen_ext();
+                v
+            }),
+            1 => Self::B({
+                let v: Bank = rng.gen_ext();
+                v
+            }),
+            2 => Self::C({
+                let v: Button1 = rng.gen_ext();
+                v
+            }),
+            _ => unreachable!(),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, new)]
+#[serde(untagged)]
+pub enum Gate {
+    A(Vec<u8>),
+    B(HashSet<i64>),
+    C(Foot1),
+    D(Navy3),
+}
+
+impl Random for Gate {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Gate {
+        let v: usize = rng.gen_range(0, 4);
+        match v {
+            0 => Self::A({
+                let v: Vec<u8> = rng.gen_ext();
+                v
+            }),
+            1 => Self::B({
+                let v: HashSet<i64> = rng.gen_ext();
+                v
+            }),
+            2 => Self::C({
+                let v: Foot1 = rng.gen_ext();
+                v
+            }),
+            3 => Self::D({
+                let v: Navy3 = rng.gen_ext();
+                v
+            }),
+            _ => unreachable!(),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, new)]
+#[serde(rename_all = "PascalCase", rename = "IceCream")]
+pub struct Chair2 {
+    #[serde(skip)]
+    brain: Option<Tongue>,
+    #[serde(rename = "kaleidoscope")]
+    gas: Gate,
+}
+
+#[allow(unused)]
+impl Random for Chair2 {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Chair2 {
+        Chair2::new(rng.gen_ext(), rng.gen_ext())
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Hash, Default)]
+#[serde(rename_all = "SCREAMING-KEBAB-CASE", rename = "Hammer2")]
+pub struct Shower {}
+
+#[allow(unused)]
+impl Random for Shower {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Shower {
+        Shower::new()
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Hash, Default)]
+#[serde(
+    rename_all = "SCREAMING_SNAKE_CASE",
+    rename = "Pants",
+    deny_unknown_fields,
+    default
+)]
+pub struct Aircraft1 {
+    crystal: Shower,
+}
+
+#[allow(unused)]
+impl Random for Aircraft1 {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Aircraft1 {
+        Aircraft1::new(rng.gen_ext())
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Hash, Default)]
+#[serde(rename_all = "UPPERCASE", deny_unknown_fields, default)]
+pub struct Meat2 {
+    #[serde(rename = "skeleton")]
+    signature1: Aircraft1,
+}
+
+#[allow(unused)]
+impl Random for Meat2 {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Meat2 {
+        Meat2::new(rng.gen_ext())
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Hash, Default)]
+#[serde(rename_all = "SCREAMING-KEBAB-CASE", deny_unknown_fields)]
+pub struct Rifle {
+    #[serde(skip_deserializing)]
+    foot: i64,
+    #[serde(rename = "pocket")]
+    pyramid: Option<Option<Vec<u8>>>,
+}
+
+#[allow(unused)]
+impl Random for Rifle {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Rifle {
+        Rifle::new(rng.gen_ext(), rng.gen_ext())
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Hash, Default)]
+#[serde(rename_all = "SCREAMING-KEBAB-CASE")]
+pub struct Shop1 {
+    #[serde(rename = "fruit")]
+    teeth: Option<bool>,
+}
+
+#[allow(unused)]
+impl Random for Shop1 {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Shop1 {
+        Shop1::new(rng.gen_ext())
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Hash)]
+#[serde(untagged)]
+pub enum Baby {
+    A(Vec<i64>),
+    B(()),
+    C(Shop1),
+}
+
+impl Random for Baby {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> Baby {
+        let v: usize = rng.gen_range(0, 3);
+        match v {
+            0 => Self::A({
+                let v: Vec<i64> = rng.gen_ext();
+                v
+            }),
+            1 => Self::B({
+                let v: () = rng.gen_ext();
+                v
+            }),
+            2 => Self::C({
+                let v: Shop1 = rng.gen_ext();
+                v
+            }),
+            _ => unreachable!(),
+        }
     }
 }
 
@@ -1400,304 +2134,304 @@ macro_rules! gen {
         let mut rng = rand::thread_rng();
         let mut ret = Vec::<Vec<u8>>::new();
 
+        let v: Star = rng.gen_ext();
+        ret.push($encoder(&v).unwrap());
+
+        let v: (Vec<u8>,) = rng.gen_ext();
+        ret.push($encoder(&v).unwrap());
+
+        let v: Vec<bool> = rng.gen_ext();
+        ret.push($encoder(&v).unwrap());
+
+        let v: Boss = rng.gen_ext();
+        ret.push($encoder(&v).unwrap());
+
+        let v: Option<Vec<()>> = rng.gen_ext();
+        ret.push($encoder(&v).unwrap());
+
+        let v: HashMap<String, HashSet<bool>> = rng.gen_ext();
+        ret.push($encoder(&v).unwrap());
+
+        let v: i64 = rng.gen_ext();
+        ret.push($encoder(&v).unwrap());
+
+        let v: Vec<Option<bool>> = rng.gen_ext();
+        ret.push($encoder(&v).unwrap());
+
+        let v: Navy = rng.gen_ext();
+        ret.push($encoder(&v).unwrap());
+
+        let v: Option<Spectrum> = rng.gen_ext();
+        ret.push($encoder(&v).unwrap());
+
+        let v: Bathtub = rng.gen_ext();
+        ret.push($encoder(&v).unwrap());
+
+        let v: Typewriter = rng.gen_ext();
+        ret.push($encoder(&v).unwrap());
+
+        let v: Vec<u8> = rng.gen_ext();
+        ret.push($encoder(&v).unwrap());
+
+        let v: Vec<u8> = rng.gen_ext();
+        ret.push($encoder(&v).unwrap());
+
+        let v: Vec<i64> = rng.gen_ext();
+        ret.push($encoder(&v).unwrap());
+
+        let v: String = rng.gen_ext();
+        ret.push($encoder(&v).unwrap());
+
+        let v: String = rng.gen_ext();
+        ret.push($encoder(&v).unwrap());
+
+        let v: Rocket = rng.gen_ext();
+        ret.push($encoder(&v).unwrap());
+
+        let v: Option<Bible> = rng.gen_ext();
+        ret.push($encoder(&v).unwrap());
+
+        let v: bool = rng.gen_ext();
+        ret.push($encoder(&v).unwrap());
+
         let v: f64 = rng.gen_ext();
         ret.push($encoder(&v).unwrap());
 
-        let v: bool = rng.gen_ext();
-        ret.push($encoder(&v).unwrap());
-
-        let v: i64 = rng.gen_ext();
-        ret.push($encoder(&v).unwrap());
-
-        let v: String = rng.gen_ext();
-        ret.push($encoder(&v).unwrap());
-
-        let v: Shower = rng.gen_ext();
-        ret.push($encoder(&v).unwrap());
-
-        let v: f64 = rng.gen_ext();
-        ret.push($encoder(&v).unwrap());
-
-        let v: String = rng.gen_ext();
-        ret.push($encoder(&v).unwrap());
-
-        let v: String = rng.gen_ext();
-        ret.push($encoder(&v).unwrap());
-
-        let v: (Rifle, i64) = rng.gen_ext();
-        ret.push($encoder(&v).unwrap());
-
-        let v: Option<String> = rng.gen_ext();
-        ret.push($encoder(&v).unwrap());
-
-        let v: Vec<u8> = rng.gen_ext();
-        ret.push($encoder(&v).unwrap());
-
-        let v: Leg = rng.gen_ext();
-        ret.push($encoder(&v).unwrap());
-
-        let v: Banana = rng.gen_ext();
-        ret.push($encoder(&v).unwrap());
-
-        let v: Vulture = rng.gen_ext();
-        ret.push($encoder(&v).unwrap());
-
-        let v: Vec<u8> = rng.gen_ext();
-        ret.push($encoder(&v).unwrap());
-
-        let v: i64 = rng.gen_ext();
-        ret.push($encoder(&v).unwrap());
-
-        let v: Vec<u8> = rng.gen_ext();
-        ret.push($encoder(&v).unwrap());
-
-        let v: i64 = rng.gen_ext();
-        ret.push($encoder(&v).unwrap());
-
-        let v: Table = rng.gen_ext();
-        ret.push($encoder(&v).unwrap());
-
-        let v: HashMap<String, HashSet<String>> = rng.gen_ext();
+        let v: () = rng.gen_ext();
         ret.push($encoder(&v).unwrap());
 
         let v: bool = rng.gen_ext();
-        ret.push($encoder(&v).unwrap());
-
-        let v: Vec<Vec<bool>> = rng.gen_ext();
-        ret.push($encoder(&v).unwrap());
-
-        let v: Vec<u8> = rng.gen_ext();
-        ret.push($encoder(&v).unwrap());
-
-        let v: Vec<Baby3> = rng.gen_ext();
-        ret.push($encoder(&v).unwrap());
-
-        let v: bool = rng.gen_ext();
-        ret.push($encoder(&v).unwrap());
-
-        let v: bool = rng.gen_ext();
-        ret.push($encoder(&v).unwrap());
-
-        let v: HashSet<Vec<u8>> = rng.gen_ext();
-        ret.push($encoder(&v).unwrap());
-
-        let v: HashSet<bool> = rng.gen_ext();
-        ret.push($encoder(&v).unwrap());
-
-        let v: Square = rng.gen_ext();
-        ret.push($encoder(&v).unwrap());
-
-        let v: Option<HashMap<String, bool>> = rng.gen_ext();
-        ret.push($encoder(&v).unwrap());
-
-        let v: Option<Explosive> = rng.gen_ext();
-        ret.push($encoder(&v).unwrap());
-
-        let v: HashSet<bool> = rng.gen_ext();
-        ret.push($encoder(&v).unwrap());
-
-        let v: Bridge1 = rng.gen_ext();
-        ret.push($encoder(&v).unwrap());
-
-        let v: Eraser = rng.gen_ext();
-        ret.push($encoder(&v).unwrap());
-
-        let v: HashMap<String, Vec<bool>> = rng.gen_ext();
-        ret.push($encoder(&v).unwrap());
-
-        let v: i64 = rng.gen_ext();
-        ret.push($encoder(&v).unwrap());
-
-        let v: IceCream = rng.gen_ext();
-        ret.push($encoder(&v).unwrap());
-
-        let v: Vec<u8> = rng.gen_ext();
-        ret.push($encoder(&v).unwrap());
-
-        let v: Signature1 = rng.gen_ext();
-        ret.push($encoder(&v).unwrap());
-
-        let v: Vec<u8> = rng.gen_ext();
-        ret.push($encoder(&v).unwrap());
-
-        let v: Vec<Sandwich> = rng.gen_ext();
-        ret.push($encoder(&v).unwrap());
-
-        let v: Circle = rng.gen_ext();
-        ret.push($encoder(&v).unwrap());
-
-        let v: Option<String> = rng.gen_ext();
-        ret.push($encoder(&v).unwrap());
-
-        let v: HashSet<i64> = rng.gen_ext();
-        ret.push($encoder(&v).unwrap());
-
-        let v: String = rng.gen_ext();
-        ret.push($encoder(&v).unwrap());
-
-        let v: Window = rng.gen_ext();
-        ret.push($encoder(&v).unwrap());
-
-        let v: Staircase = rng.gen_ext();
-        ret.push($encoder(&v).unwrap());
-
-        let v: Vec<u8> = rng.gen_ext();
-        ret.push($encoder(&v).unwrap());
-
-        let v: Vec<u8> = rng.gen_ext();
-        ret.push($encoder(&v).unwrap());
-
-        let v: HashSet<Vec<u8>> = rng.gen_ext();
-        ret.push($encoder(&v).unwrap());
-
-        let v: f64 = rng.gen_ext();
         ret.push($encoder(&v).unwrap());
 
         let v: Option<bool> = rng.gen_ext();
         ret.push($encoder(&v).unwrap());
 
-        let v: i64 = rng.gen_ext();
-        ret.push($encoder(&v).unwrap());
-
-        let v: Option<String> = rng.gen_ext();
-        ret.push($encoder(&v).unwrap());
-
-        let v: String = rng.gen_ext();
-        ret.push($encoder(&v).unwrap());
-
-        let v: HashSet<i64> = rng.gen_ext();
-        ret.push($encoder(&v).unwrap());
-
-        let v: Vec<u8> = rng.gen_ext();
-        ret.push($encoder(&v).unwrap());
-
-        let v: (Option<()>, f64) = rng.gen_ext();
+        let v: Church = rng.gen_ext();
         ret.push($encoder(&v).unwrap());
 
         let v: i64 = rng.gen_ext();
+        ret.push($encoder(&v).unwrap());
+
+        let v: bool = rng.gen_ext();
+        ret.push($encoder(&v).unwrap());
+
+        let v: Vec<Fan> = rng.gen_ext();
+        ret.push($encoder(&v).unwrap());
+
+        let v: Option<bool> = rng.gen_ext();
+        ret.push($encoder(&v).unwrap());
+
+        let v: Comet = rng.gen_ext();
+        ret.push($encoder(&v).unwrap());
+
+        let v: Drill = rng.gen_ext();
         ret.push($encoder(&v).unwrap());
 
         let v: Girl = rng.gen_ext();
         ret.push($encoder(&v).unwrap());
 
-        let v: Bank1 = rng.gen_ext();
+        let v: f64 = rng.gen_ext();
         ret.push($encoder(&v).unwrap());
 
-        let v: Man = rng.gen_ext();
+        let v: Vec<(Sandwich, HashSet<Vec<u8>>)> = rng.gen_ext();
         ret.push($encoder(&v).unwrap());
 
-        let v: Option<String> = rng.gen_ext();
-        ret.push($encoder(&v).unwrap());
-
-        let v: Feather1 = rng.gen_ext();
+        let v: Microscope = rng.gen_ext();
         ret.push($encoder(&v).unwrap());
 
         let v: i64 = rng.gen_ext();
         ret.push($encoder(&v).unwrap());
 
-        let v: () = rng.gen_ext();
+        let v: String = rng.gen_ext();
         ret.push($encoder(&v).unwrap());
 
-        let v: () = rng.gen_ext();
+        let v: Fruit = rng.gen_ext();
         ret.push($encoder(&v).unwrap());
 
-        let v: Pendulum = rng.gen_ext();
+        let v: Telescope = rng.gen_ext();
+        ret.push($encoder(&v).unwrap());
+
+        let v: (Vec<Option<i64>>, HashMap<String, bool>) = rng.gen_ext();
+        ret.push($encoder(&v).unwrap());
+
+        let v: bool = rng.gen_ext();
         ret.push($encoder(&v).unwrap());
 
         let v: f64 = rng.gen_ext();
         ret.push($encoder(&v).unwrap());
 
-        let v: Vec<Mist> = rng.gen_ext();
-        ret.push($encoder(&v).unwrap());
-
         let v: String = rng.gen_ext();
         ret.push($encoder(&v).unwrap());
 
-        let v: (Vec<u8>, HashMap<String, bool>) = rng.gen_ext();
+        let v: Map = rng.gen_ext();
         ret.push($encoder(&v).unwrap());
 
         let v: bool = rng.gen_ext();
         ret.push($encoder(&v).unwrap());
 
-        let v: String = rng.gen_ext();
-        ret.push($encoder(&v).unwrap());
-
-        let v: Vec<String> = rng.gen_ext();
-        ret.push($encoder(&v).unwrap());
-
-        let v: Vec<u8> = rng.gen_ext();
-        ret.push($encoder(&v).unwrap());
-
-        let v: Vec<u8> = rng.gen_ext();
-        ret.push($encoder(&v).unwrap());
-
-        let v: Option<Option<Vec<u8>>> = rng.gen_ext();
-        ret.push($encoder(&v).unwrap());
-
-        let v: Pillow = rng.gen_ext();
-        ret.push($encoder(&v).unwrap());
-
-        let v: bool = rng.gen_ext();
-        ret.push($encoder(&v).unwrap());
-
-        let v: Dung = rng.gen_ext();
-        ret.push($encoder(&v).unwrap());
-
-        let v: HashMap<String, Hat> = rng.gen_ext();
-        ret.push($encoder(&v).unwrap());
-
-        let v: Vec<String> = rng.gen_ext();
-        ret.push($encoder(&v).unwrap());
-
-        let v: HashSet<bool> = rng.gen_ext();
+        let v: Table1 = rng.gen_ext();
         ret.push($encoder(&v).unwrap());
 
         let v: String = rng.gen_ext();
         ret.push($encoder(&v).unwrap());
 
-        let v: HashMap<String, f64> = rng.gen_ext();
+        let v: HashSet<Vec<u8>> = rng.gen_ext();
         ret.push($encoder(&v).unwrap());
 
-        let v: HashSet<i64> = rng.gen_ext();
+        let v: Passport1 = rng.gen_ext();
         ret.push($encoder(&v).unwrap());
 
-        let v: Pendulum1 = rng.gen_ext();
+        let v: Map1 = rng.gen_ext();
+        ret.push($encoder(&v).unwrap());
+
+        let v: (Roof, (Vec<u8>,)) = rng.gen_ext();
+        ret.push($encoder(&v).unwrap());
+
+        let v: Wheelchair = rng.gen_ext();
         ret.push($encoder(&v).unwrap());
 
         let v: i64 = rng.gen_ext();
         ret.push($encoder(&v).unwrap());
 
+        let v: HashMap<String, Room> = rng.gen_ext();
+        ret.push($encoder(&v).unwrap());
+
         let v: bool = rng.gen_ext();
         ret.push($encoder(&v).unwrap());
 
-        let v: HashMap<String, Clock> = rng.gen_ext();
+        let v: bool = rng.gen_ext();
         ret.push($encoder(&v).unwrap());
 
-        let v: SpotLight1 = rng.gen_ext();
-        ret.push($encoder(&v).unwrap());
-
-        let v: f64 = rng.gen_ext();
-        ret.push($encoder(&v).unwrap());
-
-        let v: HashSet<bool> = rng.gen_ext();
-        ret.push($encoder(&v).unwrap());
-
-        let v: Vec<String> = rng.gen_ext();
+        let v: bool = rng.gen_ext();
         ret.push($encoder(&v).unwrap());
 
         let v: f64 = rng.gen_ext();
         ret.push($encoder(&v).unwrap());
 
-        let v: Vec<Vec<String>> = rng.gen_ext();
+        let v: i64 = rng.gen_ext();
+        ret.push($encoder(&v).unwrap());
+
+        let v: Option<f64> = rng.gen_ext();
+        ret.push($encoder(&v).unwrap());
+
+        let v: f64 = rng.gen_ext();
+        ret.push($encoder(&v).unwrap());
+
+        let v: Option<Explosive> = rng.gen_ext();
+        ret.push($encoder(&v).unwrap());
+
+        let v: f64 = rng.gen_ext();
+        ret.push($encoder(&v).unwrap());
+
+        let v: HashSet<Vec<u8>> = rng.gen_ext();
+        ret.push($encoder(&v).unwrap());
+
+        let v: i64 = rng.gen_ext();
+        ret.push($encoder(&v).unwrap());
+
+        let v: ((f64,), HashSet<bool>) = rng.gen_ext();
+        ret.push($encoder(&v).unwrap());
+
+        let v: i64 = rng.gen_ext();
+        ret.push($encoder(&v).unwrap());
+
+        let v: Vec<Explosive1> = rng.gen_ext();
+        ret.push($encoder(&v).unwrap());
+
+        let v: Milkshake1 = rng.gen_ext();
         ret.push($encoder(&v).unwrap());
 
         let v: String = rng.gen_ext();
         ret.push($encoder(&v).unwrap());
 
-        let v: (Vec<Vec<String>>, Vec<Vec<((), Typewriter2)>>) = rng.gen_ext();
+        let v: HashMap<String, bool> = rng.gen_ext();
         ret.push($encoder(&v).unwrap());
 
-        let v: f64 = rng.gen_ext();
+        let v: Planet2 = rng.gen_ext();
+        ret.push($encoder(&v).unwrap());
+
+        let v: Highway1 = rng.gen_ext();
+        ret.push($encoder(&v).unwrap());
+
+        let v: String = rng.gen_ext();
+        ret.push($encoder(&v).unwrap());
+
+        let v: PostOffice = rng.gen_ext();
+        ret.push($encoder(&v).unwrap());
+
+        let v: (HashMap<String, bool>, Vec<u8>) = rng.gen_ext();
+        ret.push($encoder(&v).unwrap());
+
+        let v: Chocolates1 = rng.gen_ext();
+        ret.push($encoder(&v).unwrap());
+
+        let v: String = rng.gen_ext();
+        ret.push($encoder(&v).unwrap());
+
+        let v: Fungus = rng.gen_ext();
+        ret.push($encoder(&v).unwrap());
+
+        let v: Chair1 = rng.gen_ext();
+        ret.push($encoder(&v).unwrap());
+
+        let v: Vec<Vec<u8>> = rng.gen_ext();
+        ret.push($encoder(&v).unwrap());
+
+        let v: Eyes = rng.gen_ext();
+        ret.push($encoder(&v).unwrap());
+
+        let v: Option<Vec<u8>> = rng.gen_ext();
+        ret.push($encoder(&v).unwrap());
+
+        let v: Vec<u8> = rng.gen_ext();
+        ret.push($encoder(&v).unwrap());
+
+        let v: Potato1 = rng.gen_ext();
+        ret.push($encoder(&v).unwrap());
+
+        let v: Wheelchair2 = rng.gen_ext();
+        ret.push($encoder(&v).unwrap());
+
+        let v: Option<(bool,)> = rng.gen_ext();
+        ret.push($encoder(&v).unwrap());
+
+        let v: Passport2 = rng.gen_ext();
+        ret.push($encoder(&v).unwrap());
+
+        let v: (Gloves1, HashSet<i64>) = rng.gen_ext();
+        ret.push($encoder(&v).unwrap());
+
+        let v: SpotLight = rng.gen_ext();
+        ret.push($encoder(&v).unwrap());
+
+        let v: i64 = rng.gen_ext();
+        ret.push($encoder(&v).unwrap());
+
+        let v: Milk = rng.gen_ext();
+        ret.push($encoder(&v).unwrap());
+
+        let v: bool = rng.gen_ext();
+        ret.push($encoder(&v).unwrap());
+
+        let v: (Chair2, (HashMap<String, Meat2>,)) = rng.gen_ext();
+        ret.push($encoder(&v).unwrap());
+
+        let v: Vec<u8> = rng.gen_ext();
+        ret.push($encoder(&v).unwrap());
+
+        let v: HashMap<String, HashMap<String, Rifle>> = rng.gen_ext();
+        ret.push($encoder(&v).unwrap());
+
+        let v: Vec<u8> = rng.gen_ext();
+        ret.push($encoder(&v).unwrap());
+
+        let v: Baby = rng.gen_ext();
+        ret.push($encoder(&v).unwrap());
+
+        let v: HashMap<String, Vec<u8>> = rng.gen_ext();
+        ret.push($encoder(&v).unwrap());
+
+        let v: HashMap<String, HashMap<String, f64>> = rng.gen_ext();
         ret.push($encoder(&v).unwrap());
 
         ret

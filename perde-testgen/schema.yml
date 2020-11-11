@@ -1,0 +1,1609 @@
+---
+- Union:
+    name: Star
+    variants:
+      - Float
+      - Bytes
+      - Class:
+          name: Fire
+          attr:
+            rename_all: PascalCase
+            rename: ~
+            deny_unknown_fields: false
+            default: false
+          fields:
+            spice:
+              attr:
+                flatten: false
+                rename: ~
+                default: false
+                skip: false
+                skip_deserializing: false
+              schema:
+                Class:
+                  name: PaintBrush
+                  attr:
+                    rename_all: UPPERCASE
+                    rename: ~
+                    deny_unknown_fields: true
+                    default: true
+                  fields:
+                    hieroglyph:
+                      attr:
+                        flatten: false
+                        rename: ears
+                        default: false
+                        skip: false
+                        skip_deserializing: false
+                      schema:
+                        Dict:
+                          key: Str
+                          value: Str
+                    parachute:
+                      attr:
+                        flatten: false
+                        rename: chief
+                        default: true
+                        skip: false
+                        skip_deserializing: true
+                      schema: Float
+- Tuple:
+    args:
+      - Bytes
+- List:
+    value: Bool
+- Class:
+    name: Boss
+    attr:
+      rename_all: UPPERCASE
+      rename: Adult
+      deny_unknown_fields: false
+      default: false
+    fields:
+      parachute1:
+        attr:
+          flatten: false
+          rename: ~
+          default: false
+          skip: true
+          skip_deserializing: false
+        schema:
+          Optional:
+            value:
+              Tuple:
+                args:
+                  - Int
+      square:
+        attr:
+          flatten: false
+          rename: ~
+          default: false
+          skip: false
+          skip_deserializing: false
+        schema:
+          Class:
+            name: Perfume
+            attr:
+              rename_all: UPPERCASE
+              rename: Desk
+              deny_unknown_fields: false
+              default: false
+            fields: {}
+- Optional:
+    value:
+      List:
+        value:
+          Tuple:
+            args: []
+- Dict:
+    key: Str
+    value:
+      Set:
+        value: Bool
+- Int
+- List:
+    value:
+      Optional:
+        value: Bool
+- Class:
+    name: Navy
+    attr:
+      rename_all: PascalCase
+      rename: ~
+      deny_unknown_fields: false
+      default: true
+    fields:
+      sword:
+        attr:
+          flatten: false
+          rename: child
+          default: false
+          skip: false
+          skip_deserializing: true
+        schema: Bool
+- Optional:
+    value:
+      Union:
+        name: Spectrum
+        variants:
+          - Bool
+          - Str
+          - Set:
+              value: Bytes
+          - Class:
+              name: Television
+              attr:
+                rename_all: lowercase
+                rename: ~
+                deny_unknown_fields: false
+                default: false
+              fields: {}
+- Union:
+    name: Bathtub
+    variants:
+      - Bytes
+      - Dict:
+          key: Str
+          value:
+            Union:
+              name: Sunglasses
+              variants:
+                - Float
+                - Str
+                - Class:
+                    name: Videotape
+                    attr:
+                      rename_all: kebab-case
+                      rename: ~
+                      deny_unknown_fields: true
+                      default: false
+                    fields:
+                      prison:
+                        attr:
+                          flatten: false
+                          rename: ~
+                          default: false
+                          skip: false
+                          skip_deserializing: false
+                        schema:
+                          Set:
+                            value: Bool
+                - Union:
+                    name: Pepper
+                    variants:
+                      - Str
+                      - Dict:
+                          key: Str
+                          value: Int
+                      - Union:
+                          name: Horoscope
+                          variants:
+                            - Int
+                            - Float
+                            - List:
+                                value: Bool
+                            - Class:
+                                name: Dung
+                                attr:
+                                  rename_all: lowercase
+                                  rename: ~
+                                  deny_unknown_fields: false
+                                  default: true
+                                fields: {}
+      - Set:
+          value:
+            Union:
+              name: Adult1
+              variants:
+                - Bool
+                - Str
+                - Class:
+                    name: Pillow
+                    attr:
+                      rename_all: snake_case
+                      rename: Album
+                      deny_unknown_fields: true
+                      default: false
+                    fields:
+                      chocolates:
+                        attr:
+                          flatten: false
+                          rename: sportscar
+                          default: true
+                          skip: false
+                          skip_deserializing: false
+                        schema: Int
+                      parachute2:
+                        attr:
+                          flatten: false
+                          rename: passport
+                          default: true
+                          skip: false
+                          skip_deserializing: true
+                        schema: Bytes
+      - Tuple:
+          args:
+            - Class:
+                name: Planet
+                attr:
+                  rename_all: snake_case
+                  rename: ~
+                  deny_unknown_fields: true
+                  default: false
+                fields:
+                  electricity:
+                    attr:
+                      flatten: false
+                      rename: ~
+                      default: false
+                      skip: false
+                      skip_deserializing: false
+                    schema:
+                      Class:
+                        name: Sex
+                        attr:
+                          rename_all: camelCase
+                          rename: Garden
+                          deny_unknown_fields: false
+                          default: true
+                        fields:
+                          star:
+                            attr:
+                              flatten: false
+                              rename: chair
+                              default: true
+                              skip: false
+                              skip_deserializing: false
+                            schema: Bytes
+            - Int
+- Union:
+    name: Typewriter
+    variants:
+      - Bool
+      - List:
+          value: Str
+      - Union:
+          name: Ship
+          variants:
+            - Class:
+                name: Fork
+                attr:
+                  rename_all: SCREAMING_SNAKE_CASE
+                  rename: School
+                  deny_unknown_fields: false
+                  default: true
+                fields:
+                  cycle:
+                    attr:
+                      flatten: false
+                      rename: dress
+                      default: false
+                      skip: false
+                      skip_deserializing: false
+                    schema: Bool
+                  surveyor:
+                    attr:
+                      flatten: false
+                      rename: ~
+                      default: false
+                      skip: true
+                      skip_deserializing: false
+                    schema:
+                      Class:
+                        name: Record
+                        attr:
+                          rename_all: camelCase
+                          rename: Diamond
+                          deny_unknown_fields: false
+                          default: true
+                        fields:
+                          bee:
+                            attr:
+                              flatten: false
+                              rename: ~
+                              default: false
+                              skip: false
+                              skip_deserializing: true
+                            schema: Float
+            - Union:
+                name: Navy1
+                variants:
+                  - Bool
+                  - Float
+                  - Set:
+                      value: Str
+                  - Tuple:
+                      args:
+                        - Float
+- Bytes
+- Bytes
+- List:
+    value: Int
+- Str
+- Str
+- Class:
+    name: Rocket
+    attr:
+      rename_all: UPPERCASE
+      rename: ~
+      deny_unknown_fields: true
+      default: false
+    fields:
+      vampire:
+        attr:
+          flatten: false
+          rename: ~
+          default: false
+          skip: false
+          skip_deserializing: false
+        schema:
+          Optional:
+            value:
+              List:
+                value: Bool
+- Optional:
+    value:
+      Class:
+        name: Bible
+        attr:
+          rename_all: SCREAMING_SNAKE_CASE
+          rename: Parachute
+          deny_unknown_fields: false
+          default: true
+        fields: {}
+- Bool
+- Float
+- Tuple:
+    args: []
+- Bool
+- Optional:
+    value: Bool
+- Union:
+    name: Church
+    variants:
+      - Int
+      - List:
+          value: Float
+      - Class:
+          name: Vulture
+          attr:
+            rename_all: kebab-case
+            rename: ~
+            deny_unknown_fields: true
+            default: false
+          fields:
+            sandpaper:
+              attr:
+                flatten: false
+                rename: ~
+                default: false
+                skip: true
+                skip_deserializing: false
+              schema: Str
+            wheelchair:
+              attr:
+                flatten: false
+                rename: ~
+                default: false
+                skip: false
+                skip_deserializing: false
+              schema:
+                List:
+                  value: Int
+- Int
+- Bool
+- List:
+    value:
+      Union:
+        name: Fan
+        variants:
+          - Float
+          - Set:
+              value: Bool
+          - Tuple:
+              args:
+                - Tuple:
+                    args:
+                      - Optional:
+                          value: Int
+                      - Bytes
+                - Class:
+                    name: Passport
+                    attr:
+                      rename_all: ~
+                      rename: ~
+                      deny_unknown_fields: false
+                      default: false
+                    fields:
+                      table:
+                        attr:
+                          flatten: false
+                          rename: ~
+                          default: false
+                          skip: false
+                          skip_deserializing: false
+                        schema:
+                          Optional:
+                            value:
+                              Tuple:
+                                args:
+                                  - Bytes
+          - Union:
+              name: Drink
+              variants:
+                - Int
+                - Str
+                - Dict:
+                    key: Str
+                    value: Int
+                - Set:
+                    value: Int
+- Optional:
+    value: Bool
+- Union:
+    name: Comet
+    variants:
+      - Bool
+      - Int
+      - Str
+      - Bytes
+- Class:
+    name: Drill
+    attr:
+      rename_all: UPPERCASE
+      rename: ~
+      deny_unknown_fields: true
+      default: false
+    fields:
+      triangle:
+        attr:
+          flatten: false
+          rename: onion
+          default: false
+          skip: false
+          skip_deserializing: false
+        schema:
+          Tuple:
+            args:
+              - Str
+- Class:
+    name: Girl
+    attr:
+      rename_all: kebab-case
+      rename: ~
+      deny_unknown_fields: true
+      default: false
+    fields:
+      web:
+        attr:
+          flatten: false
+          rename: ~
+          default: false
+          skip: false
+          skip_deserializing: false
+        schema:
+          Union:
+            name: Boy
+            variants:
+              - Bool
+              - Float
+              - Set:
+                  value: Int
+              - Class:
+                  name: Circus
+                  attr:
+                    rename_all: PascalCase
+                    rename: Flower
+                    deny_unknown_fields: false
+                    default: true
+                  fields:
+                    roof:
+                      attr:
+                        flatten: true
+                        rename: ~
+                        default: true
+                        skip: false
+                        skip_deserializing: false
+                      schema:
+                        Dict:
+                          key: Str
+                          value:
+                            Class:
+                              name: Flower1
+                              attr:
+                                rename_all: snake_case
+                                rename: ~
+                                deny_unknown_fields: false
+                                default: true
+                              fields: {}
+                    pebble:
+                      attr:
+                        flatten: false
+                        rename: ~
+                        default: false
+                        skip: false
+                        skip_deserializing: true
+                      schema: Bytes
+      airforce1:
+        attr:
+          flatten: false
+          rename: ~
+          default: true
+          skip: false
+          skip_deserializing: true
+        schema: Float
+- Float
+- List:
+    value:
+      Tuple:
+        args:
+          - Class:
+              name: Sandwich
+              attr:
+                rename_all: lowercase
+                rename: ~
+                deny_unknown_fields: false
+                default: false
+              fields:
+                carrot:
+                  attr:
+                    flatten: false
+                    rename: ~
+                    default: false
+                    skip: true
+                    skip_deserializing: false
+                  schema:
+                    Set:
+                      value: Bytes
+                money:
+                  attr:
+                    flatten: false
+                    rename: sportscar1
+                    default: false
+                    skip: false
+                    skip_deserializing: true
+                  schema: Bool
+          - Set:
+              value: Bytes
+- Union:
+    name: Microscope
+    variants:
+      - Int
+      - Float
+      - Class:
+          name: Butterfly
+          attr:
+            rename_all: ~
+            rename: ~
+            deny_unknown_fields: false
+            default: false
+          fields:
+            table1:
+              attr:
+                flatten: false
+                rename: ~
+                default: false
+                skip: false
+                skip_deserializing: false
+              schema:
+                List:
+                  value: Str
+- Int
+- Str
+- Class:
+    name: Fruit
+    attr:
+      rename_all: SCREAMING_SNAKE_CASE
+      rename: ~
+      deny_unknown_fields: true
+      default: false
+    fields:
+      staircase:
+        attr:
+          flatten: false
+          rename: man
+          default: true
+          skip: false
+          skip_deserializing: true
+        schema:
+          Dict:
+            key: Str
+            value: Str
+      horoscope:
+        attr:
+          flatten: false
+          rename: ~
+          default: false
+          skip: false
+          skip_deserializing: false
+        schema:
+          Union:
+            name: Junk
+            variants:
+              - Float
+              - Set:
+                  value: Int
+              - Tuple:
+                  args: []
+              - Class:
+                  name: Bed
+                  attr:
+                    rename_all: SCREAMING-KEBAB-CASE
+                    rename: ~
+                    deny_unknown_fields: false
+                    default: false
+                  fields:
+                    egg:
+                      attr:
+                        flatten: false
+                        rename: meat
+                        default: true
+                        skip: false
+                        skip_deserializing: true
+                      schema: Bytes
+- Union:
+    name: Telescope
+    variants:
+      - Bool
+      - Str
+      - Class:
+          name: Guitar
+          attr:
+            rename_all: lowercase
+            rename: ~
+            deny_unknown_fields: false
+            default: true
+          fields:
+            carrier:
+              attr:
+                flatten: false
+                rename: monster
+                default: false
+                skip: false
+                skip_deserializing: false
+              schema: Str
+- Tuple:
+    args:
+      - List:
+          value:
+            Optional:
+              value: Int
+      - Dict:
+          key: Str
+          value: Bool
+- Bool
+- Float
+- Str
+- Class:
+    name: Map
+    attr:
+      rename_all: SCREAMING-KEBAB-CASE
+      rename: Satellite
+      deny_unknown_fields: false
+      default: true
+    fields: {}
+- Bool
+- Class:
+    name: Table1
+    attr:
+      rename_all: snake_case
+      rename: Hammer
+      deny_unknown_fields: false
+      default: false
+    fields: {}
+- Str
+- Set:
+    value: Bytes
+- Union:
+    name: Passport1
+    variants:
+      - Bool
+      - Int
+      - Tuple:
+          args:
+            - Str
+            - Bytes
+      - Class:
+          name: Tunnel
+          attr:
+            rename_all: kebab-case
+            rename: ~
+            deny_unknown_fields: false
+            default: false
+          fields:
+            eyes:
+              attr:
+                flatten: false
+                rename: ~
+                default: false
+                skip: false
+                skip_deserializing: true
+              schema:
+                Dict:
+                  key: Str
+                  value:
+                    Dict:
+                      key: Str
+                      value: Bool
+- Class:
+    name: Map1
+    attr:
+      rename_all: snake_case
+      rename: Fan1
+      deny_unknown_fields: true
+      default: false
+    fields:
+      flower:
+        attr:
+          flatten: false
+          rename: apple
+          default: false
+          skip: false
+          skip_deserializing: false
+        schema:
+          Optional:
+            value:
+              Union:
+                name: Finger
+                variants:
+                  - Bool
+                  - Int
+                  - Float
+                  - Dict:
+                      key: Str
+                      value:
+                        Union:
+                          name: Coffee
+                          variants:
+                            - Bool
+                            - Float
+                            - Bytes
+      onion1:
+        attr:
+          flatten: false
+          rename: ~
+          default: false
+          skip: true
+          skip_deserializing: false
+        schema: Str
+- Tuple:
+    args:
+      - Class:
+          name: Roof
+          attr:
+            rename_all: ~
+            rename: ~
+            deny_unknown_fields: false
+            default: false
+          fields: {}
+      - Tuple:
+          args:
+            - Bytes
+- Union:
+    name: Wheelchair
+    variants:
+      - Bool
+      - Bytes
+      - Dict:
+          key: Str
+          value: Bytes
+      - Set:
+          value: Int
+- Int
+- Dict:
+    key: Str
+    value:
+      Class:
+        name: Room
+        attr:
+          rename_all: PascalCase
+          rename: Aeroplane
+          deny_unknown_fields: true
+          default: true
+        fields:
+          balloon:
+            attr:
+              flatten: false
+              rename: ~
+              default: false
+              skip: false
+              skip_deserializing: false
+            schema: Int
+- Bool
+- Bool
+- Bool
+- Float
+- Int
+- Optional:
+    value: Float
+- Float
+- Optional:
+    value:
+      Class:
+        name: Explosive
+        attr:
+          rename_all: UPPERCASE
+          rename: ~
+          deny_unknown_fields: false
+          default: false
+        fields:
+          boy:
+            attr:
+              flatten: false
+              rename: ~
+              default: false
+              skip: false
+              skip_deserializing: false
+            schema:
+              Union:
+                name: Pillow1
+                variants:
+                  - Bytes
+                  - Tuple:
+                      args:
+                        - Class:
+                            name: Circus1
+                            attr:
+                              rename_all: SCREAMING-KEBAB-CASE
+                              rename: ~
+                              deny_unknown_fields: true
+                              default: true
+                            fields:
+                              spoon:
+                                attr:
+                                  flatten: false
+                                  rename: ~
+                                  default: true
+                                  skip: false
+                                  skip_deserializing: false
+                                schema: Int
+          rainbow:
+            attr:
+              flatten: false
+              rename: sunglasses
+              default: false
+              skip: false
+              skip_deserializing: false
+            schema:
+              Dict:
+                key: Str
+                value: Bytes
+- Float
+- Set:
+    value: Bytes
+- Int
+- Tuple:
+    args:
+      - Tuple:
+          args:
+            - Float
+      - Set:
+          value: Bool
+- Int
+- List:
+    value:
+      Union:
+        name: Explosive1
+        variants:
+          - Set:
+              value: Str
+          - Tuple:
+              args:
+                - Dict:
+                    key: Str
+                    value: Float
+                - Class:
+                    name: Sex1
+                    attr:
+                      rename_all: ~
+                      rename: ~
+                      deny_unknown_fields: true
+                      default: false
+                    fields:
+                      sword2:
+                        attr:
+                          flatten: false
+                          rename: ~
+                          default: false
+                          skip: false
+                          skip_deserializing: false
+                        schema: Bytes
+          - Class:
+              name: Solid1
+              attr:
+                rename_all: SCREAMING_SNAKE_CASE
+                rename: ~
+                deny_unknown_fields: false
+                default: false
+              fields:
+                alphabet:
+                  attr:
+                    flatten: false
+                    rename: junk
+                    default: true
+                    skip: false
+                    skip_deserializing: true
+                  schema:
+                    List:
+                      value: Int
+- Union:
+    name: Milkshake1
+    variants:
+      - Bytes
+      - Tuple:
+          args:
+            - Union:
+                name: PaintBrush2
+                variants:
+                  - Bool
+                  - Str
+                  - Bytes
+                  - Dict:
+                      key: Str
+                      value: Bool
+      - Class:
+          name: Radar
+          attr:
+            rename_all: UPPERCASE
+            rename: School1
+            deny_unknown_fields: false
+            default: false
+          fields: {}
+- Str
+- Dict:
+    key: Str
+    value: Bool
+- Union:
+    name: Planet2
+    variants:
+      - Float
+      - Class:
+          name: Child1
+          attr:
+            rename_all: kebab-case
+            rename: Flower2
+            deny_unknown_fields: false
+            default: true
+          fields: {}
+      - Class:
+          name: Carrier
+          attr:
+            rename_all: UPPERCASE
+            rename: Apple
+            deny_unknown_fields: false
+            default: true
+          fields:
+            window:
+              attr:
+                flatten: false
+                rename: icecream
+                default: false
+                skip: false
+                skip_deserializing: false
+              schema:
+                Tuple:
+                  args: []
+      - Optional:
+          value:
+            Class:
+              name: Egg
+              attr:
+                rename_all: SCREAMING-KEBAB-CASE
+                rename: Radar1
+                deny_unknown_fields: true
+                default: false
+              fields:
+                finger:
+                  attr:
+                    flatten: false
+                    rename: ~
+                    default: false
+                    skip: false
+                    skip_deserializing: false
+                  schema:
+                    Class:
+                      name: Computer
+                      attr:
+                        rename_all: lowercase
+                        rename: Carpet
+                        deny_unknown_fields: false
+                        default: false
+                      fields: {}
+- Class:
+    name: Highway1
+    attr:
+      rename_all: camelCase
+      rename: Circus2
+      deny_unknown_fields: true
+      default: false
+    fields:
+      signature:
+        attr:
+          flatten: false
+          rename: passport1
+          default: false
+          skip: false
+          skip_deserializing: true
+        schema: Int
+      ring:
+        attr:
+          flatten: false
+          rename: ~
+          default: false
+          skip: false
+          skip_deserializing: false
+        schema:
+          Optional:
+            value:
+              Union:
+                name: Crystal
+                variants:
+                  - Float
+                  - Dict:
+                      key: Str
+                      value: Float
+                  - Class:
+                      name: Butterfly1
+                      attr:
+                        rename_all: SCREAMING_SNAKE_CASE
+                        rename: ~
+                        deny_unknown_fields: false
+                        default: true
+                      fields:
+                        coffeeshop:
+                          attr:
+                            flatten: false
+                            rename: ~
+                            default: false
+                            skip: true
+                            skip_deserializing: false
+                          schema: Bytes
+                        meat1:
+                          attr:
+                            flatten: false
+                            rename: explosive
+                            default: false
+                            skip: false
+                            skip_deserializing: true
+                          schema: Bool
+                  - Union:
+                      name: Star1
+                      variants:
+                        - Dict:
+                            key: Str
+                            value: Str
+                        - List:
+                            value: Bytes
+                        - Class:
+                            name: Bible1
+                            attr:
+                              rename_all: lowercase
+                              rename: ~
+                              deny_unknown_fields: false
+                              default: true
+                            fields: {}
+                        - Optional:
+                            value: Bytes
+- Str
+- Union:
+    name: PostOffice
+    variants:
+      - Str
+      - Set:
+          value: Str
+      - Tuple:
+          args:
+            - Bool
+- Tuple:
+    args:
+      - Dict:
+          key: Str
+          value: Bool
+      - Bytes
+- Class:
+    name: Chocolates1
+    attr:
+      rename_all: UPPERCASE
+      rename: Chair
+      deny_unknown_fields: true
+      default: false
+    fields:
+      window1:
+        attr:
+          flatten: false
+          rename: ~
+          default: false
+          skip: false
+          skip_deserializing: false
+        schema: Bool
+- Str
+- Union:
+    name: Fungus
+    variants:
+      - Bool
+      - Str
+      - List:
+          value: Int
+      - Optional:
+          value: Str
+- Class:
+    name: Chair1
+    attr:
+      rename_all: snake_case
+      rename: ~
+      deny_unknown_fields: false
+      default: false
+    fields: {}
+- List:
+    value: Bytes
+- Class:
+    name: Eyes
+    attr:
+      rename_all: ~
+      rename: Hammer1
+      deny_unknown_fields: false
+      default: false
+    fields: {}
+- Optional:
+    value: Bytes
+- Bytes
+- Class:
+    name: Potato1
+    attr:
+      rename_all: UPPERCASE
+      rename: Hat1
+      deny_unknown_fields: false
+      default: true
+    fields: {}
+- Union:
+    name: Wheelchair2
+    variants:
+      - Float
+      - Str
+      - Class:
+          name: Gas
+          attr:
+            rename_all: SCREAMING-KEBAB-CASE
+            rename: ~
+            deny_unknown_fields: false
+            default: true
+          fields: {}
+- Optional:
+    value:
+      Tuple:
+        args:
+          - Bool
+- Class:
+    name: Passport2
+    attr:
+      rename_all: ~
+      rename: ~
+      deny_unknown_fields: false
+      default: false
+    fields:
+      spoon1:
+        attr:
+          flatten: false
+          rename: leatherjacket
+          default: true
+          skip: false
+          skip_deserializing: true
+        schema:
+          Class:
+            name: Meteor
+            attr:
+              rename_all: kebab-case
+              rename: Microscope1
+              deny_unknown_fields: false
+              default: false
+            fields: {}
+      boy1:
+        attr:
+          flatten: false
+          rename: robot
+          default: false
+          skip: false
+          skip_deserializing: false
+        schema:
+          List:
+            value:
+              List:
+                value:
+                  Optional:
+                    value:
+                      List:
+                        value: Float
+- Tuple:
+    args:
+      - Class:
+          name: Gloves1
+          attr:
+            rename_all: kebab-case
+            rename: ~
+            deny_unknown_fields: false
+            default: true
+          fields:
+            pillow:
+              attr:
+                flatten: true
+                rename: ~
+                default: false
+                skip: false
+                skip_deserializing: false
+              schema:
+                Class:
+                  name: Foot
+                  attr:
+                    rename_all: SCREAMING-KEBAB-CASE
+                    rename: Bible3
+                    deny_unknown_fields: false
+                    default: true
+                  fields: {}
+            videotape:
+              attr:
+                flatten: false
+                rename: ~
+                default: false
+                skip: false
+                skip_deserializing: false
+              schema:
+                List:
+                  value:
+                    Dict:
+                      key: Str
+                      value:
+                        List:
+                          value: Bytes
+      - Set:
+          value: Int
+- Class:
+    name: SpotLight
+    attr:
+      rename_all: camelCase
+      rename: ~
+      deny_unknown_fields: true
+      default: false
+    fields:
+      pillow1:
+        attr:
+          flatten: false
+          rename: bed
+          default: false
+          skip: false
+          skip_deserializing: true
+        schema:
+          Optional:
+            value:
+              Optional:
+                value:
+                  List:
+                    value:
+                      List:
+                        value: Int
+      monster1:
+        attr:
+          flatten: false
+          rename: ~
+          default: false
+          skip: false
+          skip_deserializing: false
+        schema: Bytes
+- Int
+- Union:
+    name: Milk
+    variants:
+      - Int
+      - Class:
+          name: Sandpaper
+          attr:
+            rename_all: PascalCase
+            rename: ~
+            deny_unknown_fields: false
+            default: false
+          fields:
+            room:
+              attr:
+                flatten: false
+                rename: comet
+                default: true
+                skip: false
+                skip_deserializing: true
+              schema:
+                Optional:
+                  value:
+                    Tuple:
+                      args:
+                        - Tuple:
+                            args:
+                              - Int
+                              - Dict:
+                                  key: Str
+                                  value: Bool
+- Bool
+- Tuple:
+    args:
+      - Class:
+          name: Chair2
+          attr:
+            rename_all: PascalCase
+            rename: IceCream
+            deny_unknown_fields: false
+            default: false
+          fields:
+            brain:
+              attr:
+                flatten: false
+                rename: ~
+                default: false
+                skip: true
+                skip_deserializing: false
+              schema:
+                Optional:
+                  value:
+                    Class:
+                      name: Tongue
+                      attr:
+                        rename_all: SCREAMING_SNAKE_CASE
+                        rename: Carrier1
+                        deny_unknown_fields: false
+                        default: true
+                      fields: {}
+            gas:
+              attr:
+                flatten: false
+                rename: kaleidoscope
+                default: false
+                skip: false
+                skip_deserializing: false
+              schema:
+                Union:
+                  name: Gate
+                  variants:
+                    - Bytes
+                    - Set:
+                        value: Int
+                    - Class:
+                        name: Foot1
+                        attr:
+                          rename_all: kebab-case
+                          rename: ~
+                          deny_unknown_fields: false
+                          default: false
+                        fields:
+                          finger1:
+                            attr:
+                              flatten: false
+                              rename: dress1
+                              default: false
+                              skip: false
+                              skip_deserializing: true
+                            schema:
+                              List:
+                                value: Bool
+                    - Union:
+                        name: Navy3
+                        variants:
+                          - Str
+                          - Class:
+                              name: Bank
+                              attr:
+                                rename_all: camelCase
+                                rename: ~
+                                deny_unknown_fields: false
+                                default: true
+                              fields:
+                                sunglasses3:
+                                  attr:
+                                    flatten: false
+                                    rename: ~
+                                    default: true
+                                    skip: false
+                                    skip_deserializing: true
+                                  schema:
+                                    Optional:
+                                      value: Bool
+                          - Union:
+                              name: Button1
+                              variants:
+                                - Dict:
+                                    key: Str
+                                    value: Str
+                                - List:
+                                    value:
+                                      Optional:
+                                        value: Bool
+                                - Set:
+                                    value:
+                                      Union:
+                                        name: Button2
+                                        variants:
+                                          - Int
+                                          - Class:
+                                              name: Potato2
+                                              attr:
+                                                rename_all: ~
+                                                rename: ~
+                                                deny_unknown_fields: false
+                                                default: false
+                                              fields: {}
+                                          - Class:
+                                              name: Sandwich1
+                                              attr:
+                                                rename_all: PascalCase
+                                                rename: ~
+                                                deny_unknown_fields: true
+                                                default: true
+                                              fields:
+                                                software1:
+                                                  attr:
+                                                    flatten: false
+                                                    rename: ~
+                                                    default: false
+                                                    skip: true
+                                                    skip_deserializing: false
+                                                  schema: Bytes
+                                                school1:
+                                                  attr:
+                                                    flatten: false
+                                                    rename: ~
+                                                    default: false
+                                                    skip: false
+                                                    skip_deserializing: false
+                                                  schema: Bool
+                                          - Optional:
+                                              value: Str
+                                - Union:
+                                    name: Needle
+                                    variants:
+                                      - Dict:
+                                          key: Str
+                                          value: Int
+                                      - Tuple:
+                                          args:
+                                            - Dict:
+                                                key: Str
+                                                value:
+                                                  Dict:
+                                                    key: Str
+                                                    value: Float
+                                      - Class:
+                                          name: Stomach
+                                          attr:
+                                            rename_all: SCREAMING_SNAKE_CASE
+                                            rename: ~
+                                            deny_unknown_fields: true
+                                            default: false
+                                          fields:
+                                            explosive2:
+                                              attr:
+                                                flatten: false
+                                                rename: ~
+                                                default: false
+                                                skip: true
+                                                skip_deserializing: false
+                                              schema:
+                                                List:
+                                                  value: Str
+                                            carrot1:
+                                              attr:
+                                                flatten: false
+                                                rename: ~
+                                                default: false
+                                                skip: false
+                                                skip_deserializing: false
+                                              schema: Float
+      - Tuple:
+          args:
+            - Dict:
+                key: Str
+                value:
+                  Class:
+                    name: Meat2
+                    attr:
+                      rename_all: UPPERCASE
+                      rename: ~
+                      deny_unknown_fields: true
+                      default: true
+                    fields:
+                      signature1:
+                        attr:
+                          flatten: false
+                          rename: skeleton
+                          default: true
+                          skip: false
+                          skip_deserializing: false
+                        schema:
+                          Class:
+                            name: Aircraft1
+                            attr:
+                              rename_all: SCREAMING_SNAKE_CASE
+                              rename: Pants
+                              deny_unknown_fields: true
+                              default: true
+                            fields:
+                              crystal:
+                                attr:
+                                  flatten: false
+                                  rename: ~
+                                  default: false
+                                  skip: false
+                                  skip_deserializing: false
+                                schema:
+                                  Class:
+                                    name: Shower
+                                    attr:
+                                      rename_all: SCREAMING-KEBAB-CASE
+                                      rename: Hammer2
+                                      deny_unknown_fields: false
+                                      default: false
+                                    fields: {}
+- Bytes
+- Dict:
+    key: Str
+    value:
+      Dict:
+        key: Str
+        value:
+          Class:
+            name: Rifle
+            attr:
+              rename_all: SCREAMING-KEBAB-CASE
+              rename: ~
+              deny_unknown_fields: true
+              default: false
+            fields:
+              foot:
+                attr:
+                  flatten: false
+                  rename: ~
+                  default: false
+                  skip: false
+                  skip_deserializing: true
+                schema: Int
+              pyramid:
+                attr:
+                  flatten: false
+                  rename: pocket
+                  default: true
+                  skip: false
+                  skip_deserializing: false
+                schema:
+                  Optional:
+                    value:
+                      Optional:
+                        value: Bytes
+- Bytes
+- Union:
+    name: Baby
+    variants:
+      - List:
+          value: Int
+      - Tuple:
+          args: []
+      - Class:
+          name: Shop1
+          attr:
+            rename_all: SCREAMING-KEBAB-CASE
+            rename: ~
+            deny_unknown_fields: false
+            default: false
+          fields:
+            teeth:
+              attr:
+                flatten: false
+                rename: fruit
+                default: true
+                skip: false
+                skip_deserializing: false
+              schema:
+                Optional:
+                  value: Bool
+- Dict:
+    key: Str
+    value: Bytes
+- Dict:
+    key: Str
+    value:
+      Dict:
+        key: Str
+        value: Float
