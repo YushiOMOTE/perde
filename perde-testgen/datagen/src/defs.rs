@@ -1,4 +1,4 @@
-// Generated 2020-11-10T14:24:55.624677066+09:00
+// Generated 2020-11-11T21:09:39.861362300+09:00
 
 use crate::gen::{GenExt, Random};
 use derive_new::new;
@@ -2129,6 +2129,19 @@ impl Random for Baby {
     }
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, new, PartialEq, Eq, Hash, Default)]
+pub struct A {
+    a: bool,
+    b: i64,
+}
+
+#[allow(unused)]
+impl Random for A {
+    fn random<R: Rng + ?Sized>(rng: &mut R) -> A {
+        A::new(rng.gen_ext(), rng.gen_ext())
+    }
+}
+
 macro_rules! gen {
     ($encoder:path) => {{
         let mut rng = rand::thread_rng();
@@ -2432,6 +2445,9 @@ macro_rules! gen {
         ret.push($encoder(&v).unwrap());
 
         let v: HashMap<String, HashMap<String, f64>> = rng.gen_ext();
+        ret.push($encoder(&v).unwrap());
+
+        let v: A = rng.gen_ext();
         ret.push($encoder(&v).unwrap());
 
         ret

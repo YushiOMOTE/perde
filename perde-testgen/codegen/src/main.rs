@@ -1,4 +1,4 @@
-use codegen::{gen, gen_schema, Code, Python, Rust, Schema};
+use codegen::{gen, gen_schema, presets, Code, Python, Rust, Schema};
 use std::{
     fs,
     io::prelude::*,
@@ -52,11 +52,14 @@ fn yapf(value: &str) -> String {
 #[derive(StructOpt)]
 struct GenSchema {
     /// The number of schema.
-    #[structopt(short = "n", long = "number")]
+    #[structopt(short = "n", long = "number", default_value = "100")]
     num: usize,
     /// The size of each schema.
-    #[structopt(short = "d", long = "depth")]
+    #[structopt(short = "d", long = "depth", default_value = "5")]
     depth: usize,
+    /// The name of preset. If specified, `number` and `depth` are ignored.
+    #[structopt(short = "p", long = "preset")]
+    preset: Option<String>,
     /// Path to schema file.
     #[structopt(name = "schema")]
     schema: PathBuf,
@@ -64,15 +67,15 @@ struct GenSchema {
 
 #[derive(StructOpt)]
 struct GenCode {
-    /// Path to schema file.
-    #[structopt(name = "schema")]
-    schema: PathBuf,
     /// Path to the output Rust file.
     #[structopt(name = "rust")]
     rust_file: PathBuf,
     /// Path to the output Python file.
     #[structopt(name = "python")]
     python_file: PathBuf,
+    /// Path to schema file.
+    #[structopt(name = "schemas")]
+    schemas: Vec<PathBuf>,
 }
 
 #[derive(StructOpt)]
@@ -86,17 +89,29 @@ enum Opt {
 }
 
 fn gen_schema_cmd(c: GenSchema) {
-    let schemas = gen_schema_set(c.num, c.depth);
+    let schemas = if let Some(p) = c.preset.as_ref() {
+        presets(p)
+    } else {
+        gen_schema_set(c.num, c.depth)
+    };
     let schemas = serde_yaml::to_vec(&schemas).unwrap();
     fs::write(&c.schema, &schemas).unwrap();
 }
 
 fn gen_code_cmd(c: GenCode) {
-    let schemas: Vec<Schema> = serde_yaml::from_slice(&fs::read(&c.schema).unwrap()).unwrap();
+    let schemas: Vec<_> = c
+        .schemas
+        .iter()
+        .flat_map(|s| {
+            let schemas: Vec<Schema> = serde_yaml::from_slice(&fs::read(&s).unwrap()).unwrap();
+            schemas
+        })
+        .collect();
 
     let mut rs_constructs = vec![];
     let mut rs_definitions = vec![];
     let mut py_definitions = vec![];
+
     let mut py_types = vec![];
 
     for (rs_code, py_code) in gen_code(&schemas) {
@@ -143,6 +158,7 @@ ret
         )),
     )
     .unwrap();
+    println!("Created {}", c.rust_file.display());
 
     // Emit Python code.
     fs::write(
@@ -162,6 +178,7 @@ TYPES = [{types}]
         )),
     )
     .unwrap();
+    println!("Created {}", c.python_file.display());
 }
 
 fn main() {

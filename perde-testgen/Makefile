@@ -1,12 +1,19 @@
 .PHONY: all codegen datagen
 
+run = pipenv run cargo run --bin
+run-codegen = $(run) codegen --
+run-datagen = $(run) datagen --
+
 default: codegen datagen
 
 schemagen:
-	cargo run --bin codegen -- schema -d 5 -n 100 schema.yml
+	$(run-codegen) schema -d 5 -n 100 schema.yml
 
-codegen:
-	cargo run --bin codegen -- code schema.yml datagen/src/defs.rs tests/defs.py
+presetgen:
+	$(run-codegen) schema -p rename rename.yml
+
+codegen: schema.yml rename.yml
+	$(run-codegen) code datagen/src/defs.rs tests/defs.py $^
 
 datagen:
-	cargo run --bin datagen -- -f json
+	$(run-datagen) -f json

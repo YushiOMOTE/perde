@@ -6,8 +6,8 @@ import typing
 @perde.attr(rename_all="UPPERCASE", deny_unknown_fields=True, default=True)
 @dataclass
 class PaintBrush:
-    hieroglyph: typing.Dict[str, str] = field(
-        metadata={"perde_rename": "ears"})
+    hieroglyph: typing.Dict[str,
+                            str] = field(metadata={"perde_rename": "ears"})
     parachute: float = field(metadata={
         "perde_rename": "chief",
         "perde_skip_deserializing": True
@@ -102,8 +102,9 @@ class Rocket:
     vampire: typing.Optional[typing.List[bool]]
 
 
-@perde.attr(
-    rename_all="SCREAMING_SNAKE_CASE", rename="Parachute", default=True)
+@perde.attr(rename_all="SCREAMING_SNAKE_CASE",
+            rename="Parachute",
+            default=True)
 @dataclass
 class Bible:
     pass
@@ -187,8 +188,9 @@ class Guitar:
     carrier: str = field(metadata={"perde_rename": "monster"})
 
 
-@perde.attr(
-    rename_all="SCREAMING-KEBAB-CASE", rename="Satellite", default=True)
+@perde.attr(rename_all="SCREAMING-KEBAB-CASE",
+            rename="Satellite",
+            default=True)
 @dataclass
 class Map:
     pass
@@ -210,10 +212,9 @@ class Tunnel:
 @perde.attr(rename_all="snake_case", rename="Fan1", deny_unknown_fields=True)
 @dataclass
 class Map1:
-    flower: typing.Optional[
-        typing.Union[bool, int, float, typing.
-                     Dict[str, typing.Union[bool, float, bytes]]]] = field(
-                         metadata={"perde_rename": "apple"})
+    flower: typing.Optional[typing.Union[bool, int, float, typing.Dict[
+        str, typing.Union[bool, float,
+                          bytes]]]] = field(metadata={"perde_rename": "apple"})
     onion1: str = field(metadata={"perde_skip": True})
 
 
@@ -222,18 +223,18 @@ class Roof:
     pass
 
 
-@perde.attr(
-    rename_all="PascalCase",
-    rename="Aeroplane",
-    deny_unknown_fields=True,
-    default=True)
+@perde.attr(rename_all="PascalCase",
+            rename="Aeroplane",
+            deny_unknown_fields=True,
+            default=True)
 @dataclass
 class Room:
     balloon: int
 
 
-@perde.attr(
-    rename_all="SCREAMING-KEBAB-CASE", deny_unknown_fields=True, default=True)
+@perde.attr(rename_all="SCREAMING-KEBAB-CASE",
+            deny_unknown_fields=True,
+            default=True)
 @dataclass
 class Circus1:
     spoon: int
@@ -286,10 +287,9 @@ class Computer:
     pass
 
 
-@perde.attr(
-    rename_all="SCREAMING-KEBAB-CASE",
-    rename="Radar1",
-    deny_unknown_fields=True)
+@perde.attr(rename_all="SCREAMING-KEBAB-CASE",
+            rename="Radar1",
+            deny_unknown_fields=True)
 @dataclass
 class Egg:
     finger: Computer
@@ -318,10 +318,11 @@ class Highway1:
         "perde_rename": "passport1",
         "perde_skip_deserializing": True
     })
-    ring: typing.Optional[
-        typing.Union[float, typing.Dict[str, float], Butterfly1, typing.
-                     Union[typing.Dict[str, str], typing.
-                           List[bytes], Bible1, typing.Optional[bytes]]]]
+    ring: typing.Optional[typing.Union[float, typing.Dict[str,
+                                                          float], Butterfly1,
+                                       typing.Union[typing.Dict[str, str],
+                                                    typing.List[bytes], Bible1,
+                                                    typing.Optional[bytes]]]]
 
 
 @perde.attr(rename_all="UPPERCASE", rename="Chair", deny_unknown_fields=True)
@@ -397,12 +398,11 @@ class SpotLight:
 @perde.attr(rename_all="PascalCase")
 @dataclass
 class Sandpaper:
-    room: typing.Optional[typing.Tuple[
-        typing.Tuple[int, typing.Dict[str, bool]]]] = field(
-            metadata={
-                "perde_rename": "comet",
-                "perde_skip_deserializing": True
-            })
+    room: typing.Optional[typing.Tuple[typing.Tuple[int, typing.Dict[
+        str, bool]]]] = field(metadata={
+            "perde_rename": "comet",
+            "perde_skip_deserializing": True
+        })
 
 
 @perde.attr(rename_all="SCREAMING_SNAKE_CASE", rename="Carrier1", default=True)
@@ -451,15 +451,15 @@ class Stomach:
 class Chair2:
     brain: typing.Optional[Tongue] = field(metadata={"perde_skip": True})
     gas: typing.Union[bytes, typing.Set[int], Foot1, typing.Union[
-        str, Bank, typing.
-        Union[typing.Dict[str, str], typing.List[typing.Optional[bool]], typing
-              .Set[typing.Union[int, Potato2, Sandwich1, typing.
-                                Optional[str]]], typing.
-              Union[typing.Dict[str, int], typing.
-                    Tuple[typing.
-                          Dict[str, typing.
-                               Dict[str, float]]], Stomach]]]] = field(
-                                   metadata={"perde_rename": "kaleidoscope"})
+        str, Bank, typing.Union[
+            typing.Dict[str, str], typing.List[typing.Optional[bool]],
+            typing.Set[typing.Union[int, Potato2, Sandwich1,
+                                    typing.Optional[str]]],
+            typing.Union[typing.Dict[str, int],
+                         typing.Tuple[typing.Dict[str, typing.Dict[str,
+                                                                   float]]],
+                         Stomach]]]] = field(
+                             metadata={"perde_rename": "kaleidoscope"})
 
 
 @perde.attr(rename_all="SCREAMING-KEBAB-CASE", rename="Hammer2")
@@ -468,11 +468,10 @@ class Shower:
     pass
 
 
-@perde.attr(
-    rename_all="SCREAMING_SNAKE_CASE",
-    rename="Pants",
-    deny_unknown_fields=True,
-    default=True)
+@perde.attr(rename_all="SCREAMING_SNAKE_CASE",
+            rename="Pants",
+            deny_unknown_fields=True,
+            default=True)
 @dataclass
 class Aircraft1:
     crystal: Shower
@@ -498,57 +497,71 @@ class Shop1:
     teeth: typing.Optional[bool] = field(metadata={"perde_rename": "fruit"})
 
 
+@dataclass
+class A:
+    a: bool
+    b: int
+
+
 TYPES = [
     typing.Union[float, bytes, Fire], typing.Tuple[bytes], typing.List[bool],
     Boss, typing.Optional[typing.List[typing.Tuple[()]]],
-    typing.Dict[str, typing.Set[bool]], int,
-    typing.List[typing.Optional[bool]], Navy,
-    typing.Optional[typing.Union[bool, str, typing.Set[bytes], Television]],
-    typing.
-    Union[bytes, typing.Dict[str, typing.
-                             Union[float, str, Videotape, typing.
-                                   Union[str, typing.Dict[str, int], typing.
-                                         Union[int, float, typing.
-                                               List[bool], Dung]]]], typing.
-          Set[typing.Union[bool, str, Pillow]], typing.Tuple[Planet, int]],
-    typing.Union[bool, typing.List[str], typing.
-                 Union[Fork, typing.Union[bool, float, typing.Set[str], typing.
-                                          Tuple[float]]]], bytes, bytes,
-    typing.List[int], str, str, Rocket, typing.Optional[Bible], bool, float,
-    typing.Tuple[()], bool, typing.Optional[bool],
+    typing.Dict[str,
+                typing.Set[bool]], int, typing.List[typing.Optional[bool]],
+    Navy, typing.Optional[typing.Union[bool, str, typing.Set[bytes],
+                                       Television]],
+    typing.Union[bytes, typing.Dict[str, typing.Union[
+        float, str, Videotape,
+        typing.Union[str, typing.Dict[str, int],
+                     typing.Union[int, float, typing.List[bool], Dung]]]],
+                 typing.Set[typing.Union[bool, str,
+                                         Pillow]], typing.Tuple[Planet, int]],
+    typing.Union[bool, typing.List[str],
+                 typing.Union[Fork, typing.Union[bool, float, typing.Set[str],
+                                                 typing.Tuple[float]]]], bytes,
+    bytes, typing.List[int], str, str, Rocket, typing.Optional[Bible], bool,
+    float, typing.Tuple[()], bool, typing.Optional[bool],
     typing.Union[int, typing.List[float], Vulture], int, bool,
-    typing.List[typing.Union[
-        float, typing.Set[bool], typing.
-        Tuple[typing.Tuple[typing.Optional[int], bytes], Passport], typing.
-        Union[int, str, typing.Dict[str, int], typing.Set[int]]]],
+    typing.List[typing.Union[float, typing.Set[bool],
+                             typing.Tuple[typing.Tuple[typing.Optional[int],
+                                                       bytes], Passport],
+                             typing.Union[int, str, typing.Dict[str, int],
+                                          typing.Set[int]]]],
     typing.Optional[bool], typing.Union[bool, int, str, bytes], Drill, Girl,
     float, typing.List[typing.Tuple[Sandwich, typing.Set[bytes]]],
-    typing.Union[int, float, Butterfly], int, str, Fruit,
-    typing.Union[bool, str, Guitar],
+    typing.Union[int, float,
+                 Butterfly], int, str, Fruit, typing.Union[bool, str, Guitar],
     typing.Tuple[typing.List[typing.Optional[int]], typing.Dict[str, bool]],
     bool, float, str, Map, bool, Table1, str, typing.Set[bytes],
-    typing.Union[bool, int, typing.Tuple[str, bytes], Tunnel], Map1,
-    typing.Tuple[Roof, typing.Tuple[bytes]],
-    typing.Union[bool, bytes, typing.Dict[str, bytes], typing.Set[int]], int,
-    typing.Dict[str, Room], bool, bool, bool, float, int,
-    typing.Optional[float], float, typing.Optional[Explosive], float,
-    typing.Set[bytes], int,
-    typing.Tuple[typing.Tuple[float], typing.Set[bool]], int,
-    typing.List[typing.Union[typing.Set[str], typing.
-                             Tuple[typing.Dict[str, float], Sex1], Solid1]],
-    typing.Union[bytes, typing.Tuple[typing.Union[bool, str, bytes, typing.
-                                                  Dict[str, bool]]], Radar],
-    str, typing.Dict[str, bool],
+    typing.Union[bool, int, typing.Tuple[str, bytes],
+                 Tunnel], Map1, typing.Tuple[Roof, typing.Tuple[bytes]],
+    typing.Union[bool, bytes, typing.Dict[str, bytes],
+                 typing.Set[int]], int, typing.Dict[str,
+                                                    Room], bool, bool, bool,
+    float, int, typing.Optional[float], float, typing.Optional[Explosive],
+    float, typing.Set[bytes], int, typing.Tuple[typing.Tuple[float],
+                                                typing.Set[bool]], int,
+    typing.List[typing.Union[typing.Set[str], typing.Tuple[typing.Dict[str,
+                                                                       float],
+                                                           Sex1], Solid1]],
+    typing.Union[bytes, typing.Tuple[typing.Union[bool, str, bytes,
+                                                  typing.Dict[str, bool]]],
+                 Radar], str, typing.Dict[str, bool],
     typing.Union[float, Child1, Carrier, typing.Optional[Egg]], Highway1, str,
-    typing.Union[str, typing.Set[str], typing.Tuple[bool]],
-    typing.Tuple[typing.Dict[str, bool], bytes], Chocolates1, str,
-    typing.Union[bool, str, typing.List[int], typing.Optional[str]], Chair1,
-    typing.List[bytes], Eyes, typing.Optional[bytes], bytes, Potato1,
-    typing.Union[float, str, Gas], typing.Optional[typing.Tuple[bool]],
-    Passport2, typing.Tuple[Gloves1, typing.Set[int]], SpotLight, int,
-    typing.Union[int, Sandpaper], bool,
-    typing.Tuple[Chair2, typing.Tuple[typing.Dict[str, Meat2]]], bytes,
-    typing.Dict[str, typing.Dict[str, Rifle]], bytes,
-    typing.Union[typing.List[int], typing.Tuple[()], Shop1],
-    typing.Dict[str, bytes], typing.Dict[str, typing.Dict[str, float]]
+    typing.Union[str, typing.Set[str],
+                 typing.Tuple[bool]], typing.Tuple[typing.Dict[str, bool],
+                                                   bytes], Chocolates1, str,
+    typing.Union[bool, str, typing.List[int],
+                 typing.Optional[str]], Chair1, typing.List[bytes], Eyes,
+    typing.Optional[bytes], bytes, Potato1, typing.Union[float, str, Gas],
+    typing.Optional[typing.Tuple[bool]], Passport2,
+    typing.Tuple[Gloves1,
+                 typing.Set[int]], SpotLight, int, typing.Union[int,
+                                                                Sandpaper],
+    bool, typing.Tuple[Chair2, typing.Tuple[typing.Dict[str, Meat2]]], bytes,
+    typing.Dict[str, typing.Dict[str,
+                                 Rifle]], bytes, typing.Union[typing.List[int],
+                                                              typing.Tuple[()],
+                                                              Shop1],
+    typing.Dict[str, bytes], typing.Dict[str, typing.Dict[str, float]], A
 ]

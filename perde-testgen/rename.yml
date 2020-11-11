@@ -1,0 +1,25 @@
+---
+- Class:
+    name: A
+    attr:
+      rename_all: ~
+      rename: ~
+      deny_unknown_fields: false
+      default: false
+    fields:
+      a:
+        attr:
+          flatten: false
+          rename: ~
+          default: false
+          skip: false
+          skip_deserializing: false
+        schema: Bool
+      b:
+        attr:
+          flatten: false
+          rename: ~
+          default: false
+          skip: false
+          skip_deserializing: false
+        schema: Int
