@@ -59,6 +59,17 @@ value: hoge
 perde_msgpack.loads_as(A, b'\x82\xA3\x6B\x65\x79\xCD\x01\x2C\xA5\x76\x61\x6C\x75\x65\xCD\x01\x90')
 ```
 
+### Supported Python
+
+* Interpreters (CPython)
+    * [x] 3.7
+    * [ ] 3.8
+    * [ ] 3.9
+* Platforms
+    * [x] Linux
+    * [ ] MacOS
+    * [ ] Windows
+
 ### Supported types
 
 * `dataclass`
