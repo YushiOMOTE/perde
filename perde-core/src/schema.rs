@@ -181,6 +181,11 @@ pub enum Primitive {
     Str,
     Bytes,
     ByteArray,
+    DateTime,
+    Date,
+    Time,
+    Decimal,
+    Uuid,
 }
 
 impl Primitive {
@@ -192,6 +197,11 @@ impl Primitive {
             Self::Str => "str".into(),
             Self::Bytes => "bytes".into(),
             Self::ByteArray => "bytearray".into(),
+            Self::DateTime => "datetime".into(),
+            Self::Date => "date".into(),
+            Self::Time => "time".into(),
+            Self::Decimal => "Decimal".into(),
+            Self::Uuid => "Uuid".into(),
         }
     }
 }

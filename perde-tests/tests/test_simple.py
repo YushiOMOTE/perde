@@ -3,6 +3,9 @@ import enum
 import typing
 import pytest
 import perde
+import datetime
+import decimal
+import uuid
 from util import FORMATS, repack, repack_as
 
 
@@ -264,3 +267,21 @@ def test_any(m):
     repack_as(m, typing.Any, 3)
     repack_as(m, typing.Any, "abc")
     repack_as(m, typing.Any, [1, 2, 3])
+
+
+@pytest.mark.parametrize("m", FORMATS)
+def test_datetime(m):
+    now = datetime.datetime.now()
+    repack_as(m, datetime.datetime, now)
+    repack_as(m, datetime.date, now.date())
+    repack_as(m, datetime.time, now.time())
+
+
+@pytest.mark.parametrize("m", FORMATS)
+def test_decimal(m):
+    repack_as(m, decimal.Decimal, decimal.Decimal('3.1314134'))
+
+
+@pytest.mark.parametrize("m", FORMATS)
+def test_uuid(m):
+    repack_as(m, uuid.UUID, uuid.uuid1())

@@ -99,11 +99,12 @@ perde_msgpack.loads_as(A, b'\x82\xA3\x6B\x65\x79\xCD\x01\x2C\xA5\x76\x61\x6C\x75
     * [x] `set`
     * [x] `frozenset`
     * [x] `tuple`
-* Chrono types
-    * [ ] `datetime`
-    * [ ] `date`
-    * [ ] `time`
-    * [ ] `timedelta`
+* More built-in types
+    * [x] `datetime.datetime`
+    * [x] `datetime.date`
+    * [x] `datetime.time`
+    * [x] `decimal.Decimal`
+    * [x] `uuid.UUID`
 
 ### Supported formats
 
