@@ -84,9 +84,9 @@ perde_msgpack.loads_as(A, b'\x82\xA3\x6B\x65\x79\xCD\x01\x2C\xA5\x76\x61\x6C\x75
     * [x] `Any`
 * Enum types
     * [x] `Enum`
-    * [ ] `IntEnum`
-    * [ ] `Flag`
-    * [ ] `IntFlag`
+    * [x] `IntEnum`
+    * [x] `Flag`
+    * [x] `IntFlag`
 * Built-in types
     * [x] `int`
     * [x] `str`

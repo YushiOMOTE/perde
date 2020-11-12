@@ -1,5 +1,5 @@
-from enum import Enum
 from dataclasses import dataclass
+import enum
 import typing
 import pytest
 import perde
@@ -164,7 +164,7 @@ def test_class(m):
 
 @pytest.mark.parametrize("m", FORMATS)
 def test_enum(m):
-    class E(Enum):
+    class E(enum.Enum):
         X = 1
         Y = "hage"
         Z = 3.3
@@ -172,18 +172,76 @@ def test_enum(m):
     repack_as(m, E, E.X)
     repack_as(m, E, E.Y)
     repack_as(m, E, E.Z)
+
+    @perde.attr(as_value = True)
+    class EV(enum.Enum):
+        X = 1
+        Y = "hage"
+        Z = 3.3
+
+    repack_as(m, EV, EV.X)
+    repack_as(m, EV, EV.Y)
+    repack_as(m, EV, EV.Z)
+
+    class IE(enum.IntEnum):
+        X = 1
+        Y = 4
+        Z = 5
+
+    repack_as(m, IE, IE.X)
+    repack_as(m, IE, IE.Y)
+    repack_as(m, IE, IE.Z)
+
+    @perde.attr(as_value = True)
+    class IEV(enum.IntEnum):
+        X = 1
+        Y = 4
+        Z = 5
+
+    repack_as(m, IEV, IEV.X)
+    repack_as(m, IEV, IEV.Y)
+    repack_as(m, IEV, IEV.Z)
+
 
 @pytest.mark.parametrize("m", FORMATS)
-def test_enum_value(m):
-    @perde.attr(as_value = True)
-    class E(Enum):
-        X = 1
-        Y = "hage"
-        Z = 3.3
+def test_flag(m):
+    class E(enum.Flag):
+        X = enum.auto()
+        Y = enum.auto()
+        Z = X | Y
 
     repack_as(m, E, E.X)
     repack_as(m, E, E.Y)
     repack_as(m, E, E.Z)
+
+    @perde.attr(as_value = True)
+    class EV(enum.Flag):
+        X = enum.auto()
+        Y = enum.auto()
+        Z = X | Y
+
+    repack_as(m, EV, EV.X)
+    repack_as(m, EV, EV.Y)
+    repack_as(m, EV, EV.Z)
+
+    class IE(enum.IntFlag):
+        X = enum.auto()
+        Y = enum.auto()
+        Z = X | Y
+
+    repack_as(m, IE, IE.X)
+    repack_as(m, IE, IE.Y)
+    repack_as(m, IE, IE.Z)
+
+    @perde.attr(as_value = True)
+    class IEV(enum.IntFlag):
+        X = enum.auto()
+        Y = enum.auto()
+        Z = X | Y
+
+    repack_as(m, IEV, IEV.X)
+    repack_as(m, IEV, IEV.Y)
+    repack_as(m, IEV, IEV.Z)
 
 
 @pytest.mark.parametrize("m", FORMATS)
