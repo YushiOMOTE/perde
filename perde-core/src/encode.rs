@@ -1,7 +1,7 @@
 use crate::{
     error::Convert,
     schema::{Any, FieldSchema, Primitive, Schema, WithSchema},
-    types::{AttrStr, DictRef, ListRef, ObjectRef, Set, SetRef, TupleRef},
+    types::{isoformat, to_str, AttrStr, DictRef, ListRef, ObjectRef, Set, SetRef, TupleRef},
 };
 use indexmap::IndexMap;
 use serde::ser::Error;
@@ -29,6 +29,21 @@ impl<'a> Serialize for WithSchema<'a> {
                 s.serialize_bytes(self.object.as_bytearray().ser()?)
             }
             Schema::Primitive(Primitive::Bytes) => s.serialize_bytes(self.object.as_bytes().ser()?),
+            Schema::Primitive(Primitive::DateTime) => {
+                s.serialize_str(isoformat(self.object).ser()?.as_str().ser()?)
+            }
+            Schema::Primitive(Primitive::Time) => {
+                s.serialize_str(isoformat(self.object).ser()?.as_str().ser()?)
+            }
+            Schema::Primitive(Primitive::Date) => {
+                s.serialize_str(isoformat(self.object).ser()?.as_str().ser()?)
+            }
+            Schema::Primitive(Primitive::Decimal) => {
+                s.serialize_str(to_str(&self.object).ser()?.as_str().ser()?)
+            }
+            Schema::Primitive(Primitive::Uuid) => {
+                s.serialize_str(to_str(&self.object).ser()?.as_str().ser()?)
+            }
             Schema::List(l) => {
                 let list = ListRef::new(self.object);
                 let len = list.len();
@@ -96,19 +111,16 @@ impl<'a> Serialize for WithSchema<'a> {
                 map.end()
             }
             Schema::Enum(e) => {
-                let name = self.object.get_attr(&ATTR_NAME).ser()?;
-                let name = name.as_str().ser()?;
-                if !e.variants.contains_key(name) {
-                    return Err(S::Error::custom(format!("no such variant: {}", name)));
-                }
-                s.serialize_str(&name)
-            }
-            Schema::Optional(o) => {
-                if self.object.is_none() {
-                    s.serialize_none()
+                if e.attr.as_value {
+                    let value = self.object.get_attr(&ATTR_VALUE).ser()?;
+                    value.resolved_object().ser()?.serialize(s)
                 } else {
-                    let w = self.object.with_schema(&o.value);
-                    s.serialize_some(&w)
+                    let name = self.object.get_attr(&ATTR_NAME).ser()?;
+                    let name = name.as_str().ser()?;
+                    if !e.variants.contains_key(name) {
+                        return Err(S::Error::custom(format!("no such variant: {}", name)));
+                    }
+                    s.serialize_str(&name)
                 }
             }
             Schema::Union(u) => {

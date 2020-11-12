@@ -1,5 +1,5 @@
 use crate::{
-    gen::{Code, CodeGen, Context, Hint},
+    gen::{CodeGen, Context, Hint},
     schema::*,
 };
 
@@ -118,7 +118,7 @@ impl CodeGen for Rust {
             c.name
         ));
         s.push_str(&format!("    {}::new(\n", c.name));
-        for (name, f) in &c.fields {
+        for (_, f) in &c.fields {
             s.push_str(&format!("      {},\n", self.construct(&f.schema)));
         }
         s.push_str("    )\n");
@@ -130,7 +130,7 @@ impl CodeGen for Rust {
         c.name.clone()
     }
 
-    fn construct(&mut self, schema: &Schema) -> String {
+    fn construct(&mut self, _: &Schema) -> String {
         "rng.gen_ext()".into()
     }
 
@@ -166,7 +166,7 @@ impl CodeGen for Rust {
                 self.define_class(c.clone(), &hint, context);
                 c.name.clone()
             }
-            Schema::Enum(e) => unimplemented!(),
+            Schema::Enum(_) => unimplemented!(),
             Schema::Optional(o) => format!("Option<{}>", self.gen(&o.value, context)),
             Schema::Union(u) => {
                 self.define_enum(u.clone(), &hint, context);

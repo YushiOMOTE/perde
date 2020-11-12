@@ -1,8 +1,38 @@
 ---
 - Class:
-    name: A
+    name: Preset0
+    attr:
+      rename_all: camelCase
+      rename_all_serialize: ~
+      rename_all_deserialize: ~
+      rename: ~
+      deny_unknown_fields: false
+      default: false
+    fields:
+      apple_pen:
+        attr:
+          flatten: false
+          rename: ~
+          default: false
+          skip: false
+          skip_serializing: false
+          skip_deserializing: false
+        schema: Bool
+      pen_pineapple:
+        attr:
+          flatten: false
+          rename: ~
+          default: false
+          skip: false
+          skip_serializing: false
+          skip_deserializing: false
+        schema: Int
+- Class:
+    name: Preset1
     attr:
       rename_all: ~
+      rename_all_serialize: ~
+      rename_all_deserialize: ~
       rename: ~
       deny_unknown_fields: false
       default: false
@@ -10,9 +40,10 @@
       a:
         attr:
           flatten: false
-          rename: ~
+          rename: hage
           default: false
           skip: false
+          skip_serializing: false
           skip_deserializing: false
         schema: Bool
       b:
@@ -21,5 +52,62 @@
           rename: ~
           default: false
           skip: false
+          skip_serializing: false
+          skip_deserializing: false
+        schema: Int
+- Class:
+    name: Preset2
+    attr:
+      rename_all: ~
+      rename_all_serialize: ~
+      rename_all_deserialize: ~
+      rename: ~
+      deny_unknown_fields: false
+      default: false
+    fields:
+      a:
+        attr:
+          flatten: true
+          rename: ~
+          default: false
+          skip: false
+          skip_serializing: false
+          skip_deserializing: false
+        schema:
+          Class:
+            name: Preset3
+            attr:
+              rename_all: ~
+              rename_all_serialize: ~
+              rename_all_deserialize: ~
+              rename: ~
+              deny_unknown_fields: false
+              default: false
+            fields:
+              x:
+                attr:
+                  flatten: false
+                  rename: ~
+                  default: false
+                  skip: false
+                  skip_serializing: false
+                  skip_deserializing: false
+                schema: Bool
+              y:
+                attr:
+                  flatten: false
+                  rename: ~
+                  default: false
+                  skip: false
+                  skip_serializing: false
+                  skip_deserializing: false
+                schema: Int
+      b:
+        attr:
+          flatten: false
+          rename: ~
+          default: false
+          skip: false
+          skip_serializing: false
           skip_deserializing: false
         schema: Int

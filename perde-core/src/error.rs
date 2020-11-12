@@ -31,11 +31,10 @@ impl Error {
     {
         let py = unsafe { Python::assume_gil_acquired() };
 
-        let pyerr = if PyErr::occurred(py) {
-            PyErr::fetch(py)
-        } else {
-            PyErr::new::<PyRuntimeError, _>(t.to_string())
-        };
+        if PyErr::occurred(py) {
+            unsafe { pyo3::ffi::PyErr_Clear() };
+        }
+        let pyerr = PyErr::new::<PyRuntimeError, _>(t.to_string());
 
         Self {
             pyerr,

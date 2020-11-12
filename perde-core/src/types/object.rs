@@ -422,6 +422,81 @@ pub struct StaticObjects {
     pub empty_tuple: StaticObject,
     pub optional: StaticObject,
     pub enum_meta: StaticObject,
+    pub datetime: StaticObject,
+    pub date: StaticObject,
+    pub time: StaticObject,
+    pub decimal: StaticObject,
+    pub uuid: StaticObject,
+}
+
+pub fn is_datetime(obj: &ObjectRef) -> Result<bool> {
+    Ok(obj.is(static_objects()?.datetime.as_ptr()))
+}
+
+pub fn is_date(obj: &ObjectRef) -> Result<bool> {
+    Ok(obj.is(static_objects()?.date.as_ptr()))
+}
+
+pub fn is_time(obj: &ObjectRef) -> Result<bool> {
+    Ok(obj.is(static_objects()?.time.as_ptr()))
+}
+
+pub fn is_decimal(obj: &ObjectRef) -> Result<bool> {
+    Ok(obj.is(static_objects()?.decimal.as_ptr()))
+}
+
+pub fn is_uuid(obj: &ObjectRef) -> Result<bool> {
+    Ok(obj.is(static_objects()?.uuid.as_ptr()))
+}
+
+pub fn isoformat(obj: &ObjectRef) -> Result<Object> {
+    obj.get_attr(&ATTR_ISOFORMAT)?.call_noarg()
+}
+
+pub fn datetime_fromisoformat(obj: &ObjectRef) -> Result<Object> {
+    let mut args = Tuple::new(1)?;
+    args.set(0, obj.owned());
+    static_objects()?
+        .datetime
+        .get_attr(&ATTR_FROMISOFORMAT)?
+        .call(args)
+}
+
+pub fn date_fromisoformat(obj: &ObjectRef) -> Result<Object> {
+    let mut args = Tuple::new(1)?;
+    args.set(0, obj.owned());
+    static_objects()?
+        .date
+        .get_attr(&ATTR_FROMISOFORMAT)?
+        .call(args)
+}
+
+pub fn time_fromisoformat(obj: &ObjectRef) -> Result<Object> {
+    let mut args = Tuple::new(1)?;
+    args.set(0, obj.owned());
+    static_objects()?
+        .time
+        .get_attr(&ATTR_FROMISOFORMAT)?
+        .call(args)
+}
+
+pub fn to_str(obj: &ObjectRef) -> Result<Object> {
+    let strtype = ObjectRef::new(cast!(PyUnicode_Type))?;
+    let mut args = Tuple::new(1)?;
+    args.set(0, obj.owned());
+    strtype.call(args)
+}
+
+pub fn to_uuid(obj: &ObjectRef) -> Result<Object> {
+    let mut args = Tuple::new(1)?;
+    args.set(0, obj.owned());
+    static_objects()?.uuid.call(args)
+}
+
+pub fn to_decimal(obj: &ObjectRef) -> Result<Object> {
+    let mut args = Tuple::new(1)?;
+    args.set(0, obj.owned());
+    static_objects()?.decimal.call(args)
 }
 
 unsafe impl Sync for StaticObject {}
@@ -440,6 +515,9 @@ macro_rules! getattr {
 }
 
 lazy_static::lazy_static! {
+    static ref ATTR_ISOFORMAT: AttrStr = AttrStr::new("isoformat");
+    static ref ATTR_FROMISOFORMAT: AttrStr = AttrStr::new("fromisoformat");
+
     static ref STATIC_OBJECTS: Result<StaticObjects> = {
         use pyo3::{Python, types::PyModule};
 
@@ -451,6 +529,12 @@ lazy_static::lazy_static! {
             .map_err(|_| err!("couldn't import `typing`"))?;
         let enum_ = PyModule::import(py, "enum")
             .map_err(|_| err!("couldn't import `enum`"))?;
+        let datetime_ = PyModule::import(py, "datetime")
+            .map_err(|_| err!("couldn't import `datetime`"))?;
+        let decimal_ = PyModule::import(py, "decimal")
+            .map_err(|_| err!("couldn't import `decimal`"))?;
+        let uuid_ = PyModule::import(py, "uuid")
+            .map_err(|_| err!("couldn't import `uuid`"))?;
 
         let fields = getattr!(dataclasses, "fields")?;
         let generic_alias = getattr!(typing, "_GenericAlias")?;
@@ -464,6 +548,12 @@ lazy_static::lazy_static! {
         let tuple_type = ObjectRef::new(cast!(PyTuple_Type))?;
         let empty_tuple = StaticObject(tuple_type.call_noarg()?);
 
+        let datetime = getattr!(datetime_, "datetime")?;
+        let date = getattr!(datetime_, "date")?;
+        let time = getattr!(datetime_, "time")?;
+        let decimal = getattr!(decimal_, "Decimal")?;
+        let uuid = getattr!(uuid_, "UUID")?;
+
         Ok(StaticObjects {
             fields,
             generic_alias,
@@ -474,6 +564,11 @@ lazy_static::lazy_static! {
             empty_tuple,
             optional,
             enum_meta,
+            datetime,
+            date,
+            time,
+            decimal,
+            uuid,
         })
     };
 }

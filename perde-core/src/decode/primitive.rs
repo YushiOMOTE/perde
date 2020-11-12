@@ -1,4 +1,10 @@
-use crate::{error::Convert, schema::*, types::Object};
+use crate::{
+    error::Convert,
+    schema::*,
+    types::{
+        date_fromisoformat, datetime_fromisoformat, time_fromisoformat, to_decimal, to_uuid, Object,
+    },
+};
 use serde::de::{self, DeserializeSeed, Deserializer, SeqAccess, Visitor};
 use smallvec::SmallVec;
 use std::fmt;
@@ -206,6 +212,26 @@ impl<'a, 'de> DeserializeSeed<'de> for &'a Primitive {
             Primitive::Str => deserializer.deserialize_str(StrVisitor),
             Primitive::Bytes => deserializer.deserialize_bytes(BytesVisitor(false)),
             Primitive::ByteArray => deserializer.deserialize_bytes(BytesVisitor(true)),
+            Primitive::DateTime => {
+                let s = deserializer.deserialize_str(StrVisitor)?;
+                datetime_fromisoformat(&s).de()
+            }
+            Primitive::Date => {
+                let s = deserializer.deserialize_str(StrVisitor)?;
+                date_fromisoformat(&s).de()
+            }
+            Primitive::Time => {
+                let s = deserializer.deserialize_str(StrVisitor)?;
+                time_fromisoformat(&s).de()
+            }
+            Primitive::Decimal => {
+                let s = deserializer.deserialize_str(StrVisitor)?;
+                to_decimal(&s).de()
+            }
+            Primitive::Uuid => {
+                let s = deserializer.deserialize_str(StrVisitor)?;
+                to_uuid(&s).de()
+            }
         }
     }
 }

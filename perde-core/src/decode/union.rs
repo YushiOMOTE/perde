@@ -199,10 +199,10 @@ impl<'a, 'de> Visitor<'de> for UnionVisitor<'a> {
             return Ok(Object::new_none());
         }
 
-        let schema = find!(self, Unexpected::Option, Optional)?;
+        let schema = find!(self, Unexpected::Option, Union)?;
 
         match schema {
-            Schema::Optional(option) => decode::option::OptionVisitor(option).visit_none(),
+            Schema::Union(u) if u.optional => Ok(Object::new_none()),
             _ => Err(de::Error::invalid_type(Unexpected::Option, &self)),
         }
     }
@@ -211,8 +211,8 @@ impl<'a, 'de> Visitor<'de> for UnionVisitor<'a> {
     where
         D: Deserializer<'de>,
     {
-        let schema = find!(self, Unexpected::Option, Optional)?;
-        schema.deserialize(deserializer)
+        find!(self, Unexpected::Option, Union)?;
+        deserializer.deserialize_any(UnionVisitor(self.0))
     }
 
     fn visit_seq<A>(self, seq: A) -> Result<Self::Value, A::Error>

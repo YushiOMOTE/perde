@@ -84,9 +84,9 @@ perde_msgpack.loads_as(A, b'\x82\xA3\x6B\x65\x79\xCD\x01\x2C\xA5\x76\x61\x6C\x75
     * [x] `Any`
 * Enum types
     * [x] `Enum`
-    * [ ] `IntEnum`
-    * [ ] `Flag`
-    * [ ] `IntFlag`
+    * [x] `IntEnum`
+    * [x] `Flag`
+    * [x] `IntFlag`
 * Built-in types
     * [x] `int`
     * [x] `str`
@@ -99,11 +99,12 @@ perde_msgpack.loads_as(A, b'\x82\xA3\x6B\x65\x79\xCD\x01\x2C\xA5\x76\x61\x6C\x75
     * [x] `set`
     * [x] `frozenset`
     * [x] `tuple`
-* Chrono types
-    * [ ] `datetime`
-    * [ ] `date`
-    * [ ] `time`
-    * [ ] `timedelta`
+* More built-in types
+    * [x] `datetime.datetime`
+    * [x] `datetime.date`
+    * [x] `datetime.time`
+    * [x] `decimal.Decimal`
+    * [x] `uuid.UUID`
 
 ### Supported formats
 
@@ -230,6 +231,10 @@ perde_json.dumps(A.FooBar)
     * Convert the case of all the members in the enum.
     * The possible values are the same as ones for `class`.
     * This option is ignored when `as_value` is set.
+* `rename_all_serialize = "string_case"`
+    * Convert the string case only when serialization.
+* `rename_all_deserialize = "string_case"`
+    * Convert the string case only when deserialization.
 * `as_value = True`
     * Serialize and deserialize enum using the enum value instead of the name.
 
