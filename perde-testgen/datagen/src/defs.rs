@@ -1,4 +1,4 @@
-// Generated 2020-11-11T21:09:39.861362300+09:00
+// Generated 2020-11-12T07:52:12.474363088+09:00
 
 use crate::gen::{GenExt, Random};
 use derive_new::new;

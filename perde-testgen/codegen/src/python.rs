@@ -1,16 +1,16 @@
 use crate::{
-    gen::{Code, CodeGen, Context, Hint},
+    gen::{CodeGen, Context, Hint},
     schema::*,
 };
 
 pub struct Python;
 
 impl CodeGen for Python {
-    fn define_enum(&mut self, u: Union, hint: &Hint, context: &mut Context) -> String {
+    fn define_enum(&mut self, _: Union, _: &Hint, _: &mut Context) -> String {
         unreachable!()
     }
 
-    fn define_class(&mut self, c: Class, hint: &Hint, context: &mut Context) -> String {
+    fn define_class(&mut self, c: Class, _: &Hint, context: &mut Context) -> String {
         let mut s = "".to_string();
 
         let mut cls_attr = vec![];
@@ -71,11 +71,11 @@ impl CodeGen for Python {
         c.name.clone()
     }
 
-    fn construct(&mut self, schema: &Schema) -> String {
+    fn construct(&mut self, _: &Schema) -> String {
         "".into()
     }
 
-    fn construct_line(&mut self, typename: &str, schema: &Schema) -> String {
+    fn construct_line(&mut self, _: &str, _: &Schema) -> String {
         "".into()
     }
 
@@ -115,7 +115,7 @@ impl CodeGen for Python {
                 self.define_class(c.clone(), &hint, context);
                 c.name.clone()
             }
-            Schema::Enum(e) => unimplemented!(),
+            Schema::Enum(_) => unimplemented!(),
             Schema::Optional(o) => format!("typing.Optional[{}]", self.gen(&o.value, context)),
             Schema::Union(u) => {
                 let s: Vec<_> = u

@@ -2,15 +2,14 @@ use crate::data::{random_field_name, random_type_name};
 use derive_new::new;
 use indexmap::IndexMap;
 use rand::{
-    distributions::{Alphanumeric, Distribution, Standard},
+    distributions::{Distribution, Standard},
     Rng,
 };
 use serde::{Deserialize, Serialize};
-use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicUsize, Ordering};
 
 thread_local! {
     pub static DEPTH: AtomicUsize = AtomicUsize::new(0);
-    pub static INIT: AtomicBool = AtomicBool::new(false);
 }
 
 fn set_depth(depth: usize) {
@@ -32,14 +31,6 @@ fn go_deep() -> bool {
 
 fn go_up() {
     DEPTH.with(|d| d.fetch_add(1, Ordering::Relaxed));
-}
-
-fn set_init() {
-    INIT.with(|b| b.swap(true, Ordering::Relaxed));
-}
-
-fn is_init() -> bool {
-    INIT.with(|b| b.swap(false, Ordering::Relaxed))
 }
 
 macro_rules! opt {
@@ -356,7 +347,7 @@ impl Schema {
             Self::Set(s) => s.value.valid() && s.value.has_hash(),
             Self::Tuple(t) => t.args.iter().all(|v| v.valid()),
             Self::Class(c) => c.fields.iter().all(|(_, v)| v.schema.valid()),
-            Self::Enum(e) => true,
+            Self::Enum(_) => true,
             Self::Optional(o) => o.value.valid(),
             Self::Union(u) => u.variants.iter().all(|u| u.valid()),
         }
@@ -369,14 +360,14 @@ impl Schema {
             Self::Float => true,
             Self::Str => true,
             Self::Bytes => true,
-            Self::Dict(d) => true,
-            Self::List(l) => true,
-            Self::Set(s) => true,
+            Self::Dict(_) => true,
+            Self::List(_) => true,
+            Self::Set(_) => true,
             Self::Tuple(t) => t.args.iter().all(|v| v.has_default()),
             Self::Class(c) => c.fields.iter().all(|(_, v)| v.schema.has_default()),
-            Self::Enum(e) => false,
+            Self::Enum(_) => false,
             Self::Optional(o) => o.value.has_default(),
-            Self::Union(u) => false,
+            Self::Union(_) => false,
         }
     }
 
@@ -387,12 +378,12 @@ impl Schema {
             Self::Float => false,
             Self::Str => true,
             Self::Bytes => true,
-            Self::Dict(d) => false,
+            Self::Dict(_) => false,
             Self::List(l) => l.value.has_hash(),
-            Self::Set(s) => false,
+            Self::Set(_) => false,
             Self::Tuple(t) => t.args.iter().all(|v| v.has_hash()),
             Self::Class(c) => c.fields.iter().all(|(_, v)| v.schema.has_hash()),
-            Self::Enum(e) => true,
+            Self::Enum(_) => true,
             Self::Optional(o) => o.value.has_hash(),
             Self::Union(u) => u.variants.iter().all(|u| u.has_hash()),
         }
@@ -410,38 +401,9 @@ impl Schema {
             Self::Set(s) => s.value.has_eq(),
             Self::Tuple(t) => t.args.iter().all(|v| v.has_eq()),
             Self::Class(c) => c.fields.iter().all(|(_, v)| v.schema.has_eq()),
-            Self::Enum(e) => true,
+            Self::Enum(_) => true,
             Self::Optional(o) => o.value.has_eq(),
             Self::Union(u) => u.variants.iter().all(|u| u.has_eq()),
-        }
-    }
-
-    fn is_map(&self) -> bool {
-        match self {
-            Self::Dict(_) => true,
-            _ => false,
-        }
-    }
-
-    fn is_vec(&self) -> bool {
-        match self {
-            Self::Bytes => true,
-            Self::List(_) => true,
-            _ => false,
-        }
-    }
-
-    fn is_set(&self) -> bool {
-        match self {
-            Self::Set(_) => true,
-            _ => false,
-        }
-    }
-
-    fn is_opt(&self) -> bool {
-        match self {
-            Self::Optional(_) => true,
-            _ => false,
         }
     }
 }
@@ -497,7 +459,6 @@ impl Distribution<Schema> for Standard {
 
 pub fn gen_schema(depth: usize) -> Schema {
     let mut rng = rand::thread_rng();
-    set_init();
     set_depth(depth);
     rng.gen()
 }
