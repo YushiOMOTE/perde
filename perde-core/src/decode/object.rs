@@ -9,7 +9,7 @@ use serde::{
 };
 use std::{borrow::Cow, fmt};
 
-struct AnyVisitor;
+pub struct AnyVisitor;
 
 impl<'de> Visitor<'de> for AnyVisitor {
     type Value = Object;

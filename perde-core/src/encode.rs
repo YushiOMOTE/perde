@@ -96,12 +96,17 @@ impl<'a> Serialize for WithSchema<'a> {
                 map.end()
             }
             Schema::Enum(e) => {
-                let name = self.object.get_attr(&ATTR_NAME).ser()?;
-                let name = name.as_str().ser()?;
-                if !e.variants.contains_key(name) {
-                    return Err(S::Error::custom(format!("no such variant: {}", name)));
+                if e.attr.as_value {
+                    let value = self.object.get_attr(&ATTR_VALUE).ser()?;
+                    value.resolved_object().ser()?.serialize(s)
+                } else {
+                    let name = self.object.get_attr(&ATTR_NAME).ser()?;
+                    let name = name.as_str().ser()?;
+                    if !e.variants.contains_key(name) {
+                        return Err(S::Error::custom(format!("no such variant: {}", name)));
+                    }
+                    s.serialize_str(&name)
                 }
-                s.serialize_str(&name)
             }
             Schema::Union(u) => {
                 if self.object.is_none() && u.optional {

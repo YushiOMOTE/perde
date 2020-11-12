@@ -2,6 +2,7 @@ from enum import Enum
 from dataclasses import dataclass
 import typing
 import pytest
+import perde
 from util import FORMATS, repack, repack_as
 
 
@@ -163,6 +164,18 @@ def test_class(m):
 
 @pytest.mark.parametrize("m", FORMATS)
 def test_enum(m):
+    class E(Enum):
+        X = 1
+        Y = "hage"
+        Z = 3.3
+
+    repack_as(m, E, E.X)
+    repack_as(m, E, E.Y)
+    repack_as(m, E, E.Z)
+
+@pytest.mark.parametrize("m", FORMATS)
+def test_enum_value(m):
+    @perde.attr(as_value = True)
     class E(Enum):
         X = 1
         Y = "hage"

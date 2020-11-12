@@ -1,4 +1,9 @@
-use crate::{schema::*, types::Object};
+use crate::{
+    decode::object::AnyVisitor,
+    error::Convert,
+    schema::*,
+    types::{Object, Tuple},
+};
 use serde::de::{self, DeserializeSeed, Deserializer, Visitor};
 use std::fmt;
 
@@ -71,6 +76,13 @@ impl<'a, 'de> DeserializeSeed<'de> for &'a Enum {
     where
         D: Deserializer<'de>,
     {
-        deserializer.deserialize_any(EnumVisitor(self))
+        if self.attr.as_value {
+            let obj = deserializer.deserialize_any(AnyVisitor)?;
+            let mut args = Tuple::new(1).de()?;
+            args.set(0, obj);
+            self.object.call(args).de()
+        } else {
+            deserializer.deserialize_any(EnumVisitor(self))
+        }
     }
 }
