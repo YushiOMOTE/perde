@@ -1,7 +1,7 @@
 use crate::{
     error::Result,
     schema::*,
-    types::{self, static_objects, AttrStr, ObjectRef, TupleRef},
+    types::{self, static_objects, AttrStr, ObjectRef},
 };
 use indexmap::IndexMap;
 use std::collections::HashMap;
@@ -213,29 +213,10 @@ fn maybe_enum(p: &ObjectRef, attr: &Option<HashMap<&str, &ObjectRef>>) -> Result
     ))))
 }
 
-fn maybe_option(args: TupleRef) -> Result<Schema> {
-    let t1 = args.get(0)?;
-    let t2 = args.get(1)?;
-    let s = if t1.is_none_type() {
-        let t = to_schema(t2)?;
-        Schema::Optional(Optional::new(Box::new(t)))
-    } else if t2.is_none_type() {
-        let t = to_schema(t1)?;
-        Schema::Optional(Optional::new(Box::new(t)))
-    } else {
-        Schema::Union(Union::new(vec![to_schema(t1)?, to_schema(t2)?]))
-    };
-    Ok(s)
-}
-
 fn to_union(p: &ObjectRef) -> Result<Schema> {
     let args = get_args(p)?;
     let args = args.as_ref();
     let iter = args.iter();
-
-    if iter.len() == 2 {
-        return maybe_option(args);
-    }
 
     let mut optional = false;
     let variants: Result<Vec<_>> = iter
@@ -249,7 +230,7 @@ fn to_union(p: &ObjectRef) -> Result<Schema> {
         })
         .collect();
 
-    Ok(Schema::Union(Union::new_optional(variants?, optional)))
+    Ok(Schema::Union(Union::new(variants?, optional)))
 }
 
 fn to_tuple(p: &ObjectRef) -> Result<Schema> {
@@ -313,13 +294,8 @@ fn maybe_generic(p: &ObjectRef) -> Result<Option<Schema>> {
     if !p.is_instance(static_objects()?.generic_alias.as_ptr())
         && !p.is(static_objects()?.tuple.as_ptr())
     {
-        if p.is(static_objects()?.optional.as_ptr()) {
-            // Here is for Optional without subscription.
-            return Ok(Some(Schema::Optional(Optional::new(Box::new(
-                Schema::Any(Any),
-            )))));
-        } else if p.is(static_objects()?.union.as_ptr()) {
-            // Here is for Union without subscription.
+        if p.is(static_objects()?.optional.as_ptr()) || p.is(static_objects()?.union.as_ptr()) {
+            // Bare `typing.Union` and `typing.Optional` are identical to `Any`.
             return Ok(Some(Schema::Any(Any)));
         }
         return Ok(None);

@@ -306,28 +306,12 @@ pub struct FieldSchema {
 }
 
 #[derive(Debug, Clone, new, PartialEq, Eq)]
-pub struct Optional {
-    pub value: Box<Schema>,
-}
-
-impl Optional {
-    pub fn name(&self) -> &str {
-        "optional"
-    }
-}
-
-#[derive(Debug, Clone, new, PartialEq, Eq)]
 pub struct Union {
     pub variants: Vec<Schema>,
-    #[new(default)]
     pub optional: bool,
 }
 
 impl Union {
-    pub fn new_optional(variants: Vec<Schema>, optional: bool) -> Self {
-        Self { variants, optional }
-    }
-
     pub fn name(&self) -> &str {
         "union"
     }
@@ -339,6 +323,9 @@ pub const SCHEMA_ANY: &'static Schema = &Schema::Any(Any);
 pub struct Any;
 
 #[derive(Debug, Clone, new, PartialEq, Eq)]
+pub struct NoneType;
+
+#[derive(Debug, Clone, new, PartialEq, Eq)]
 pub enum Schema {
     Primitive(Primitive),
     Dict(Dict),
@@ -348,7 +335,6 @@ pub enum Schema {
     Tuple(Tuple),
     Class(Class),
     Enum(Enum),
-    Optional(Optional),
     Union(Union),
     Any(Any),
 }
@@ -364,7 +350,6 @@ impl Schema {
             Self::Tuple(t) => t.name(),
             Self::Class(c) => c.name(),
             Self::Enum(e) => e.name(),
-            Self::Optional(o) => o.name(),
             Self::Union(u) => u.name(),
             Self::Any(_) => "any",
         }

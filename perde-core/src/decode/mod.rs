@@ -7,7 +7,6 @@ pub mod enums;
 pub mod frozen_set;
 pub mod list;
 pub mod object;
-pub mod option;
 pub mod primitive;
 pub mod set;
 pub mod tuple;
@@ -29,7 +28,6 @@ impl<'a, 'de> DeserializeSeed<'de> for &'a Schema {
             Schema::Tuple(t) => t.deserialize(deserializer),
             Schema::Class(c) => c.deserialize(deserializer),
             Schema::Enum(e) => e.deserialize(deserializer),
-            Schema::Optional(o) => o.deserialize(deserializer),
             Schema::Union(u) => u.deserialize(deserializer),
             Schema::Any(a) => a.deserialize(deserializer),
         }

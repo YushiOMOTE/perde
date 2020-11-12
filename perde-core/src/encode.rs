@@ -103,14 +103,6 @@ impl<'a> Serialize for WithSchema<'a> {
                 }
                 s.serialize_str(&name)
             }
-            Schema::Optional(o) => {
-                if self.object.is_none() {
-                    s.serialize_none()
-                } else {
-                    let w = self.object.with_schema(&o.value);
-                    s.serialize_some(&w)
-                }
-            }
             Schema::Union(u) => {
                 if self.object.is_none() && u.optional {
                     return s.serialize_none();
