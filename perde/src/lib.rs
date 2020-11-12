@@ -1,10 +1,10 @@
-use perde_core::method_fastcall;
 use perde_core::{
     bail,
     error::Convert,
+    method_fastcall, module,
     types::{FastArgs, Object},
 };
-use pyo3::{ffi::*, prelude::*};
+use pyo3::ffi::*;
 use std::collections::HashMap;
 
 pub extern "C" fn resolve(
@@ -41,8 +41,4 @@ pub extern "C" fn resolve(
     inner().restore().unwrap_or(std::ptr::null_mut())
 }
 
-#[pymodule]
-fn perde(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
-    method_fastcall!(resolve, "")(m);
-    Ok(())
-}
+module!(perde, method_fastcall!(resolve, ""));
