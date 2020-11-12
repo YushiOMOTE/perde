@@ -20,7 +20,7 @@ codegen: rename.yml #schema.yml (don't use until stabilized)
 	$(run-codegen) code datagen/src/defs.rs tests/defs.py $^
 
 datagen:
-	$(run-datagen) -f json -f yaml -f msgpack
+	$(run-datagen) -f json -f yaml
 
 test: gen
 	$(run-test) -x tests/tests.py

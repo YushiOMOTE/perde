@@ -21,12 +21,12 @@ def test_yaml_with_serde():
             a = perde_yaml.dumps(p)
             assert a == s
 
-def test_msgpack_with_serde():
-    for i, t in enumerate(defs.TYPES):
-        with open(f'msgpack/{i}', 'rb') as f:
-            s = f.read()
-            print(f'repacking {s} as {t}')
-            p = perde_msgpack.loads_as(t, s)
-            print(f'{p}')
-            a = perde_msgpack.dumps(p)
-            assert a == s
+#  def test_msgpack_with_serde():
+#      for i, t in enumerate(defs.TYPES):
+#          with open(f'msgpack/{i}', 'rb') as f:
+#              s = f.read()
+#              print(f'repacking {s} as {t}')
+#              p = perde_msgpack.loads_as(t, s)
+#              print(f'{p}')
+#              a = perde_msgpack.dumps(p)
+#              assert a == s
