@@ -36,16 +36,6 @@ impl FromStr for StrCase {
     }
 }
 
-#[derive(Clone, Debug, Default, PartialEq, Eq, new)]
-pub struct FieldAttr {
-    pub flatten: bool,
-    pub rename: Option<String>,
-    pub default: Option<Object>,
-    pub default_factory: Option<Object>,
-    pub skip: bool,
-    pub skip_deserializing: bool,
-}
-
 macro_rules! extract_parse {
     ($dict:expr, $field:expr) => {
         $dict
@@ -91,14 +81,28 @@ macro_rules! extract {
     };
 }
 
+#[derive(Clone, Debug, Default, PartialEq, Eq, new)]
+pub struct FieldAttr {
+    pub flatten: bool,
+    pub rename: Option<String>,
+    pub use_default: bool,
+    pub default: Option<Object>,
+    pub default_factory: Option<Object>,
+    pub skip: bool,
+    pub skip_serializing: bool,
+    pub skip_deserializing: bool,
+}
+
 impl FieldAttr {
     pub fn parse(attr: &Option<&ObjectRef>) -> Result<Self> {
         Ok(Self::new(
             extract_bool!(attr, "perde_flatten"),
             extract_str!(attr, "perde_rename"),
+            extract_bool!(attr, "perde_default"),
             extract!(attr, "default"),
             extract!(attr, "default_factory"),
             extract_bool!(attr, "perde_skip"),
+            extract_bool!(attr, "perde_skip_serializing"),
             extract_bool!(attr, "perde_skip_deserializing"),
         ))
     }
@@ -107,11 +111,29 @@ impl FieldAttr {
 #[derive(Clone, Debug, Default, new, PartialEq, Eq)]
 pub struct VariantAttr {
     pub rename: Option<String>,
+    pub skip: bool,
+    pub skip_serializing: bool,
+    pub skip_deserializing: bool,
+    pub other: bool,
+}
+
+impl VariantAttr {
+    pub fn parse(attr: &Option<&ObjectRef>) -> Result<Self> {
+        Ok(Self::new(
+            extract_str!(attr, "perde_rename"),
+            extract_bool!(attr, "perde_skip"),
+            extract_bool!(attr, "perde_skip_serializing"),
+            extract_bool!(attr, "perde_skip_deserializing"),
+            extract_bool!(attr, "perde_other"),
+        ))
+    }
 }
 
 #[derive(Clone, Debug, Default, new, PartialEq, Eq)]
 pub struct ClassAttr {
     pub rename_all: Option<StrCase>,
+    pub rename_all_serialize: Option<StrCase>,
+    pub rename_all_deserialize: Option<StrCase>,
     pub rename: Option<String>,
     pub deny_unknown_fields: bool,
     pub default: bool,
@@ -121,6 +143,8 @@ impl ClassAttr {
     pub fn parse(attr: &Option<HashMap<&str, &ObjectRef>>) -> Result<Self> {
         Ok(Self::new(
             extract_parse!(attr, "rename_all"),
+            extract_parse!(attr, "rename_all_serialize"),
+            extract_parse!(attr, "rename_all_deserialize"),
             extract_str!(attr, "rename"),
             extract_bool!(attr, "deny_unknown_fields"),
             extract_bool!(attr, "default"),
@@ -131,14 +155,20 @@ impl ClassAttr {
 #[derive(Clone, Debug, Default, new, PartialEq, Eq)]
 pub struct EnumAttr {
     pub rename_all: Option<StrCase>,
+    pub rename_all_serializing: Option<StrCase>,
+    pub rename_all_deserializing: Option<StrCase>,
     pub rename: Option<String>,
+    pub as_value: bool,
 }
 
 impl EnumAttr {
     pub fn parse(attr: &Option<HashMap<&str, &ObjectRef>>) -> Result<Self> {
         Ok(Self::new(
             extract_parse!(attr, "rename_all"),
+            extract_parse!(attr, "rename_all_serialize"),
+            extract_parse!(attr, "rename_all_deserialize"),
             extract_str!(attr, "rename"),
+            extract_bool!(attr, "as_value"),
         ))
     }
 }

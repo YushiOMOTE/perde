@@ -64,6 +64,7 @@ lazy_static::lazy_static! {
     static ref ATTR_VALUE: AttrStr = AttrStr::new("value");
     static ref ATTR_ARGS: AttrStr = AttrStr::new("__args__");
     static ref ATTR_ORIGIN: AttrStr = AttrStr::new("__origin__");
+    static ref ATTR_ENUM_METADATA: AttrStr = AttrStr::new("_perde_metadata");
 }
 
 pub fn resolve_schema<'a>(
@@ -190,9 +191,16 @@ fn maybe_enum(p: &ObjectRef, attr: &Option<HashMap<&str, &ObjectRef>>) -> Result
 
             let name = name.as_str()?;
 
+            let attr = if item.has_attr(&ATTR_ENUM_METADATA) {
+                let metadata = item.get_attr(&ATTR_ENUM_METADATA)?;
+                VariantAttr::parse(&Some(&metadata))?
+            } else {
+                VariantAttr::default()
+            };
+
             Ok((
                 name.to_string(),
-                VariantSchema::new(name.into(), VariantAttr::default(), value),
+                VariantSchema::new(name.into(), attr, value),
             ))
         })
         .collect();

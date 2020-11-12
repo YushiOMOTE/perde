@@ -230,6 +230,10 @@ perde_json.dumps(A.FooBar)
     * Convert the case of all the members in the enum.
     * The possible values are the same as ones for `class`.
     * This option is ignored when `as_value` is set.
+* `rename_all_serialize = "string_case"`
+    * Convert the string case only when serialization.
+* `rename_all_deserialize = "string_case"`
+    * Convert the string case only when deserialization.
 * `as_value = True`
     * Serialize and deserialize enum using the enum value instead of the name.
 
