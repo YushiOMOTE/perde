@@ -3,9 +3,6 @@ url = "https://pypi.python.org/simple"
 verify_ssl = true
 name = "pypi"
 
-[requires]
-python_version = "3.7"
-
 [dev-packages]
 yapf = "0.30"
 typing_inspect = "~=0.6"
