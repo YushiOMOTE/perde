@@ -1,4 +1,5 @@
 use crate::data::{random_field_name, random_type_name};
+use derive_builder::Builder;
 use derive_new::new;
 use indexmap::IndexMap;
 use rand::{
@@ -33,6 +34,21 @@ fn go_up() {
     DEPTH.with(|d| d.fetch_add(1, Ordering::Relaxed));
 }
 
+fn gen_case<R: Rng + ?Sized>(rng: &mut R) -> Option<String> {
+    let v: usize = rng.gen_range(0, 9);
+    match v {
+        0 => Some("lowercase".into()),
+        1 => Some("UPPERCASE".into()),
+        2 => Some("PascalCase".into()),
+        3 => Some("camelCase".into()),
+        4 => Some("snake_case".into()),
+        5 => Some("SCREAMING_SNAKE_CASE".into()),
+        6 => Some("kebab-case".into()),
+        7 => Some("SCREAMING-KEBAB-CASE".into()),
+        _ => None,
+    }
+}
+
 macro_rules! opt {
     ($rng:expr, $v:expr) => {
         if $rng.gen() {
@@ -43,13 +59,21 @@ macro_rules! opt {
     };
 }
 
-#[derive(Clone, Debug, Default, PartialEq, Eq, new, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, new, Serialize, Deserialize, Builder)]
+#[builder(default)]
 pub struct FieldAttr {
     pub flatten: bool,
     pub rename: Option<String>,
     pub default: bool,
     pub skip: bool,
+    pub skip_serializing: bool,
     pub skip_deserializing: bool,
+}
+
+impl FieldAttr {
+    pub fn builder() -> FieldAttrBuilder {
+        <FieldAttrBuilder as Default>::default()
+    }
 }
 
 impl Distribution<FieldAttr> for Standard {
@@ -60,59 +84,93 @@ impl Distribution<FieldAttr> for Standard {
             rng.gen(),
             rng.gen(),
             rng.gen(),
+            rng.gen(),
         )
     }
 }
 
-#[derive(Clone, Debug, Default, new, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, new, PartialEq, Eq, Serialize, Deserialize, Builder)]
+#[builder(default)]
 pub struct VariantAttr {
     pub rename: Option<String>,
+    pub skip: bool,
+    pub skip_serializing: bool,
+    pub skip_deserializing: bool,
+    pub other: bool,
+}
+
+impl VariantAttr {
+    pub fn builder() -> VariantAttrBuilder {
+        <VariantAttrBuilder as Default>::default()
+    }
 }
 
 impl Distribution<VariantAttr> for Standard {
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> VariantAttr {
-        VariantAttr::new(opt!(rng, random_type_name(rng)))
+        VariantAttr::new(
+            opt!(rng, random_type_name(rng)),
+            rng.gen(),
+            rng.gen(),
+            rng.gen(),
+            rng.gen(),
+        )
     }
 }
 
-#[derive(Clone, Debug, Default, new, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, new, PartialEq, Eq, Serialize, Deserialize, Builder)]
+#[builder(default)]
 pub struct ClassAttr {
     pub rename_all: Option<String>,
+    pub rename_all_serialize: Option<String>,
+    pub rename_all_deserialize: Option<String>,
     pub rename: Option<String>,
     pub deny_unknown_fields: bool,
     pub default: bool,
 }
 
-impl Distribution<ClassAttr> for Standard {
-    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> ClassAttr {
-        let v: usize = rng.gen_range(0, 9);
-        let attr = match v {
-            0 => Some("lowercase".into()),
-            1 => Some("UPPERCASE".into()),
-            2 => Some("PascalCase".into()),
-            3 => Some("camelCase".into()),
-            4 => Some("snake_case".into()),
-            5 => Some("SCREAMING_SNAKE_CASE".into()),
-            6 => Some("kebab-case".into()),
-            7 => Some("SCREAMING-KEBAB-CASE".into()),
-            _ => None,
-        };
-
-        ClassAttr::new(attr, opt!(rng, random_type_name(rng)), rng.gen(), rng.gen())
+impl ClassAttr {
+    pub fn builder() -> ClassAttrBuilder {
+        <ClassAttrBuilder as Default>::default()
     }
 }
 
-#[derive(Clone, Debug, Default, new, PartialEq, Eq, Serialize, Deserialize)]
+impl Distribution<ClassAttr> for Standard {
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> ClassAttr {
+        ClassAttr::new(
+            gen_case(rng),
+            gen_case(rng),
+            gen_case(rng),
+            opt!(rng, random_type_name(rng)),
+            rng.gen(),
+            rng.gen(),
+        )
+    }
+}
+
+#[derive(Clone, Debug, Default, new, PartialEq, Eq, Serialize, Deserialize, Builder)]
+#[builder(default)]
 pub struct EnumAttr {
     pub rename_all: Option<String>,
+    pub rename_all_serializing: Option<String>,
+    pub rename_all_deserializing: Option<String>,
     pub rename: Option<String>,
+    pub as_value: bool,
+}
+
+impl EnumAttr {
+    pub fn builder() -> EnumAttrBuilder {
+        <EnumAttrBuilder as Default>::default()
+    }
 }
 
 impl Distribution<EnumAttr> for Standard {
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> EnumAttr {
         EnumAttr::new(
+            gen_case(rng),
+            gen_case(rng),
+            gen_case(rng),
             opt!(rng, random_field_name(rng)),
-            opt!(rng, random_field_name(rng)),
+            rng.gen(),
         )
     }
 }
@@ -312,10 +370,14 @@ impl Schema {
                         v.attr.flatten = false;
                         v.attr.rename = None;
                         v.attr.default = false;
+                        v.attr.skip_serializing = false;
                         v.attr.skip_deserializing = false;
                     }
                     if num == 1 {
                         v.attr.skip = false;
+                        if v.attr.skip_serializing && v.attr.skip_deserializing {
+                            v.attr.skip_serializing = false;
+                        }
                     }
 
                     if v.attr.skip || v.attr.skip_deserializing || v.attr.flatten {

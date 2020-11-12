@@ -127,12 +127,16 @@ fn gen_code_cmd(c: GenCode) {
         ));
     }
 
+    let timestamp = chrono::Local::now();
+
     // Emit Rust code.
     fs::write(
         &c.rust_file,
         rustfmt(&format!(
             r#"
+#![allow(unused)]
 // Generated {:?}
+
 
 use derive_new::new;
 use serde::{{Serialize, Deserialize}};
@@ -152,7 +156,7 @@ ret
 }}}}
 }}
 "#,
-            chrono::Local::now(),
+            timestamp,
             rs_definitions.join(""),
             rs_constructs.join("")
         )),
@@ -165,6 +169,8 @@ ret
         &c.python_file,
         yapf(&format!(
             r#"
+# Generated {timestamp:?}
+
 from dataclasses import dataclass, field
 import perde
 import typing
@@ -173,6 +179,7 @@ import typing
 
 TYPES = [{types}]
 "#,
+            timestamp = timestamp,
             definitions = py_definitions.join("\n"),
             types = py_types.join(","),
         )),

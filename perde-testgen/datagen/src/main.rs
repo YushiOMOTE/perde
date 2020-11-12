@@ -3,11 +3,7 @@ mod defs;
 mod gen;
 
 use crate::{defs::*, gen::GenExt};
-use std::{
-    collections::{HashMap, HashSet},
-    fs,
-    path::PathBuf,
-};
+use std::{fs, path::PathBuf};
 use structopt::StructOpt;
 
 #[derive(StructOpt)]
@@ -39,7 +35,7 @@ fn main() {
         match f.as_ref() {
             "json" => write!("json", serde_json::to_vec),
             "yaml" => write!("yaml", serde_yaml::to_vec),
-            "msgpack" => write!("msgpack", rmp_serde::to_vec),
+            "msgpack" => write!("msgpack", rmp_serde::to_vec_named),
             f => panic!("unknown format: {}", f),
         }
     }

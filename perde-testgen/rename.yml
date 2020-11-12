@@ -1,8 +1,10 @@
 ---
 - Class:
-    name: A
+    name: Preset0
     attr:
       rename_all: ~
+      rename_all_serialize: ~
+      rename_all_deserialize: ~
       rename: ~
       deny_unknown_fields: false
       default: false
@@ -10,9 +12,10 @@
       a:
         attr:
           flatten: false
-          rename: ~
+          rename: hage
           default: false
           skip: false
+          skip_serializing: false
           skip_deserializing: false
         schema: Bool
       b:
@@ -21,5 +24,6 @@
           rename: ~
           default: false
           skip: false
+          skip_serializing: false
           skip_deserializing: false
         schema: Int

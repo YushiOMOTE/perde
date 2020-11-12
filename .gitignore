@@ -7,6 +7,8 @@
 flame-graph.html
 
 perde-testgen/json
+perde-testgen/yaml
+perde-testgen/msgpack
 
 .python-version
 __pycache__/
