@@ -160,7 +160,7 @@ perde_json.dumps(A(1, 2))
 
 ```python
 @perde.attr(rename_all = "snake_case")
-enum A(enum.Enum):
+class A(enum.Enum):
    FooBar: 1
    BarBar: 2
 
@@ -171,7 +171,7 @@ perde_json.dumps(A.BarBar)
 To set attributes for the members of `Enum` or `IntEnum`. Use `perde.Enum` or `perde.IntEnum` and add dictionaries after enum members.
 
 ```python
-enum A(perde.Enum):
+class A(perde.Enum):
    FooBar: 1, {"perde_rename": "BooBoo"}
    BarBar: 2
 
