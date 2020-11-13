@@ -70,6 +70,7 @@ lazy_static::lazy_static! {
     static ref ATTR_ARGS: AttrStr = AttrStr::new("__args__");
     static ref ATTR_ORIGIN: AttrStr = AttrStr::new("__origin__");
     static ref ATTR_ENUM_METADATA: AttrStr = AttrStr::new("_perde_metadata");
+    static ref ATTR_TYPENAME: AttrStr = AttrStr::new("__name__");
 }
 
 pub fn resolve_schema<'a>(
@@ -124,7 +125,12 @@ pub fn resolve_schema<'a>(
     } else if is_type_var_instance(p)? || is_any_type(p)? {
         Ok(&SCHEMA_ANY)
     } else {
-        bail!("unsupported type")
+        bail!(
+            "unsupported type `{}`",
+            p.get_attr(&ATTR_TYPENAME)
+                .and_then(|o| Ok(o.as_str()?.to_string()))
+                .unwrap_or("<unknown>".into())
+        );
     }
 }
 
