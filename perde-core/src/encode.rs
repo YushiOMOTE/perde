@@ -149,7 +149,7 @@ where
     T: SerializeMap<Error = E>,
     E: serde::ser::Error,
 {
-    for (name, field) in fields {
+    for (_, field) in fields {
         let obj = object.get_attr(&field.name).ser()?;
         if field.attr.flatten {
             match &field.schema {
@@ -160,7 +160,7 @@ where
             }
         } else {
             let f = obj.with_schema(&field.schema);
-            map.serialize_entry(&name, &f)?;
+            map.serialize_entry(&field.rename, &f)?;
         }
     }
     Ok(())

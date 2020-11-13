@@ -310,6 +310,7 @@ impl Class {
 #[derive(Debug, Clone, new, PartialEq, Eq)]
 pub struct FieldSchema {
     pub name: AttrStr,
+    pub rename: String,
     pub pos: usize,
     pub attr: FieldAttr,
     pub schema: Schema,

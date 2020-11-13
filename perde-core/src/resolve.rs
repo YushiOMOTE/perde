@@ -166,15 +166,30 @@ fn maybe_dataclass(
         };
         let fattr = FieldAttr::parse(&fattr)?;
 
-        let s = name.as_str()?;
-        let name = if let Some(renamed) = &fattr.rename {
-            renamed.to_owned()
+        let origname = name.as_str()?;
+        let (dename, sename) = if let Some(renamed) = &fattr.rename {
+            (renamed.to_owned(), renamed.to_owned())
+        } else if cattr.rename_all.is_some() {
+            let renamed = convert_stringcase(origname, cattr.rename_all);
+            (renamed.clone(), renamed)
         } else {
-            convert_stringcase(s, cattr.rename_all)
+            (
+                convert_stringcase(origname, cattr.rename_all_deserialize),
+                convert_stringcase(origname, cattr.rename_all_serialize),
+            )
         };
 
-        let mem = FieldSchema::new(AttrStr::new(s), i as usize, fattr, to_schema(ty.as_ref())?);
-        members.insert(name, mem);
+        // `sename` is used for serialization.
+        let mem = FieldSchema::new(
+            AttrStr::new(origname),
+            sename,
+            i as usize,
+            fattr,
+            to_schema(ty.as_ref())?,
+        );
+
+        // `dename` is for look up schema on deserialization.
+        members.insert(dename, mem);
     }
 
     let name = p.name();
