@@ -1,5 +1,7 @@
 packages = perde perde-json perde-msgpack perde-yaml
 
+pipenv_opt = $(if $(python_version),--python $(python_version),)
+
 develop-targets = $(foreach p,$(packages), develop-$(p))
 build-targets = $(foreach p,$(packages), build-$(p))
 publish-targets = $(foreach p,$(packages), publish-$(p))
@@ -16,7 +18,7 @@ maturin = $(pipenv) maturin
 setup: install-deps install-perde
 
 install-deps:
-	pipenv install --dev --skip-lock
+	pipenv install --dev --skip-lock $(pipenv_opt)
 
 install-perde: develop
 

@@ -22,6 +22,6 @@ jobs:
      - name: Install dependencies
        run: |
          pip install pipenv
-         make setup
+         make setup python_version=${{ matrix.python }}
      - name: Test
        run: make test
