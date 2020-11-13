@@ -9,12 +9,14 @@
 * [x] `rename_all_serialize`
 * [x] `rename_all_deserialize`
 * [x] `deny_unknown_fields`
-* [ ] `default`
+* [x] `default`
 
 #### Class fields attributes
 
 * [x] `perde_rename: "name"`
-* [ ] `perde_default: True`
+* [x] `perde_default: True`
+* [x] `default`
+* [x] `default_factory`
 * [x] `perde_flatten: True`
 * [ ] `perde_skip: True`
 * [ ] `perde_skip_serializing: True`

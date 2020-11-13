@@ -2,7 +2,7 @@ use super::{AttrStr, Tuple};
 use crate::{
     error::Result,
     resolve::resolve_schema,
-    schema::{Schema, WithSchema},
+    schema::{Primitive, Schema, WithSchema},
 };
 use pyo3::{conversion::IntoPyPointer, ffi::*};
 use std::{
@@ -348,10 +348,56 @@ impl Object {
         })
     }
 
+    pub fn new_default(s: &Schema) -> Result<Object> {
+        let obj = match s {
+            Schema::Primitive(Primitive::Bool) => {
+                ObjectRef::new(cast!(PyBool_Type))?.call_noarg()?
+            }
+            Schema::Primitive(Primitive::Int) => {
+                ObjectRef::new(cast!(PyLong_Type))?.call_noarg()?
+            }
+            Schema::Primitive(Primitive::Float) => {
+                ObjectRef::new(cast!(PyFloat_Type))?.call_noarg()?
+            }
+            Schema::Primitive(Primitive::Str) => {
+                ObjectRef::new(cast!(PyUnicode_Type))?.call_noarg()?
+            }
+            Schema::Primitive(Primitive::Bytes) => {
+                ObjectRef::new(cast!(PyBytes_Type))?.call_noarg()?
+            }
+            Schema::Primitive(Primitive::ByteArray) => {
+                ObjectRef::new(cast!(PyByteArray_Type))?.call_noarg()?
+            }
+            Schema::Primitive(Primitive::DateTime) => static_objects()?.datetime.call_noarg()?,
+            Schema::Primitive(Primitive::Date) => static_objects()?.date.call_noarg()?,
+            Schema::Primitive(Primitive::Time) => static_objects()?.time.call_noarg()?,
+            Schema::Primitive(Primitive::Decimal) => static_objects()?.decimal.call_noarg()?,
+            Schema::Primitive(Primitive::Uuid) => static_objects()?.uuid.call_noarg()?,
+            Schema::Dict(_) => ObjectRef::new(cast!(PyDict_Type))?.call_noarg()?,
+            Schema::List(_) => ObjectRef::new(cast!(PyList_Type))?.call_noarg()?,
+            Schema::Set(_) => ObjectRef::new(cast!(PySet_Type))?.call_noarg()?,
+            Schema::FrozenSet(_) => ObjectRef::new(cast!(PyFrozenSet_Type))?.call_noarg()?,
+            Schema::Tuple(_) => bail!("cannot use default construction for `tuple`"),
+            Schema::Class(c) => c.ty.default_construct()?,
+            Schema::Enum(_) => bail!("cannot use default construction for `enum`"),
+            Schema::Union(_) => bail!("cannot use default construction for `union`"),
+            Schema::Any(_) => bail!("cannot use default construction for `any`"),
+        };
+        Ok(obj)
+    }
+
     pub fn into_ptr(self) -> *mut PyObject {
         let ptr = self.0.as_ptr();
         std::mem::forget(self);
         ptr as *mut PyObject
+    }
+
+    pub fn none_as_optional(self) -> Option<Object> {
+        if self.is_none() {
+            None
+        } else {
+            Some(self)
+        }
     }
 
     fn incref(&self) {
@@ -414,6 +460,7 @@ impl From<pyo3::PyObject> for StaticObject {
 
 pub struct StaticObjects {
     pub fields: StaticObject,
+    pub missing: StaticObject,
     pub generic_alias: StaticObject,
     pub type_var: StaticObject,
     pub any: StaticObject,
@@ -537,6 +584,7 @@ lazy_static::lazy_static! {
             .map_err(|_| err!("couldn't import `uuid`"))?;
 
         let fields = getattr!(dataclasses, "fields")?;
+        let missing = getattr!(dataclasses, "MISSING")?;
         let generic_alias = getattr!(typing, "_GenericAlias")?;
         let type_var = getattr!(typing, "TypeVar")?;
         let any = getattr!(typing, "Any")?;
@@ -556,6 +604,7 @@ lazy_static::lazy_static! {
 
         Ok(StaticObjects {
             fields,
+            missing,
             generic_alias,
             type_var,
             any,

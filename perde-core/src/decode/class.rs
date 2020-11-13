@@ -3,7 +3,7 @@ use crate::{
     schema::*,
     types::{self, Object},
 };
-use serde::de::{self, DeserializeSeed, Deserializer, IgnoredAny, MapAccess, Visitor};
+use serde::de::{DeserializeSeed, Deserializer, IgnoredAny, MapAccess, Visitor};
 use std::{borrow::Cow, collections::HashMap, fmt};
 
 pub struct ClassVisitor<'a>(pub &'a Class);
@@ -19,51 +19,23 @@ impl<'a, 'de> Visitor<'de> for ClassVisitor<'a> {
     where
         M: MapAccess<'de>,
     {
-        if self.0.flatten_fields.is_empty() {
-            let mut tuple = types::Tuple::new(self.0.fields.len()).de()?;
-            let mut setcount = 0;
+        let mut map = HashMap::new();
 
-            while let Some(key) = access.next_key()? {
-                let key: Cow<str> = key;
+        while let Some(key) = access.next_key()? {
+            let key: Cow<str> = key;
 
-                if let Some(s) = self.0.field(&key).de()? {
-                    let value: Object = access.next_value_seed(&s.schema)?;
+            if let Some(s) = self.0.field(&key).de()? {
+                let value: Object = access.next_value_seed(&s.schema)?;
 
-                    tuple.set(s.pos, value);
-                    setcount += 1;
-                } else {
-                    let _: IgnoredAny = access.next_value()?;
-                }
+                map.insert(key, value);
+            } else {
+                let _: IgnoredAny = access.next_value()?;
             }
-
-            if setcount != self.0.num_fields() {
-                return Err(de::Error::custom("missing field"));
-            }
-
-            self.0.ty.construct(tuple).de()
-        } else {
-            let mut map = HashMap::new();
-
-            while let Some(key) = access.next_key()? {
-                let key: Cow<str> = key;
-
-                if let Some(s) = self.0.field(&key).de()? {
-                    let value: Object = access.next_value_seed(&s.schema)?;
-
-                    map.insert(key, value);
-                } else {
-                    let _: IgnoredAny = access.next_value()?;
-                }
-            }
-
-            let cls = self.0.call(&mut map).de()?;
-
-            if !map.is_empty() && self.0.attr.deny_unknown_fields {
-                // TODO: Error
-            }
-
-            Ok(cls)
         }
+
+        let cls = self.0.call(&mut map).de()?;
+
+        Ok(cls)
     }
 }
 
@@ -127,7 +99,22 @@ impl Class {
                             }
                             return Ok(dict.into_inner());
                         }
-                        _ => return Err(err!("found `flatten` attribute an non-map type",)),
+                        _ => return Err(err!("cannot use `flatten` attribute with an non-map type")),
+                    }
+                }
+
+                if s.attr.skip || s.attr.skip_deserializing {
+                    // Here we don't check if the field exists.
+                    // Just use default, default_factory or default constructor.
+
+                    if let Some(obj) = s.attr.default.as_ref() {
+                        return Ok(obj.owned());
+                    } else if let Some(obj) = s.attr.default_factory.as_ref() {
+                        return obj.call_noarg();
+                    } else if self.attr.default {
+                        return Object::new_default(&s.schema);
+                    } else {
+                        bail!("`default` must be set together with `skip`/`skip_deserializing` attribute")
                     }
                 }
 
@@ -135,17 +122,19 @@ impl Class {
                 match map.remove(k) {
                     Some(v) => Ok(v),
                     None => {
-                        if self.attr.default
-                            || s.attr.default.is_some()
-                            || s.attr.skip
-                            || s.attr.skip_deserializing
-                        {
-                            if let Some(d) = s.attr.default.as_ref() {
-                                return Ok(d.clone());
-                            } else if let Some(d) = s.attr.default_factory.as_ref() {
-                                return d.call_noarg();
-                            }
+                        // Here field is missing.
+                        // If default is defined, use it.
+                        // If this is optional, return `None`.
+                        if let Some(d) = s.attr.default.as_ref() {
+                            return Ok(d.clone());
+                        } else if let Some(d) = s.attr.default_factory.as_ref() {
+                            return d.call_noarg();
+                        } else if s.schema.is_optional() {
+                            return Ok(Object::new_none());
+                        } else if self.attr.default || s.attr.default_construct {
+                            return Object::new_default(&s.schema);
                         }
+
                         Err(err!("missing field \"{}\"", k))
                     }
                 }

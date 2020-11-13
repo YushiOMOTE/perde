@@ -213,6 +213,14 @@ fn main() {
     add!(Flatten {"xxx".into(), FlattenChild::new("ppp".into(), "qqq".into()), 1111}
      except "msgpack");
 
+    #[derive(Serialize, Debug, new)]
+    struct DefaultConstruct {
+        a: String,
+        c: u64,
+    }
+
+    add!(DefaultConstruct {"xxx".into(), 3});
+
     let opt = Opt::from_args();
     save(&opt.dir);
 }

@@ -73,37 +73,33 @@ macro_rules! extract_str {
     };
 }
 
-macro_rules! extract {
-    ($dict:expr, $field:expr) => {
-        $dict
-            .as_ref()
-            .and_then(|map| map.get($field).map(|v| (*v).owned()))
-    };
-}
-
 #[derive(Clone, Debug, Default, PartialEq, Eq, new)]
 pub struct FieldAttr {
     pub flatten: bool,
     pub rename: Option<String>,
-    pub use_default: bool,
     pub default: Option<Object>,
     pub default_factory: Option<Object>,
     pub skip: bool,
     pub skip_serializing: bool,
     pub skip_deserializing: bool,
+    pub default_construct: bool,
 }
 
 impl FieldAttr {
-    pub fn parse(attr: &Option<&ObjectRef>) -> Result<Self> {
+    pub fn parse(
+        attr: Option<Object>,
+        default: Option<Object>,
+        default_factory: Option<Object>,
+    ) -> Result<Self> {
         Ok(Self::new(
             extract_bool!(attr, "perde_flatten"),
             extract_str!(attr, "perde_rename"),
-            extract_bool!(attr, "perde_default"),
-            extract!(attr, "default"),
-            extract!(attr, "default_factory"),
+            default,
+            default_factory,
             extract_bool!(attr, "perde_skip"),
             extract_bool!(attr, "perde_skip_serializing"),
             extract_bool!(attr, "perde_skip_deserializing"),
+            extract_bool!(attr, "perde_default"),
         ))
     }
 }
@@ -363,6 +359,13 @@ impl Schema {
             Self::Enum(e) => e.name(),
             Self::Union(u) => u.name(),
             Self::Any(_) => "any",
+        }
+    }
+
+    pub fn is_optional(&self) -> bool {
+        match self {
+            Self::Union(u) if u.variants.len() == 2 && u.optional => true,
+            _ => false,
         }
     }
 }

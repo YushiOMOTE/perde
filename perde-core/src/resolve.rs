@@ -63,6 +63,8 @@ lazy_static::lazy_static! {
     static ref DATACLASS_FIELDS: AttrStr = AttrStr::new("__dataclass_fields__");
     static ref ATTR_NAME: AttrStr = AttrStr::new("name");
     static ref ATTR_TYPE: AttrStr = AttrStr::new("type");
+    static ref ATTR_DEFAULT: AttrStr = AttrStr::new("default");
+    static ref ATTR_DEFAULT_FACTORY: AttrStr = AttrStr::new("default_factory");
     static ref ATTR_METADATA: AttrStr = AttrStr::new("metadata");
     static ref ATTR_VALUE: AttrStr = AttrStr::new("value");
     static ref ATTR_ARGS: AttrStr = AttrStr::new("__args__");
@@ -158,13 +160,27 @@ fn maybe_dataclass(
         let field = fields.getref(i)?;
         let name = field.get_attr(&ATTR_NAME)?;
         let ty = field.get_attr(&ATTR_TYPE)?;
-        let metadata = field.get_attr(&ATTR_METADATA)?;
-        let fattr = if metadata.is_none() {
-            None
-        } else {
-            Some(metadata.as_ref())
-        };
-        let fattr = FieldAttr::parse(&fattr)?;
+        let default = field
+            .get_attr(&ATTR_DEFAULT)?
+            .none_as_optional()
+            .filter(|o| {
+                static_objects()
+                    .ok()
+                    .filter(|so| !o.is(so.missing.as_ptr()))
+                    .is_some()
+            });
+        let default_factory = field
+            .get_attr(&ATTR_DEFAULT_FACTORY)?
+            .none_as_optional()
+            .filter(|o| {
+                static_objects()
+                    .ok()
+                    .filter(|so| !o.is(so.missing.as_ptr()))
+                    .is_some()
+            });
+        let metadata = field.get_attr(&ATTR_METADATA)?.none_as_optional();
+
+        let fattr = FieldAttr::parse(metadata, default, default_factory)?;
 
         let origname = name.as_str()?;
         let (dename, sename) = if let Some(renamed) = &fattr.rename {

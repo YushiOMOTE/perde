@@ -234,6 +234,10 @@ impl Class {
         self.0.call(args)
     }
 
+    pub fn default_construct(&self) -> Result<Object> {
+        self.0.call_noarg()
+    }
+
     pub fn name(&self) -> &str {
         self.0.name()
     }
