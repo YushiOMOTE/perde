@@ -155,6 +155,7 @@ fn maybe_dataclass(
     let fields = types::Tuple::from(fields);
 
     let mut members = IndexMap::new();
+    let mut ser_field_len = 0;
 
     for i in 0..fields.len() {
         let field = fields.getref(i)?;
@@ -195,6 +196,10 @@ fn maybe_dataclass(
             )
         };
 
+        if !fattr.skip && !fattr.skip_serializing {
+            ser_field_len += 1;
+        }
+
         // `sename` is used for serialization.
         let mem = FieldSchema::new(
             AttrStr::new(origname),
@@ -218,6 +223,7 @@ fn maybe_dataclass(
         cattr,
         members,
         flatten_members,
+        ser_field_len,
     ))))
 }
 

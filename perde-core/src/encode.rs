@@ -106,7 +106,7 @@ impl<'a> Serialize for WithSchema<'a> {
                 map.end()
             }
             Schema::Class(c) => {
-                let mut map = s.serialize_map(Some(c.fields.len()))?;
+                let mut map = s.serialize_map(Some(c.ser_field_len))?;
                 serialize_fields(&self.object, &c.fields, &mut map)?;
                 map.end()
             }
@@ -157,7 +157,12 @@ where
     E: serde::ser::Error,
 {
     for (_, field) in fields {
+        if field.attr.skip || field.attr.skip_serializing {
+            continue;
+        }
+
         let obj = object.get_attr(&field.name).ser()?;
+
         if field.attr.flatten {
             match &field.schema {
                 Schema::Class(cls) => {
