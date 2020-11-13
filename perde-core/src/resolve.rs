@@ -226,14 +226,14 @@ fn maybe_enum(p: &ObjectRef, attr: &Option<HashMap<&str, &ObjectRef>>) -> Result
         return Ok(None);
     }
 
+    let eattr = EnumAttr::parse(&attr)?;
+
     let iter = p.get_iter()?;
 
     let variants: Result<_> = iter
         .map(|item| {
             let name = item.get_attr(&ATTR_NAME)?;
             let value = item.get_attr(&ATTR_VALUE)?;
-
-            let name = name.as_str()?;
 
             let attr = if item.has_attr(&ATTR_ENUM_METADATA) {
                 let metadata = item.get_attr(&ATTR_ENUM_METADATA)?;
@@ -242,9 +242,26 @@ fn maybe_enum(p: &ObjectRef, attr: &Option<HashMap<&str, &ObjectRef>>) -> Result
                 VariantAttr::default()
             };
 
-            Ok((
-                name.to_string(),
-                VariantSchema::new(name.into(), attr, value),
+            let origname = name.as_str()?;
+
+            let (dename, sername) = if let Some(renamed) = attr.rename.as_ref() {
+                (renamed.to_string(), renamed.to_string())
+            } else if eattr.rename_all.is_some() {
+                let renamed = convert_stringcase(origname, eattr.rename_all);
+                (renamed.clone(), renamed)
+            } else {
+                (
+                    convert_stringcase(origname, eattr.rename_all_deserialize),
+                    convert_stringcase(origname, eattr.rename_all_serialize),
+                )
+            };
+
+            Ok(VariantSchema::new(
+                origname.into(),
+                sername,
+                dename,
+                attr,
+                value,
             ))
         })
         .collect();
@@ -252,7 +269,7 @@ fn maybe_enum(p: &ObjectRef, attr: &Option<HashMap<&str, &ObjectRef>>) -> Result
     Ok(Some(Schema::Enum(Enum::new(
         p.name().into(),
         p.owned(),
-        EnumAttr::parse(&attr)?,
+        eattr,
         variants?,
     ))))
 }

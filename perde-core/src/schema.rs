@@ -151,8 +151,8 @@ impl ClassAttr {
 #[derive(Clone, Debug, Default, new, PartialEq, Eq)]
 pub struct EnumAttr {
     pub rename_all: Option<StrCase>,
-    pub rename_all_serializing: Option<StrCase>,
-    pub rename_all_deserializing: Option<StrCase>,
+    pub rename_all_serialize: Option<StrCase>,
+    pub rename_all_deserialize: Option<StrCase>,
     pub rename: Option<String>,
     pub as_value: bool,
 }
@@ -272,7 +272,7 @@ pub struct Enum {
     pub name: String,
     pub object: Object,
     pub attr: EnumAttr,
-    pub variants: IndexMap<String, VariantSchema>,
+    pub variants: Vec<VariantSchema>,
 }
 
 impl Enum {
@@ -284,6 +284,8 @@ impl Enum {
 #[derive(Debug, Clone, new, PartialEq, Eq)]
 pub struct VariantSchema {
     pub name: String,
+    pub sername: String,
+    pub dename: String,
     pub attr: VariantAttr,
     pub value: Object,
 }

@@ -117,10 +117,17 @@ impl<'a> Serialize for WithSchema<'a> {
                 } else {
                     let name = self.object.get_attr(&ATTR_NAME).ser()?;
                     let name = name.as_str().ser()?;
-                    if !e.variants.contains_key(name) {
-                        return Err(S::Error::custom(format!("no such variant: {}", name)));
+                    let e = match e.variants.iter().find(|s| s.name == name) {
+                        Some(e) => e,
+                        None => return Err(S::Error::custom(format!("no such variant: {}", name))),
+                    };
+                    if e.attr.skip || e.attr.skip_serializing {
+                        return Err(S::Error::custom(format!(
+                            "variant `{}` is marked as `skip` and cannot be serialized",
+                            name
+                        )));
                     }
-                    s.serialize_str(&name)
+                    s.serialize_str(&e.sername)
                 }
             }
             Schema::Union(u) => {

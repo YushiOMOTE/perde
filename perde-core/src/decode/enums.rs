@@ -11,22 +11,43 @@ struct EnumVisitor<'a>(&'a Enum);
 
 impl<'a> EnumVisitor<'a> {
     fn vars(&self) -> Vec<&str> {
-        self.0.variants.iter().map(|(v, _)| v.as_ref()).collect()
+        self.0
+            .variants
+            .iter()
+            .filter_map(|s| {
+                if s.attr.skip || s.attr.skip_deserializing {
+                    None
+                } else {
+                    Some(s.name.as_ref())
+                }
+            })
+            .collect()
     }
 
     fn get<E>(&self, s: &str) -> Result<Object, E>
     where
         E: de::Error,
     {
-        if !self.0.variants.contains_key(s) {
-            return Err(de::Error::custom(format!(
-                "the enum value must be any of {:?}: got `{}`",
-                self.vars(),
-                s
-            )));
-        }
+        let e = match self
+            .0
+            .variants
+            .iter()
+            .find(|v| v.dename == s && !v.attr.skip && !v.attr.skip_deserializing)
+        {
+            Some(e) => e,
+            None => match self.0.variants.iter().find(|v| v.attr.other == true) {
+                Some(e) => e,
+                None => {
+                    return Err(de::Error::custom(format!(
+                        "the enum value must be any of {:?}: got `{}`",
+                        self.vars(),
+                        s
+                    )))
+                }
+            },
+        };
 
-        self.0.object.get(s).ok_or(de::Error::custom(format!(
+        self.0.object.get(&e.name).ok_or(de::Error::custom(format!(
             "cannot construct enum from value {}",
             s
         )))
