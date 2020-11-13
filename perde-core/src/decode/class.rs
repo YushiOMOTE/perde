@@ -104,7 +104,7 @@ impl Class {
             })
             .unwrap_or_else(|| {
                 if self.attr.deny_unknown_fields {
-                    Err(err!("the field `{}` is missing", name,))
+                    Err(err!("unknown field `{}`", name,))
                 } else {
                     Ok(None)
                 }
