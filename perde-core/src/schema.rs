@@ -297,6 +297,7 @@ pub struct Class {
     pub attr: ClassAttr,
     pub fields: IndexMap<String, FieldSchema>,
     pub flatten_fields: IndexMap<String, FieldSchema>,
+    pub flatten_dict: Option<Dict>,
     pub ser_field_len: usize,
 }
 

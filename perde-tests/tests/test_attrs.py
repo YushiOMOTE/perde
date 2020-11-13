@@ -289,3 +289,34 @@ def test_flatten(m):
         z: int
 
     m.repack_type(Flatten)
+
+
+
+"""rust
+#[derive(Serialize, Debug, new)]
+struct DictFlatten {
+  x: String,
+  y: i64,
+  #[serde(flatten)]
+  z: IndexMap<String, String>,
+}
+
+add!(DictFlatten {"hey".into(), -103223,
+    {
+     let mut m = IndexMap::new();
+     m.insert("pp".into(), "q1".into());
+     m.insert("ppp".into(), "q2".into());
+     m.insert("pppp".into(), "q3".into());
+     m
+    }}
+     except "msgpack");
+"""
+@pytest.mark.parametrize("m", FORMATS_EXCEPT("msgpack"))
+def test_dict_flatten(m):
+    @dataclass
+    class DictFlatten:
+        x: str
+        y: int
+        z: Dict[str, str] = field(metadata = {"perde_flatten": True})
+
+    m.repack_type(DictFlatten)

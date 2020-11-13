@@ -168,6 +168,14 @@ where
                 Schema::Class(cls) => {
                     serialize_fields(&obj, &cls.fields, map)?;
                 }
+                Schema::Dict(d) => {
+                    let dict = DictRef::new(&obj);
+                    for (k, v) in dict.iter() {
+                        let k = k.with_schema(&d.key);
+                        let v = v.with_schema(&d.value);
+                        map.serialize_entry(&k, &v)?;
+                    }
+                }
                 _ => return Err(E::custom(format!("found flatten flag for non-class type"))),
             }
         } else {

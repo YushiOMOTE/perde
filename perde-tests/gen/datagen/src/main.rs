@@ -1,6 +1,7 @@
 // This file is generated. Don't modify manually.
 
 use derive_new::new;
+use indexmap::IndexMap;
 use serde::Serialize;
 use std::{
     collections::HashMap,
@@ -211,6 +212,24 @@ fn main() {
     }
 
     add!(Flatten {"xxx".into(), FlattenChild::new("ppp".into(), "qqq".into()), 1111}
+     except "msgpack");
+
+    #[derive(Serialize, Debug, new)]
+    struct DictFlatten {
+        x: String,
+        y: i64,
+        #[serde(flatten)]
+        z: IndexMap<String, String>,
+    }
+
+    add!(DictFlatten {"hey".into(), -103223,
+    {
+     let mut m = IndexMap::new();
+     m.insert("pp".into(), "q1".into());
+     m.insert("ppp".into(), "q2".into());
+     m.insert("pppp".into(), "q3".into());
+     m
+    }}
      except "msgpack");
 
     #[derive(Serialize, Debug, new)]

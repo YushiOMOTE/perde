@@ -12,3 +12,4 @@ rmp-serde = "0.14"
 derive-new = "0.5"
 lazy_static = "1.4"
 structopt = "0.3"
+indexmap = { version = "1.6", features = ["serde-1"] }

@@ -156,6 +156,7 @@ fn maybe_dataclass(
 
     let mut members = IndexMap::new();
     let mut ser_field_len = 0;
+    let mut flatten_dict = None;
 
     for i in 0..fields.len() {
         let field = fields.getref(i)?;
@@ -200,14 +201,22 @@ fn maybe_dataclass(
             ser_field_len += 1;
         }
 
+        let schema = to_schema(ty.as_ref())?;
+
+        // Setup flatten dict which absorbs all the remaining fields.
+        if fattr.flatten {
+            match &schema {
+                Schema::Dict(d) => {
+                    if flatten_dict.is_none() {
+                        flatten_dict = Some(d.clone());
+                    }
+                }
+                _ => {}
+            }
+        }
+
         // `sename` is used for serialization.
-        let mem = FieldSchema::new(
-            AttrStr::new(origname),
-            sename,
-            i as usize,
-            fattr,
-            to_schema(ty.as_ref())?,
-        );
+        let mem = FieldSchema::new(AttrStr::new(origname), sename, i as usize, fattr, schema);
 
         // `dename` is for look up schema on deserialization.
         members.insert(dename, mem);
@@ -223,6 +232,7 @@ fn maybe_dataclass(
         cattr,
         members,
         flatten_members,
+        flatten_dict,
         ser_field_len,
     ))))
 }

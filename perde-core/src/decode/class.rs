@@ -3,8 +3,9 @@ use crate::{
     schema::*,
     types::{self, Object},
 };
+use indexmap::IndexMap;
 use serde::de::{DeserializeSeed, Deserializer, IgnoredAny, MapAccess, Visitor};
-use std::{borrow::Cow, collections::HashMap, fmt};
+use std::{borrow::Cow, fmt};
 
 pub struct ClassVisitor<'a>(pub &'a Class);
 
@@ -19,7 +20,7 @@ impl<'a, 'de> Visitor<'de> for ClassVisitor<'a> {
     where
         M: MapAccess<'de>,
     {
-        let mut map = HashMap::new();
+        let mut map = IndexMap::new();
 
         while let Some(key) = access.next_key()? {
             let key: Cow<str> = key;
@@ -29,7 +30,12 @@ impl<'a, 'de> Visitor<'de> for ClassVisitor<'a> {
 
                 map.insert(key, value);
             } else {
-                let _: IgnoredAny = access.next_value()?;
+                if let Some(flatten_dict) = self.0.flatten_dict.as_ref() {
+                    let value: Object = access.next_value_seed(&*flatten_dict.value)?;
+                    map.insert(key, value);
+                } else {
+                    let _: IgnoredAny = access.next_value()?;
+                }
             }
         }
 
@@ -83,7 +89,7 @@ impl Class {
             })
     }
 
-    pub fn call(&self, map: &mut HashMap<Cow<str>, Object>) -> Result<Object> {
+    pub fn call(&self, map: &mut IndexMap<Cow<str>, Object>) -> Result<Object> {
         let args: Result<Vec<_>> = self
             .fields
             .iter()
@@ -92,7 +98,7 @@ impl Class {
                     match &s.schema {
                         Schema::Class(cls) => return cls.call(map),
                         Schema::Dict(_) => {
-                            let map = std::mem::replace(map, HashMap::new());
+                            let map = std::mem::replace(map, IndexMap::new());
                             let mut dict = types::Dict::new()?;
                             for (k, v) in map {
                                 dict.set(Object::new_str(&k)?, v)?;
@@ -119,7 +125,7 @@ impl Class {
                 }
 
                 let k: &str = k.as_ref();
-                match map.remove(k) {
+                match map.shift_remove(k) {
                     Some(v) => Ok(v),
                     None => {
                         // Here field is missing.
