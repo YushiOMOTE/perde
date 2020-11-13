@@ -18,7 +18,11 @@ pyo3 = { version = "{{ vars.pyo3_version }}", features = ["extension-module"] }
 perde-core = { version = "{{ vars.perde_core_version }}", path = "../perde-core" }
 serde = "1.0"
 {%- for key, value in format.deps %}
+{%- if value.features %}
+{{ key }} = { version = "{{value.version}}", features = [{% for v in value.features %}"{{v}}"{% if not loop.last %},{% endif %}{% endfor %}] }
+{% else %}
 {{ key }} = "{{ value }}"
+{% endif -%}
 {% endfor %}
 
 [lib]

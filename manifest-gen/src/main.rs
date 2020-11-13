@@ -7,12 +7,25 @@ use tera_text_filters::snake_case;
 use walkdir::WalkDir;
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
+struct DependencyInfo {
+    version: String,
+    features: Vec<String>,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+#[serde(untagged)]
+enum Dependency {
+    Str(String),
+    Info(DependencyInfo),
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
 struct Format {
     crate_name: String,
     version: String,
     description: String,
     #[serde(default)]
-    deps: HashMap<String, String>,
+    deps: HashMap<String, Dependency>,
     #[serde(flatten)]
     extra: serde_yaml::Value,
 }
