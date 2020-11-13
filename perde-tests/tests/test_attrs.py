@@ -29,6 +29,124 @@ def test_plain(m):
 
 """rust
 #[derive(Serialize, Debug, new)]
+#[serde(rename_all = "camelCase")]
+struct RenameAll {
+  pen_pineapple: String,
+  apple_pen: String,
+}
+
+add!(RenameAll {"xxx".into(), "yyy".into()});
+"""
+@pytest.mark.parametrize("m", FORMATS)
+def test_rename_all(m):
+    @perde.attr(rename_all = "camelCase")
+    @dataclass
+    class RenameAll:
+        pen_pineapple: str
+        apple_pen: str
+
+    m.repack_type(RenameAll)
+
+
+"""rust
+#[derive(Serialize, Debug, new)]
+#[serde(rename = "RenameAllSerialize", rename_all = "PascalCase")]
+struct RenameAllSerializeOutput {
+  pen_pineapple: String,
+  apple_pen: String,
+}
+
+#[derive(Serialize, Debug, new)]
+#[serde(rename = "RenameAllSerialize")]
+struct RenameAllSerializeInput {
+  pen_pineapple: String,
+  apple_pen: String,
+}
+
+add!(RenameAllSerializeInput {"--".into(), "==".into()});
+add!(RenameAllSerializeOutput {"--".into(), "==".into()});
+"""
+@pytest.mark.parametrize("m", FORMATS)
+def test_rename_all_serialize(m):
+    @perde.attr(rename_all_serialize = "PascalCase")
+    @dataclass
+    class RenameAllSerialize:
+        pen_pineapple: str
+        apple_pen: str
+
+    d = m.unpack_data("RenameAllSerializeInput", astype=RenameAllSerialize)
+    v = m.dumps(d)
+    e = m.data("RenameAllSerializeOutput")
+    assert v == e
+
+
+"""rust
+#[derive(Serialize, Debug, new)]
+#[serde(rename = "RenameAllDeserialize")]
+struct RenameAllDeserializeOutput {
+  pen_pineapple: String,
+  apple_pen: String,
+}
+
+#[derive(Serialize, Debug, new)]
+#[serde(rename = "RenameAllDeserialize", rename_all = "SCREAMING_SNAKE_CASE")]
+struct RenameAllDeserializeInput {
+  pen_pineapple: String,
+  apple_pen: String,
+}
+
+add!(RenameAllDeserializeInput {"--".into(), "==".into()});
+add!(RenameAllDeserializeOutput {"--".into(), "==".into()});
+"""
+@pytest.mark.parametrize("m", FORMATS)
+def test_rename_all_deserialize(m):
+    @perde.attr(rename_all_deserialize = "SCREAMING_SNAKE_CASE")
+    @dataclass
+    class RenameAllDeserialize:
+        pen_pineapple: str
+        apple_pen: str
+
+    d = m.unpack_data("RenameAllDeserializeInput", astype=RenameAllDeserialize)
+    v = m.dumps(d)
+    e = m.data("RenameAllDeserializeOutput")
+    assert v == e
+
+
+"""rust
+#[derive(Serialize, Debug, new)]
+struct DenyUnknownFields {
+  x: String,
+  y: i64,
+  z: i64,
+  q: String,
+}
+
+add!(DenyUnknownFields {"aaaaa".into(), 1, -2, "unknown".into()});
+"""
+@pytest.mark.parametrize("m", FORMATS)
+def test_deny_unknown_fields(m):
+    @dataclass
+    class NoDenyUnknownFields:
+        x: str
+        y: int
+        z: int
+
+    @perde.attr(deny_unknown_fields = True)
+    @dataclass
+    class DenyUnknownFields:
+        x: str
+        y: int
+        z: int
+
+    e = m.unpack_data("DenyUnknownFields", astype=NoDenyUnknownFields)
+    assert e == NoDenyUnknownFields("aaaaa", 1, -2)
+    with pytest.raises(RuntimeError) as e:
+        m.unpack_data("DenyUnknownFields", astype=DenyUnknownFields)
+    print(f'{e}')
+
+
+"""rust
+#[derive(Serialize, Debug, new)]
 struct Rename {
   a: String,
   #[serde(rename = "x")]
@@ -47,27 +165,6 @@ def test_rename(m):
         c: int
 
     m.repack_type(Rename)
-
-
-"""rust
-#[derive(Serialize, Debug, new)]
-#[serde(rename_all = "camelCase")]
-struct RenameAll {
-  pen_pineapple: String,
-  apple_pen: String,
-}
-
-add!(RenameAll {"xxx".into(), "yyy".into()});
-"""
-@pytest.mark.parametrize("m", FORMATS)
-def test_rename_all(m):
-    @perde.attr(rename_all = "camelCase")
-    @dataclass
-    class RenameAll:
-        pen_pineapple: str
-        apple_pen: str
-
-    m.repack_type(RenameAll)
 
 
 """rust
@@ -111,7 +208,7 @@ struct NestedRename {
 add!(NestedRename {"xxx".into(), NestedRenameChild::new("ppp".into(), "qqq".into()), 1111});
 """
 @pytest.mark.parametrize("m", FORMATS)
-def test_rename_in_rename_all(m):
+def test_nested_rename(m):
     @dataclass
     class NestedRenameChild:
         a: str
@@ -144,7 +241,7 @@ struct NestedRenameAll {
 add!(NestedRenameAll {"xxx".into(), NestedRenameAllChild::new("ppp".into(), "qqq".into()), 1111});
 """
 @pytest.mark.parametrize("m", FORMATS)
-def test_rename_in_rename_all(m):
+def test_nested_rename_all(m):
     @perde.attr(rename_all = "UPPERCASE")
     @dataclass
     class NestedRenameAllChild:
@@ -179,7 +276,7 @@ add!(Flatten {"xxx".into(), FlattenChild::new("ppp".into(), "qqq".into()), 1111}
      except "msgpack");
 """
 @pytest.mark.parametrize("m", FORMATS_EXCEPT("msgpack"))
-def test_rename_in_rename_all(m):
+def test_flatten(m):
     @dataclass
     class FlattenChild:
         a: str

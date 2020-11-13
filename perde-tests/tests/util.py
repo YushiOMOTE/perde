@@ -43,7 +43,18 @@ class Format:
         return f'{base}/{self.name}/{name}'
 
 
-    def repack(self, name: str, astype = None, expect = None):
+    def unpack_data(self, name: str, astype = None):
+        d = self.data(name)
+        print(f'unpacking {d}')
+        if astype is None:
+            s = self.loads(d)
+        else:
+            s = self.loads_as(astype, d)
+        print(f'unpacked {s}')
+        return s
+
+
+    def repack_data(self, name: str, astype = None, expect = None):
         d = self.data(name)
         print(f'repacking {d} in `{self.name}`...')
         if astype is not None:
@@ -58,8 +69,12 @@ class Format:
         assert v == d
 
 
+    def unpack_type(self, ty):
+        return self.unpack_data(ty.__name__, astype = ty)
+
+
     def repack_type(self, ty):
-        self.repack(ty.__name__, astype = ty)
+        self.repack_data(ty.__name__, astype = ty)
 
 
 FORMATS = [

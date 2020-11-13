@@ -91,6 +91,59 @@ fn main() {
     add!(Plain {"xxx".into(), "yyy".into(), 3});
 
     #[derive(Serialize, Debug, new)]
+    #[serde(rename_all = "camelCase")]
+    struct RenameAll {
+        pen_pineapple: String,
+        apple_pen: String,
+    }
+
+    add!(RenameAll {"xxx".into(), "yyy".into()});
+
+    #[derive(Serialize, Debug, new)]
+    #[serde(rename = "RenameAllSerialize", rename_all = "PascalCase")]
+    struct RenameAllSerializeOutput {
+        pen_pineapple: String,
+        apple_pen: String,
+    }
+
+    #[derive(Serialize, Debug, new)]
+    #[serde(rename = "RenameAllSerialize")]
+    struct RenameAllSerializeInput {
+        pen_pineapple: String,
+        apple_pen: String,
+    }
+
+    add!(RenameAllSerializeInput {"--".into(), "==".into()});
+    add!(RenameAllSerializeOutput {"--".into(), "==".into()});
+
+    #[derive(Serialize, Debug, new)]
+    #[serde(rename = "RenameAllDeserialize")]
+    struct RenameAllDeserializeOutput {
+        pen_pineapple: String,
+        apple_pen: String,
+    }
+
+    #[derive(Serialize, Debug, new)]
+    #[serde(rename = "RenameAllDeserialize", rename_all = "SCREAMING_SNAKE_CASE")]
+    struct RenameAllDeserializeInput {
+        pen_pineapple: String,
+        apple_pen: String,
+    }
+
+    add!(RenameAllDeserializeInput {"--".into(), "==".into()});
+    add!(RenameAllDeserializeOutput {"--".into(), "==".into()});
+
+    #[derive(Serialize, Debug, new)]
+    struct DenyUnknownFields {
+        x: String,
+        y: i64,
+        z: i64,
+        q: String,
+    }
+
+    add!(DenyUnknownFields {"aaaaa".into(), 1, -2, "unknown".into()});
+
+    #[derive(Serialize, Debug, new)]
     struct Rename {
         a: String,
         #[serde(rename = "x")]
@@ -99,15 +152,6 @@ fn main() {
     }
 
     add!(Rename {"xxx".into(), "yyy".into(), 3});
-
-    #[derive(Serialize, Debug, new)]
-    #[serde(rename_all = "camelCase")]
-    struct RenameAll {
-        pen_pineapple: String,
-        apple_pen: String,
-    }
-
-    add!(RenameAll {"xxx".into(), "yyy".into()});
 
     #[derive(Serialize, Debug, new)]
     #[serde(rename_all = "camelCase")]
@@ -172,4 +216,3 @@ fn main() {
     let opt = Opt::from_args();
     save(&opt.dir);
 }
-
