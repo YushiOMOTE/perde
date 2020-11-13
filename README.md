@@ -6,7 +6,7 @@
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![PyPi](https://img.shields.io/pypi/v/perde.svg)](https://pypi.python.org/pypi/perde)
 [![Supported python versions](https://img.shields.io/pypi/pyversions/perde.svg)](https://pypi.org/project/perde/)
-[![Actions Status](https://github.com/YushiOMOTE/perde/workflows/Rust/badge.svg)](https://github.com/YushiOMOTE/perde/actions)
+[![Actions Status](https://github.com/YushiOMOTE/perde/workflows/tests/badge.svg)](https://github.com/YushiOMOTE/perde/actions)
 
 ![](https://github.com/YushiOMOTE/perde/blob/master/assets/logo.png)
 
