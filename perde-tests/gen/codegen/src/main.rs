@@ -70,7 +70,7 @@ fn main() {
 
     let code = format!(
         r#"
-// Generated at {timestamp}
+// This file is generated. Don't modify manually.
 
 {util}
 
@@ -90,7 +90,6 @@ fn main() {{
   save(&opt.dir);
 }}
 "#,
-        timestamp = chrono::Local::now(),
         util = include_str!("util.rs"),
         code = rust_code.join("\n\n")
     );

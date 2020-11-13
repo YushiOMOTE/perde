@@ -1,4 +1,4 @@
-// Generated at 2020-11-13 12:15:12.463222418 +09:00
+// This file is generated. Don't modify manually.
 
 use derive_new::new;
 use serde::Serialize;
