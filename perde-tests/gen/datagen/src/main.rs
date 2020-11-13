@@ -221,6 +221,60 @@ fn main() {
 
     add!(DefaultConstruct {"xxx".into(), 3});
 
+    #[derive(Serialize, Debug, new)]
+    struct Skip {
+        x: String,
+        y: u64,
+        z: f64,
+        a: String,
+        b: String,
+    }
+
+    #[derive(Serialize, Debug, new)]
+    struct Skipped {
+        x: String,
+        #[serde(skip)]
+        y: u64,
+        z: f64,
+        a: String,
+        b: String,
+    }
+
+    #[derive(Serialize, Debug, new)]
+    struct SkipDefault {
+        x: String,
+        y: u64,
+        z: f64,
+        a: String,
+        b: String,
+    }
+
+    add!(Skip {"ssssss".into(), 3, 1.1, "a".into(), "b".into()});
+    add!(Skipped {"ssssss".into(), 3, 1.1, "a".into(), "b".into()});
+    add!(SkipDefault {"ssssss".into(), 0, 1.1, "a".into(), "b".into()});
+
+    add_value("EnumX", "X");
+    add_value("EnumY", "Y");
+    add_value("EnumZ", "Z");
+
+    add_value("EnumXValue", "hi");
+    add_value("EnumYValue", "foo");
+    add_value("EnumZValue", 3);
+
+    add_value("EnumYRename", "Yay");
+
+    add_value("EnumRenameAllX", "pan-piano");
+    add_value("EnumRenameAllY", "pan-piano-good");
+    add_value("EnumRenameAllZ", "pan-piano-excellent");
+
+    add_value("EnumRenameAllYRename", "PaiPai");
+
+    add_value("EnumRenameAllXRaw", "PanPiano");
+    add_value("EnumRenameAllYRaw", "PanPianoGood");
+    add_value("EnumRenameAllZRaw", "PanPianoExcellent");
+
+    add_value("Other", "fafafafa");
+
     let opt = Opt::from_args();
     save(&opt.dir);
 }

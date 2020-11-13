@@ -26,6 +26,24 @@ class Format:
         return self.package.loads_as(t, v)
 
 
+    def repack(self, v):
+        print(f'repacking {v}...')
+        s = self.package.dumps(v)
+        print(f'packed: {s}')
+        r = self.package.loads(s)
+        print(f'unpacked: {r}')
+        assert r == v
+
+
+    def repack_as(self, t, v):
+        print(f'repacking {v} as {t}...')
+        s = self.package.dumps(v)
+        print(f'packed: {s}')
+        r = self.package.loads_as(t, s)
+        print(f'unpacked: {r}')
+        assert r == v
+
+
     def data(self, name: str):
         p = self.data_path(name)
 
@@ -104,22 +122,3 @@ def repack_as(m, t, v):
     r = m.package.loads_as(t, s)
     print(f'unpacked: {r}')
     assert r == v
-
-
-def repack_json(ty, *args, **kwargs):
-    oty = get_origin(ty) or ty
-    e = oty(*args, **kwargs)
-    assert e is not None
-    v = perde_json.dumps(e)
-    print(f'ok: ser: {v}')
-    a = perde_json.loads_as(ty, v)
-    assert a is not None
-    assert e == a
-    print(f'ok: de: {a}')
-    return v
-
-
-def comp(a, e):
-    e = json.dumps(e, separators=(',', ':'))
-    assert a == e
-    print(f'ok: de: {e}')

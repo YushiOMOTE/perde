@@ -18,22 +18,22 @@
 * [x] `default`
 * [x] `default_factory`
 * [x] `perde_flatten: True`
-* [ ] `perde_skip: True`
-* [ ] `perde_skip_serializing: True`
-* [ ] `perde_skip_deserialzing: True`
+* [x] `perde_skip: True`
+* [x] `perde_skip_serializing: True`
+* [x] `perde_skip_deserialzing: True`
 
 #### Enum attributes
 
 * [ ] `rename`
-* [ ] `rename_all`
-* [ ] `rename_all_serialize`
-* [ ] `rename_all_deserialize`
-* [ ] `as_value`
+* [x] `rename_all`
+* [x] `rename_all_serialize`
+* [x] `rename_all_deserialize`
+* [x] `as_value`
 
 #### Enum member attributes
 
-* [ ] `perde_rename`
-* [ ] `perde_skip`
-* [ ] `perde_skip_serializing`
-* [ ] `perde_skip_deserialzing`
-* [ ] `perde_other`
+* [x] `perde_rename`
+* [x] `perde_skip`
+* [x] `perde_skip_serializing`
+* [x] `perde_skip_deserialzing`
+* [x] `perde_other`
