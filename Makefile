@@ -21,7 +21,8 @@ install-deps:
 install-perde: develop
 
 test:
-	pipenv run pytest -x
+	make -C perde-tests/gen
+	pipenv run pytest $(test_opt)
 
 develop: $(develop-targets)
 

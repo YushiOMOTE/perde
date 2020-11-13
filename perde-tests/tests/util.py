@@ -1,29 +1,92 @@
 from dataclasses import dataclass, field
-from typing import List, Dict, Optional, Union, Tuple, TypeVar
+from typing import List, Dict, Optional, Union, Tuple, TypeVar, Any
 from typing_inspect import get_origin
 import enum
 import perde_json
 import pytest
 import json
 import perde_json, perde_yaml, perde_msgpack
+import os
 
-FORMATS = [perde_json, perde_yaml, perde_msgpack]
+@dataclass
+class Format:
+    name: str
+    package: Any
+    argtype: Any
+
+    def dumps(self, v):
+        return self.package.dumps(v)
+
+
+    def loads(self, v):
+        return self.package.loads(v)
+
+
+    def loads_as(self, t, v):
+        return self.package.loads_as(t, v)
+
+
+    def data(self, name: str):
+        p = self.data_path(name)
+
+        if self.argtype is str:
+            with open(p) as f:
+                return f.read()
+        elif self.argtype is bytes:
+            with open(p, 'rb') as f:
+                return f.read()
+
+
+    def data_path(self, name: str):
+        d = os.path.dirname(__file__)
+        base = os.path.join(d, '../data/')
+        return f'{base}/{self.name}/{name}'
+
+
+    def repack(self, name: str, astype = None, expect = None):
+        d = self.data(name)
+        print(f'repacking {d} in `{self.name}`...')
+        if astype is not None:
+            v = self.loads_as(astype, d)
+        else:
+            v = self.loads(d)
+        print(f'unpacked {v}')
+        if expect is not None:
+            assert v == expect
+        v = self.dumps(v)
+        print(f'packed {v}')
+        assert v == d
+
+
+    def repack_type(self, ty):
+        self.repack(ty.__name__, astype = ty)
+
+
+FORMATS = [
+    Format("json", perde_json, str),
+    Format("yaml", perde_yaml, str),
+    Format("msgpack", perde_msgpack, bytes)
+]
+
+
+def FORMATS_EXCEPT(*args):
+    return [f for f in FORMATS if f.name not in args]
 
 
 def repack(m, v):
     print(f'repacking {v}...')
-    s = m.dumps(v)
+    s = m.package.dumps(v)
     print(f'packed: {s}')
-    r = m.loads(s)
+    r = m.package.loads(s)
     print(f'unpacked: {r}')
     assert r == v
 
 
 def repack_as(m, t, v):
     print(f'repacking {v} as {t}...')
-    s = m.dumps(v)
+    s = m.package.dumps(v)
     print(f'packed: {s}')
-    r = m.loads_as(t, s)
+    r = m.package.loads_as(t, s)
     print(f'unpacked: {r}')
     assert r == v
 

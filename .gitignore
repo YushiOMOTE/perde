@@ -10,6 +10,8 @@ perde-testgen/json
 perde-testgen/yaml
 perde-testgen/msgpack
 
+perde-tests/data
+
 .python-version
 __pycache__/
 *.py[cod]

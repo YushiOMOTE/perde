@@ -4,86 +4,191 @@ import enum
 import perde, perde_json
 import pytest
 
-from util import repack_json, comp
+from util import *
 
+"""rust
+#[derive(Serialize, Debug, new)]
+struct Plain {
+  a: String,
+  b: String,
+  c: u64,
+}
 
-def test_rename():
+add!(Plain {"xxx".into(), "yyy".into(), 3});
+"""
+@pytest.mark.parametrize("m", FORMATS)
+def test_plain(m):
     @dataclass
-    class Test:
+    class Plain:
+        a: str
+        b: str
+        c: int
+
+    m.repack_type(Plain)
+
+
+"""rust
+#[derive(Serialize, Debug, new)]
+struct Rename {
+  a: String,
+  #[serde(rename = "x")]
+  b: String,
+  c: u64,
+}
+
+add!(Rename {"xxx".into(), "yyy".into(), 3});
+"""
+@pytest.mark.parametrize("m", FORMATS)
+def test_rename(m):
+    @dataclass
+    class Rename:
         a: str
         b: str = field(metadata = {"perde_rename": "x"})
         c: int
 
-    comp(repack_json(Test, "yes", "no", 3), {"a":"yes","x":"no","c":3})
+    m.repack_type(Rename)
 
 
-def test_rename_all():
-    @perde.attr(rename_all="camelCase")
+"""rust
+#[derive(Serialize, Debug, new)]
+#[serde(rename_all = "camelCase")]
+struct RenameAll {
+  pen_pineapple: String,
+  apple_pen: String,
+}
+
+add!(RenameAll {"xxx".into(), "yyy".into()});
+"""
+@pytest.mark.parametrize("m", FORMATS)
+def test_rename_all(m):
+    @perde.attr(rename_all = "camelCase")
     @dataclass
-    class Test:
-        this_is_it: str
-        that_is_what: str
-        this_was_that: int
+    class RenameAll:
+        pen_pineapple: str
+        apple_pen: str
 
-    comp(repack_json(Test, "yes", "no", 3), {"thisIsIt":"yes","thatIsWhat":"no","thisWasThat":3})
+    m.repack_type(RenameAll)
 
 
-def test_rename_all_and_rename():
-    @perde.attr(rename_all="camelCase")
+"""rust
+#[derive(Serialize, Debug, new)]
+#[serde(rename_all = "camelCase")]
+struct RenameAllRename {
+  pen_pineapple: String,
+  #[serde(rename = "pen_pen")]
+  apple_pen: String,
+}
+
+add!(RenameAllRename {"xxx".into(), "yyy".into()});
+"""
+@pytest.mark.parametrize("m", FORMATS)
+def test_rename_in_rename_all(m):
+    @perde.attr(rename_all = "camelCase")
     @dataclass
-    class Test:
-        this_is_it: str
-        that_is_what: str = field(metadata = {"perde_rename": "that_is_which"})
-        this_was_that: int
+    class RenameAllRename:
+        pen_pineapple: str
+        apple_pen: str = field(metadata = {"perde_rename": "pen_pen"})
 
-    comp(repack_json(Test, "yes", "no", 3), {"thisIsIt":"yes","that_is_which":"no","thisWasThat":3})
+    m.repack_type(RenameAllRename)
 
 
-def test_nested_rename():
+"""rust
+#[derive(Serialize, Debug, new)]
+struct NestedRenameChild {
+  a: String,
+  #[serde(rename = "d")]
+  b: String,
+}
+
+#[derive(Serialize, Debug, new)]
+struct NestedRename {
+  x: String,
+  #[serde(rename = "w")]
+  y: NestedRenameChild,
+  z: i64,
+}
+
+add!(NestedRename {"xxx".into(), NestedRenameChild::new("ppp".into(), "qqq".into()), 1111});
+"""
+@pytest.mark.parametrize("m", FORMATS)
+def test_rename_in_rename_all(m):
     @dataclass
-    class Test2:
+    class NestedRenameChild:
         a: str
         b: str = field(metadata = {"perde_rename": "d"})
-        c: int
 
     @dataclass
-    class Test:
+    class NestedRename:
         x: str
-        y: Test2 = field(metadata = {"perde_rename": "w"})
+        y: NestedRenameChild = field(metadata = {"perde_rename": "w"})
         z: int
 
-    comp(repack_json(Test, "yes", Test2("faa", "foo", -10), 3), {"x":"yes","w":{"a":"faa","d":"foo","c":-10},"z":3})
+    m.repack_type(NestedRename)
 
 
-def test_nested_rename_all():
-    @perde.attr(rename_all="camelCase")
+"""rust
+#[derive(Serialize, Debug, new)]
+#[serde(rename_all = "UPPERCASE")]
+struct NestedRenameAllChild {
+  a: String,
+  b: String,
+}
+
+#[derive(Serialize, Debug, new)]
+struct NestedRenameAll {
+  x: String,
+  y: NestedRenameAllChild,
+  z: i64,
+}
+
+add!(NestedRenameAll {"xxx".into(), NestedRenameAllChild::new("ppp".into(), "qqq".into()), 1111});
+"""
+@pytest.mark.parametrize("m", FORMATS)
+def test_rename_in_rename_all(m):
+    @perde.attr(rename_all = "UPPERCASE")
     @dataclass
-    class Test2:
-        a_k: str
-        b_k: str
-        c_k: int
-
-    @dataclass
-    class Test:
+    class NestedRenameAllChild:
         a: str
-        b: Test2
-        c: int
+        b: str
 
-    comp(repack_json(Test, "yes", Test2("he", "she", 0), 3), {"a":"yes","b":{"aK":"he","bK":"she","cK":0},"c":3})
-
-
-def test_flatten():
-    @perde.attr(rename_all="camelCase")
     @dataclass
-    class Test2:
+    class NestedRenameAll:
         x: str
-        y: str
+        y: NestedRenameAllChild
         z: int
 
-    @dataclass
-    class Test:
-        a: str
-        b: Test2 = field(metadata = {"perde_flatten": True})
-        c: int
+    m.repack_type(NestedRenameAll)
 
-    comp(repack_json(Test, "yes", Test2("he", "she", 0), 3), {"a":"yes","x":"he","y":"she","z":0,"c":3})
+
+"""rust
+#[derive(Serialize, Debug, new)]
+struct FlattenChild {
+  a: String,
+  b: String,
+}
+
+#[derive(Serialize, Debug, new)]
+struct Flatten {
+  x: String,
+  #[serde(flatten)]
+  y: FlattenChild,
+  z: i64,
+}
+
+add!(Flatten {"xxx".into(), FlattenChild::new("ppp".into(), "qqq".into()), 1111}
+     except "msgpack");
+"""
+@pytest.mark.parametrize("m", FORMATS_EXCEPT("msgpack"))
+def test_rename_in_rename_all(m):
+    @dataclass
+    class FlattenChild:
+        a: str
+        b: str
+
+    @dataclass
+    class Flatten:
+        x: str
+        y: FlattenChild = field(metadata = {"perde_flatten": True})
+        z: int
+
+    m.repack_type(Flatten)
