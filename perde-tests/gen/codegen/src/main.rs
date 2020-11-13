@@ -10,6 +10,9 @@ struct Opt {
     /// Base directory.
     #[structopt(name = "base")]
     base: PathBuf,
+    /// Output file.
+    #[structopt(name = "output")]
+    output: PathBuf,
 }
 
 fn rustfmt(value: &str) -> String {
@@ -35,7 +38,7 @@ fn main() {
 
     let mut rust_code = Vec::new();
 
-    for e in walkdir::WalkDir::new(opt.base)
+    for e in walkdir::WalkDir::new(&opt.base)
         .into_iter()
         .filter_map(|e| e.ok())
         .filter(|e| e.path().extension().filter(|&s| s == "py").is_some())
@@ -94,12 +97,23 @@ fn main() {{
         code = rust_code.join("\n\n")
     );
 
+    let original = if opt.output.exists() {
+        String::from_utf8_lossy(&std::fs::read(&opt.output).unwrap()).to_string()
+    } else {
+        "".into()
+    };
+
     if std::panic::catch_unwind(|| {
-        println!("{}", rustfmt(&code));
+        let code = rustfmt(&code);
+        if code != original {
+            std::fs::write(&opt.output, code.as_bytes()).unwrap()
+        } else {
+            eprintln!("No change");
+        }
     })
     .is_err()
     {
-        eprintln!("****** Broken code:\n\n {}", code);
+        eprintln!("****** Code not written:\n\n {}", code);
         eprintln!("******");
     }
 }
