@@ -12,6 +12,3 @@ ujson = "~=3.1"
 pytest = "~=6.0"
 pyyaml = "~=5.3"
 msgpack = "~=1.0"
-
-[packages]
-yapf = "*"
