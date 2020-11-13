@@ -111,7 +111,7 @@ impl Class {
                         return Ok(obj.owned());
                     } else if let Some(obj) = s.attr.default_factory.as_ref() {
                         return obj.call_noarg();
-                    } else if self.attr.default {
+                    } else if self.attr.default || s.attr.default_construct {
                         return Object::new_default(&s.schema);
                     } else {
                         bail!("`default` must be set together with `skip`/`skip_deserializing` attribute")
