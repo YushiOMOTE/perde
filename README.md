@@ -63,11 +63,11 @@ perde_msgpack.loads_as(A, b'\x82\xA3\x6B\x65\x79\xCD\x01\x2C\xA5\x76\x61\x6C\x75
 
 * Interpreters (CPython)
     * [x] 3.7
-    * [ ] 3.8
+    * [x] 3.8
     * [ ] 3.9
 * Platforms
     * [x] Linux
-    * [ ] MacOS
+    * [x] MacOS
     * [ ] Windows
 
 ### Supported types
@@ -201,27 +201,26 @@ perde_json.dumps(A.FooBar)
 * `deny_unknown_fields = True`
     * Raises an error on deserialization if the input contains unknown fields.
 * `default = True`
-    * When deserialzing, any missing non-optional fields are set by its `default` or `default_factory`.
-    * Raises an error if non-optional fields are missing `default` and `default_factory`.
+    * When deserialzing, any missing fields in the class are created by their default constructors.
 
 #### Class fields attributes
 
 * `perde_rename: "name"`
     * Serialize and deserialize the field with the given name instead of the name in Python.
 * `perde_default: True`
-    * When deserialzing, if the field is missing, the field is set by `default` or `default_factory`.
+    * When deserialzing, if the field is missing, the field is created by its default constructor.
 * `perde_flatten: True`
     * Flatten the content of this field.
     * The type of the field can be either `dataclass` or dictionary.
     * If the type is dictionary, all the remaining fields at that point of deserialization are consumed.
 * `perde_skip: True`
     * Skip serializing or deserializing this field.
-    * The field must have `default` or `default_factory`.
+    * The field must have `default`/`default_factory`, or the `perde` attribute `default`/`perde_default` set.
 * `perde_skip_serializing: True`
     * Skip serialzing this field.
 * `perde_skip_deserialzing: True`
     * Skip deserializing this field.
-    * The field must have `default` or `default_factory`.
+    * The field must have `default`/`default_factory`, or the `perde` attribute `default`/`perde_default` set.
 
 #### Enum attributes
 
