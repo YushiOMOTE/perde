@@ -104,7 +104,7 @@ pub fn resolve_schema<'a>(
         Ok(&static_schema().frozenset)
     } else if p.is_tuple() {
         Ok(&static_schema().tuple)
-    } else if p.is_none_type() {
+    } else if p.is_none_type() || p.is_any() {
         Ok(&SCHEMA_ANY)
     } else if is_datetime(p)? {
         Ok(&Schema::Primitive(Primitive::DateTime))
@@ -128,7 +128,7 @@ pub fn resolve_schema<'a>(
         bail!(
             "unsupported type `{}`",
             p.get_attr(&ATTR_TYPENAME)
-                .and_then(|o| Ok(o.as_str()?.to_string()))
+                .and_then(|o| { Ok(o.as_str()?.to_string()) })
                 .unwrap_or("<unknown>".into())
         );
     }
@@ -373,14 +373,31 @@ fn get_args(p: &ObjectRef) -> Result<types::Tuple> {
     Ok(types::Tuple::from(p.get_attr(&ATTR_ARGS)?))
 }
 
-fn maybe_generic(p: &ObjectRef) -> Result<Option<Schema>> {
-    if !p.is_instance(static_objects()?.generic_alias.as_ptr())
-        && !p.is(static_objects()?.tuple.as_ptr())
+fn is_generic_alias(p: &ObjectRef) -> Result<bool> {
+    if p.is_instance(static_objects()?.generic_alias.as_ptr())
+        || static_objects()?
+            .base_generic_alias
+            .as_ref()
+            .filter(|o| p.is_instance(o.as_ptr()))
+            .is_some()
+        || static_objects()?
+            .union_generic_alias
+            .as_ref()
+            .filter(|o| p.is_instance(o.as_ptr()))
+            .is_some()
+        || static_objects()?
+            .special_generic_alias
+            .as_ref()
+            .filter(|o| p.is_instance(o.as_ptr()))
+            .is_some()
     {
-        if p.is(static_objects()?.optional.as_ptr()) || p.is(static_objects()?.union.as_ptr()) {
-            // Bare `typing.Union` and `typing.Optional` are identical to `Any`.
-            return Ok(Some(Schema::Any(Any)));
-        }
+        return Ok(true);
+    }
+    return Ok(false);
+}
+
+fn maybe_generic(p: &ObjectRef) -> Result<Option<Schema>> {
+    if !is_generic_alias(p)? && !p.is(static_objects()?.tuple.as_ptr()) {
         return Ok(None);
     }
 

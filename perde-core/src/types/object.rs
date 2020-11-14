@@ -24,6 +24,15 @@ macro_rules! cast {
     };
 }
 
+macro_rules! is_typing {
+    ($object:expr, $name:ident) => {
+        static_objects()
+            .ok()
+            .filter(|o| $object.is(o.$name.as_ptr()))
+            .is_some()
+    };
+}
+
 #[derive(Debug)]
 pub struct ObjectRef;
 
@@ -212,23 +221,28 @@ impl ObjectRef {
     }
 
     pub fn is_dict(&self) -> bool {
-        self.is(cast!(PyDict_Type))
+        self.is(cast!(PyDict_Type)) || is_typing!(self, dict)
     }
 
     pub fn is_tuple(&self) -> bool {
-        self.is(cast!(PyTuple_Type))
+        self.is(cast!(PyTuple_Type)) || is_typing!(self, tuple)
     }
 
     pub fn is_set(&self) -> bool {
-        self.is(cast!(PySet_Type))
+        self.is(cast!(PySet_Type)) || is_typing!(self, set)
     }
 
     pub fn is_list(&self) -> bool {
-        self.is(cast!(PyList_Type))
+        self.is(cast!(PyList_Type)) || is_typing!(self, list)
     }
 
     pub fn is_frozen_set(&self) -> bool {
-        self.is(cast!(PyFrozenSet_Type))
+        self.is(cast!(PyFrozenSet_Type)) || is_typing!(self, frozenset)
+    }
+
+    pub fn is_any(&self) -> bool {
+        // `Any`, bare `Optional` and bare `Union` can be treated as Any.
+        is_typing!(self, any) || is_typing!(self, optional) || is_typing!(self, union)
     }
 
     pub fn is_instance(&self, p: *mut PyObject) -> bool {
@@ -462,12 +476,19 @@ pub struct StaticObjects {
     pub fields: StaticObject,
     pub missing: StaticObject,
     pub generic_alias: StaticObject,
+    pub base_generic_alias: Option<StaticObject>,
+    pub union_generic_alias: Option<StaticObject>,
+    pub special_generic_alias: Option<StaticObject>,
     pub type_var: StaticObject,
     pub any: StaticObject,
     pub union: StaticObject,
     pub tuple: StaticObject,
     pub empty_tuple: StaticObject,
     pub optional: StaticObject,
+    pub dict: StaticObject,
+    pub list: StaticObject,
+    pub set: StaticObject,
+    pub frozenset: StaticObject,
     pub enum_meta: StaticObject,
     pub datetime: StaticObject,
     pub date: StaticObject,
@@ -586,11 +607,18 @@ lazy_static::lazy_static! {
         let fields = getattr!(dataclasses, "fields")?;
         let missing = getattr!(dataclasses, "MISSING")?;
         let generic_alias = getattr!(typing, "_GenericAlias")?;
+        let union_generic_alias = getattr!(typing, "_UnionGenericAlias").ok();
+        let base_generic_alias = getattr!(typing, "_BaseGenericAlias").ok();
+        let special_generic_alias = getattr!(typing, "_SpecialGenericAlias").ok();
         let type_var = getattr!(typing, "TypeVar")?;
         let any = getattr!(typing, "Any")?;
         let union = getattr!(typing, "Union")?;
         let tuple = getattr!(typing, "Tuple")?;
         let optional = getattr!(typing, "Optional")?;
+        let dict = getattr!(typing, "Dict")?;
+        let list = getattr!(typing, "List")?;
+        let set = getattr!(typing, "Set")?;
+        let frozenset = getattr!(typing, "FrozenSet")?;
         let enum_meta = getattr!(enum_, "EnumMeta")?;
 
         let tuple_type = ObjectRef::new(cast!(PyTuple_Type))?;
@@ -606,12 +634,19 @@ lazy_static::lazy_static! {
             fields,
             missing,
             generic_alias,
+            union_generic_alias,
+            base_generic_alias,
+            special_generic_alias,
             type_var,
             any,
             union,
             tuple,
             empty_tuple,
             optional,
+            dict,
+            list,
+            set,
+            frozenset,
             enum_meta,
             datetime,
             date,
