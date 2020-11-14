@@ -13,6 +13,7 @@ import perde_toml
 import json
 import yaml
 import msgpack
+import toml
 
 
 @dataclass
@@ -246,11 +247,11 @@ FORMATS = mark(_FORMATS)
 
 
 def FORMATS_ONLY(*args):
-    return mark([f for f in _FORMATS if f.name in args])
+    return mark([f for f in _FORMATS if f.fmtname in args])
 
 
 def FORMATS_EXCEPT(*args):
-    return mark([f for f in _FORMATS if f.name not in args])
+    return mark([f for f in _FORMATS if f.fmtname not in args])
 
 
 _BENCH_FORMATS = [
@@ -273,8 +274,8 @@ BENCH_FORMATS = mark(_BENCH_FORMATS)
 
 
 def BENCH_FORMATS_ONLY(*args):
-    return mark([f for f in _BENCH_FORMATS if f.name in args])
+    return mark([f for f in _BENCH_FORMATS if f.fmtname in args])
 
 
 def BENCH_FORMATS_EXCEPT(*args):
-    return mark([f for f in _BENCH_FORMATS if f.name not in args])
+    return mark([f for f in _BENCH_FORMATS if f.fmtname not in args])
