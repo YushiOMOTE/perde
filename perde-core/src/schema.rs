@@ -73,37 +73,33 @@ macro_rules! extract_str {
     };
 }
 
-macro_rules! extract {
-    ($dict:expr, $field:expr) => {
-        $dict
-            .as_ref()
-            .and_then(|map| map.get($field).map(|v| (*v).owned()))
-    };
-}
-
 #[derive(Clone, Debug, Default, PartialEq, Eq, new)]
 pub struct FieldAttr {
     pub flatten: bool,
     pub rename: Option<String>,
-    pub use_default: bool,
     pub default: Option<Object>,
     pub default_factory: Option<Object>,
     pub skip: bool,
     pub skip_serializing: bool,
     pub skip_deserializing: bool,
+    pub default_construct: bool,
 }
 
 impl FieldAttr {
-    pub fn parse(attr: &Option<&ObjectRef>) -> Result<Self> {
+    pub fn parse(
+        attr: Option<Object>,
+        default: Option<Object>,
+        default_factory: Option<Object>,
+    ) -> Result<Self> {
         Ok(Self::new(
             extract_bool!(attr, "perde_flatten"),
             extract_str!(attr, "perde_rename"),
-            extract_bool!(attr, "perde_default"),
-            extract!(attr, "default"),
-            extract!(attr, "default_factory"),
+            default,
+            default_factory,
             extract_bool!(attr, "perde_skip"),
             extract_bool!(attr, "perde_skip_serializing"),
             extract_bool!(attr, "perde_skip_deserializing"),
+            extract_bool!(attr, "perde_default"),
         ))
     }
 }
@@ -155,8 +151,8 @@ impl ClassAttr {
 #[derive(Clone, Debug, Default, new, PartialEq, Eq)]
 pub struct EnumAttr {
     pub rename_all: Option<StrCase>,
-    pub rename_all_serializing: Option<StrCase>,
-    pub rename_all_deserializing: Option<StrCase>,
+    pub rename_all_serialize: Option<StrCase>,
+    pub rename_all_deserialize: Option<StrCase>,
     pub rename: Option<String>,
     pub as_value: bool,
 }
@@ -276,7 +272,7 @@ pub struct Enum {
     pub name: String,
     pub object: Object,
     pub attr: EnumAttr,
-    pub variants: IndexMap<String, VariantSchema>,
+    pub variants: Vec<VariantSchema>,
 }
 
 impl Enum {
@@ -288,6 +284,8 @@ impl Enum {
 #[derive(Debug, Clone, new, PartialEq, Eq)]
 pub struct VariantSchema {
     pub name: String,
+    pub sername: String,
+    pub dename: String,
     pub attr: VariantAttr,
     pub value: Object,
 }
@@ -299,6 +297,8 @@ pub struct Class {
     pub attr: ClassAttr,
     pub fields: IndexMap<String, FieldSchema>,
     pub flatten_fields: IndexMap<String, FieldSchema>,
+    pub flatten_dict: Option<Dict>,
+    pub ser_field_len: usize,
 }
 
 impl Class {
@@ -310,6 +310,7 @@ impl Class {
 #[derive(Debug, Clone, new, PartialEq, Eq)]
 pub struct FieldSchema {
     pub name: AttrStr,
+    pub rename: String,
     pub pos: usize,
     pub attr: FieldAttr,
     pub schema: Schema,
@@ -362,6 +363,13 @@ impl Schema {
             Self::Enum(e) => e.name(),
             Self::Union(u) => u.name(),
             Self::Any(_) => "any",
+        }
+    }
+
+    pub fn is_optional(&self) -> bool {
+        match self {
+            Self::Union(u) if u.variants.len() == 2 && u.optional => true,
+            _ => false,
         }
     }
 }

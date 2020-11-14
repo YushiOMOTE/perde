@@ -63,11 +63,14 @@ lazy_static::lazy_static! {
     static ref DATACLASS_FIELDS: AttrStr = AttrStr::new("__dataclass_fields__");
     static ref ATTR_NAME: AttrStr = AttrStr::new("name");
     static ref ATTR_TYPE: AttrStr = AttrStr::new("type");
+    static ref ATTR_DEFAULT: AttrStr = AttrStr::new("default");
+    static ref ATTR_DEFAULT_FACTORY: AttrStr = AttrStr::new("default_factory");
     static ref ATTR_METADATA: AttrStr = AttrStr::new("metadata");
     static ref ATTR_VALUE: AttrStr = AttrStr::new("value");
     static ref ATTR_ARGS: AttrStr = AttrStr::new("__args__");
     static ref ATTR_ORIGIN: AttrStr = AttrStr::new("__origin__");
     static ref ATTR_ENUM_METADATA: AttrStr = AttrStr::new("_perde_metadata");
+    static ref ATTR_TYPENAME: AttrStr = AttrStr::new("__name__");
 }
 
 pub fn resolve_schema<'a>(
@@ -122,7 +125,12 @@ pub fn resolve_schema<'a>(
     } else if is_type_var_instance(p)? || is_any_type(p)? {
         Ok(&SCHEMA_ANY)
     } else {
-        bail!("unsupported type")
+        bail!(
+            "unsupported type `{}`",
+            p.get_attr(&ATTR_TYPENAME)
+                .and_then(|o| Ok(o.as_str()?.to_string()))
+                .unwrap_or("<unknown>".into())
+        );
     }
 }
 
@@ -153,28 +161,71 @@ fn maybe_dataclass(
     let fields = types::Tuple::from(fields);
 
     let mut members = IndexMap::new();
+    let mut ser_field_len = 0;
+    let mut flatten_dict = None;
 
     for i in 0..fields.len() {
         let field = fields.getref(i)?;
         let name = field.get_attr(&ATTR_NAME)?;
         let ty = field.get_attr(&ATTR_TYPE)?;
-        let metadata = field.get_attr(&ATTR_METADATA)?;
-        let fattr = if metadata.is_none() {
-            None
-        } else {
-            Some(metadata.as_ref())
-        };
-        let fattr = FieldAttr::parse(&fattr)?;
+        let default = field
+            .get_attr(&ATTR_DEFAULT)?
+            .none_as_optional()
+            .filter(|o| {
+                static_objects()
+                    .ok()
+                    .filter(|so| !o.is(so.missing.as_ptr()))
+                    .is_some()
+            });
+        let default_factory = field
+            .get_attr(&ATTR_DEFAULT_FACTORY)?
+            .none_as_optional()
+            .filter(|o| {
+                static_objects()
+                    .ok()
+                    .filter(|so| !o.is(so.missing.as_ptr()))
+                    .is_some()
+            });
+        let metadata = field.get_attr(&ATTR_METADATA)?.none_as_optional();
 
-        let s = name.as_str()?;
-        let name = if let Some(renamed) = &fattr.rename {
-            renamed.to_owned()
+        let fattr = FieldAttr::parse(metadata, default, default_factory)?;
+
+        let origname = name.as_str()?;
+        let (dename, sename) = if let Some(renamed) = &fattr.rename {
+            (renamed.to_owned(), renamed.to_owned())
+        } else if cattr.rename_all.is_some() {
+            let renamed = convert_stringcase(origname, cattr.rename_all);
+            (renamed.clone(), renamed)
         } else {
-            convert_stringcase(s, cattr.rename_all)
+            (
+                convert_stringcase(origname, cattr.rename_all_deserialize),
+                convert_stringcase(origname, cattr.rename_all_serialize),
+            )
         };
 
-        let mem = FieldSchema::new(AttrStr::new(s), i as usize, fattr, to_schema(ty.as_ref())?);
-        members.insert(name, mem);
+        if !fattr.skip && !fattr.skip_serializing {
+            ser_field_len += 1;
+        }
+
+        let schema = to_schema(ty.as_ref())?;
+
+        // Setup flatten dict which absorbs all the remaining fields.
+        if fattr.flatten {
+            match &schema {
+                Schema::Dict(d) => {
+                    if flatten_dict.is_none() {
+                        flatten_dict = Some(d.clone());
+                    }
+                }
+                _ => {}
+            }
+        }
+
+        // `sename` is used for serialization.
+        let mem = FieldSchema::new(AttrStr::new(origname), sename, i as usize, fattr, schema);
+
+        // `dename` is for look up schema on deserialization.
+        members.insert(dename, mem);
     }
 
     let name = p.name();
@@ -187,6 +238,8 @@ fn maybe_dataclass(
         cattr,
         members,
         flatten_members,
+        flatten_dict,
+        ser_field_len,
     ))))
 }
 
@@ -195,14 +248,14 @@ fn maybe_enum(p: &ObjectRef, attr: &Option<HashMap<&str, &ObjectRef>>) -> Result
         return Ok(None);
     }
 
+    let eattr = EnumAttr::parse(&attr)?;
+
     let iter = p.get_iter()?;
 
     let variants: Result<_> = iter
         .map(|item| {
             let name = item.get_attr(&ATTR_NAME)?;
             let value = item.get_attr(&ATTR_VALUE)?;
-
-            let name = name.as_str()?;
 
             let attr = if item.has_attr(&ATTR_ENUM_METADATA) {
                 let metadata = item.get_attr(&ATTR_ENUM_METADATA)?;
@@ -211,9 +264,26 @@ fn maybe_enum(p: &ObjectRef, attr: &Option<HashMap<&str, &ObjectRef>>) -> Result
                 VariantAttr::default()
             };
 
-            Ok((
-                name.to_string(),
-                VariantSchema::new(name.into(), attr, value),
+            let origname = name.as_str()?;
+
+            let (dename, sername) = if let Some(renamed) = attr.rename.as_ref() {
+                (renamed.to_string(), renamed.to_string())
+            } else if eattr.rename_all.is_some() {
+                let renamed = convert_stringcase(origname, eattr.rename_all);
+                (renamed.clone(), renamed)
+            } else {
+                (
+                    convert_stringcase(origname, eattr.rename_all_deserialize),
+                    convert_stringcase(origname, eattr.rename_all_serialize),
+                )
+            };
+
+            Ok(VariantSchema::new(
+                origname.into(),
+                sername,
+                dename,
+                attr,
+                value,
             ))
         })
         .collect();
@@ -221,7 +291,7 @@ fn maybe_enum(p: &ObjectRef, attr: &Option<HashMap<&str, &ObjectRef>>) -> Result
     Ok(Some(Schema::Enum(Enum::new(
         p.name().into(),
         p.owned(),
-        EnumAttr::parse(&attr)?,
+        eattr,
         variants?,
     ))))
 }

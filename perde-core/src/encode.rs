@@ -106,7 +106,7 @@ impl<'a> Serialize for WithSchema<'a> {
                 map.end()
             }
             Schema::Class(c) => {
-                let mut map = s.serialize_map(Some(c.fields.len()))?;
+                let mut map = s.serialize_map(Some(c.ser_field_len))?;
                 serialize_fields(&self.object, &c.fields, &mut map)?;
                 map.end()
             }
@@ -117,10 +117,17 @@ impl<'a> Serialize for WithSchema<'a> {
                 } else {
                     let name = self.object.get_attr(&ATTR_NAME).ser()?;
                     let name = name.as_str().ser()?;
-                    if !e.variants.contains_key(name) {
-                        return Err(S::Error::custom(format!("no such variant: {}", name)));
+                    let e = match e.variants.iter().find(|s| s.name == name) {
+                        Some(e) => e,
+                        None => return Err(S::Error::custom(format!("no such variant: {}", name))),
+                    };
+                    if e.attr.skip || e.attr.skip_serializing {
+                        return Err(S::Error::custom(format!(
+                            "variant `{}` is marked as `skip` and cannot be serialized",
+                            name
+                        )));
                     }
-                    s.serialize_str(&name)
+                    s.serialize_str(&e.sername)
                 }
             }
             Schema::Union(u) => {
@@ -149,18 +156,31 @@ where
     T: SerializeMap<Error = E>,
     E: serde::ser::Error,
 {
-    for (name, field) in fields {
+    for (_, field) in fields {
+        if field.attr.skip || field.attr.skip_serializing {
+            continue;
+        }
+
         let obj = object.get_attr(&field.name).ser()?;
+
         if field.attr.flatten {
             match &field.schema {
                 Schema::Class(cls) => {
                     serialize_fields(&obj, &cls.fields, map)?;
                 }
+                Schema::Dict(d) => {
+                    let dict = DictRef::new(&obj);
+                    for (k, v) in dict.iter() {
+                        let k = k.with_schema(&d.key);
+                        let v = v.with_schema(&d.value);
+                        map.serialize_entry(&k, &v)?;
+                    }
+                }
                 _ => return Err(E::custom(format!("found flatten flag for non-class type"))),
             }
         } else {
             let f = obj.with_schema(&field.schema);
-            map.serialize_entry(&name, &f)?;
+            map.serialize_entry(&field.rename, &f)?;
         }
     }
     Ok(())

@@ -1,11 +1,11 @@
-# The file is generated. Don't modify manually. Run `make manifests` to regenerate.
+# {{ generator_note }}
 
 [package]
 authors = ["Yushi Omote <yushiomote@gmail.com>"]
-name = "perde-json"
-version = "0.0.1"
+name = "{{ format.crate_name }}"
+version = "{{ format.version }}"
 edition = "2018"
-description = "Fast and flexible JSON serialization library based on perde."
+description = "{{ format.description }}"
 homepage = "https://github.com/yushiomote/perde"
 repository = "https://github.com/yushiomote/perde"
 license = "MIT"
@@ -14,14 +14,19 @@ categories = ["encoding"]
 readme = "README.md"
 
 [dependencies]
-pyo3 = { version = "0.12", features = ["extension-module"] }
-perde-core = { version = "0.0.1", path = "../perde-core" }
+pyo3 = { version = "{{ vars.pyo3_version }}", features = ["extension-module"] }
+perde-core = { version = "{{ vars.perde_core_version }}", path = "../perde-core" }
 serde = "1.0"
-serde_json = { version = "1.0", features = ["preserve_order"] }
-
+{%- for key, value in format.deps %}
+{%- if value.features %}
+{{ key }} = { version = "{{value.version}}", features = [{% for v in value.features %}"{{v}}"{% if not loop.last %},{% endif %}{% endfor %}] }
+{% else %}
+{{ key }} = "{{ value }}"
+{% endif -%}
+{% endfor %}
 
 [lib]
-name = "perde_json"
+name = "{{ format.crate_name | snake_case }}"
 crate-type = ["cdylib"]
 
 [profile.release]

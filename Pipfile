@@ -3,18 +3,17 @@ url = "https://pypi.python.org/simple"
 verify_ssl = true
 name = "pypi"
 
-[requires]
-python_version = "3.7"
-
 [dev-packages]
 yapf = "0.30"
 typing_inspect = "~=0.6"
 maturin = "~=0.8"
+pytest = "~=6.0"
+msgpack = "~=1.0"
+pytest-benchmark = "~=3.2"
+
+pygal = "~=2.4"
+pygaljs = "~=1.0"
+
+pyyaml = "~=5.3"
 orjson = "~=3.3"
 ujson = "~=3.1"
-pytest = "~=6.0"
-pyyaml = "~=5.3"
-msgpack = "~=1.0"
-
-[packages]
-yapf = "*"
