@@ -3,7 +3,7 @@ from typing import List, Dict, Optional, Union, Tuple, TypeVar
 from typing_inspect import get_origin
 import enum
 import pytest
-from util import FORMATS, repack_as
+from util import *
 
 
 @dataclass
@@ -62,13 +62,13 @@ FEW_DICTS_SK = [
 ]
 
 
-@pytest.mark.parametrize("m", FORMATS)
+@pytest.mark.parametrize("m", FORMATS_EXCEPT("toml"))
 @pytest.mark.parametrize("t1,v1", expand(PRIMITIVES + LISTS + DICTS_SK))
 def test_primitives(m, t1, v1):
     repack_as(m, t1, v1)
 
 
-@pytest.mark.parametrize("m", FORMATS)
+@pytest.mark.parametrize("m", FORMATS_EXCEPT("toml"))
 @pytest.mark.parametrize("t1,v1", expand(PRIMITIVES + LISTS + DICTS_SK))
 @pytest.mark.parametrize("t2,v2", expand(PRIMITIVES + LISTS + DICTS_SK))
 def test_simple_classes(m, t1, t2, v1, v2):
@@ -80,7 +80,7 @@ def test_simple_classes(m, t1, t2, v1, v2):
     repack_as(m, Test, Test(v1, v2))
 
 
-@pytest.mark.parametrize("m", FORMATS)
+@pytest.mark.parametrize("m", FORMATS_EXCEPT("toml"))
 @pytest.mark.parametrize("t1,v1", expand(FEW_PRIMITIVES))
 @pytest.mark.parametrize("t2,v2", expand(FEW_PRIMITIVES + FEW_LISTS + FEW_DICTS_SK))
 @pytest.mark.parametrize("t3,v3", expand(FEW_PRIMITIVES + FEW_LISTS + FEW_DICTS_SK))
@@ -111,3 +111,33 @@ def test_nested_classes(m, t1, t2, t3, v1, v2, v3):
         r: t3
 
     repack_as(m, Test3, Test3(v1, Child(v1, v2), v3))
+
+
+@pytest.mark.parametrize("m", FORMATS_ONLY("toml"))
+@pytest.mark.parametrize("t1,v1", expand(PRIMITIVES))
+@pytest.mark.parametrize("t2,v2", expand(PRIMITIVES + LISTS + DICTS_SK))
+def test_simple_classes_tables_after(m, t1, t2, v1, v2):
+    @dataclass
+    class Test:
+        a: t1
+        b: t2
+
+    repack_as(m, Test, Test(v1, v2))
+
+
+@pytest.mark.parametrize("m", FORMATS_ONLY("toml"))
+@pytest.mark.parametrize("t1,v1", expand(FEW_PRIMITIVES))
+@pytest.mark.parametrize("t2,v2", expand(FEW_PRIMITIVES + FEW_LISTS + FEW_DICTS_SK))
+@pytest.mark.parametrize("t3,v3", expand(FEW_PRIMITIVES))
+def test_nested_classes_tables_after(m, t1, t2, t3, v1, v2, v3):
+    @dataclass
+    class Child:
+        a: t1
+        b: t2
+
+    @dataclass
+    class Test1:
+        x: t3
+        y: Child
+
+    repack_as(m, Test1, Test1(v3, Child(v1, v2)))

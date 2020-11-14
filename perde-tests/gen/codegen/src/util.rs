@@ -44,6 +44,7 @@ fn add_value_except<T: Serialize + Debug>(name: &str, data: T, excepts: &[&str])
     insert!("json", serde_json::to_vec);
     insert!("yaml", serde_yaml::to_vec);
     insert!("msgpack", rmp_serde::to_vec_named);
+    insert!("toml", toml::to_vec);
 }
 
 macro_rules! add {

@@ -1,4 +1,4 @@
-packages ?= perde perde-json perde-msgpack perde-yaml
+packages ?= perde perde-json perde-msgpack perde-yaml perde-toml
 
 pipenv_opt ?= $(if $(python_version),--python $(python_version),)
 
@@ -14,7 +14,7 @@ maturin ?= $(pipenv) maturin
 pytest ?= $(pipenv) pytest
 
 bench-result-dir ?= assets
-bench-results = json yaml msgpack
+bench-results = $(foreach p,$(packages), $(p:perde-=))
 
 .PHONY: setup install-deps install-perde prepare-test
 .PHONY: test bench develop build publish test-publish manifest test-manifest
