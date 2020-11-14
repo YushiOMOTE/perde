@@ -2,17 +2,25 @@ from dataclasses import dataclass, field
 from typing import List, Dict, Optional, Union, Tuple, TypeVar, Any
 from typing_inspect import get_origin
 import enum
-import perde_json
 import pytest
-import json
-import perde_json, perde_yaml, perde_msgpack
 import os
+
+import perde_json
+import perde_yaml
+import perde_msgpack
+
+import json
+import yaml
+import msgpack
+
 
 @dataclass
 class Format:
     name: str
+    fmtname: str
     package: Any
     argtype: Any
+
 
     def dumps(self, v):
         return self.package.dumps(v)
@@ -58,7 +66,7 @@ class Format:
     def data_path(self, name: str):
         d = os.path.dirname(__file__)
         base = os.path.join(d, '../data/')
-        return f'{base}/{self.name}/{name}'
+        return f'{base}/{self.fmtname}/{name}'
 
 
     def unpack_data(self, name: str, astype = None):
@@ -95,10 +103,19 @@ class Format:
         self.repack_data(ty.__name__, astype = ty)
 
 
+    def pack_bench(self, benchmark, v):
+        self.package.pack_bench(benchmark, v)
+
+
+    def unpack_bench(self, benchmark, v, t):
+        self.package.unpack_bench(benchmark, v, t)
+
+
+
 FORMATS = [
-    Format("json", perde_json, str),
-    Format("yaml", perde_yaml, str),
-    Format("msgpack", perde_msgpack, bytes)
+    Format("json", "json", perde_json, str),
+    Format("yaml", "yaml", perde_yaml, str),
+    Format("msgpack", "msgpack", perde_msgpack, bytes)
 ]
 
 
@@ -122,3 +139,94 @@ def repack_as(m, t, v):
     r = m.package.loads_as(t, s)
     print(f'unpacked: {r}')
     assert r == v
+
+
+class Json:
+    def pack_bench(b, v):
+        b(json.dumps, v)
+
+    def unpack_bench(b, v, t):
+        b(json.loads, v)
+
+
+class Yaml:
+    def pack_bench(b, v):
+        b(yaml.dump, v)
+
+    def unpack_bench(b, v, t):
+        b(yaml.safe_load, v)
+
+
+class MsgPack:
+    def pack_bench(b, v):
+        b(msgpack.dumps, v)
+
+    def unpack_bench(b, v, t):
+        b(msgpack.loads, v)
+
+
+class PerdeJson:
+    def pack_bench(b, v):
+        b(perde_json.dumps, v)
+
+    def unpack_bench(b, v, t):
+        b(perde_json.loads, v)
+
+
+class PerdeYaml:
+    def pack_bench(b, v):
+        b(perde_yaml.dumps, v)
+
+    def unpack_bench(b, v, t):
+        b(perde_yaml.loads, v)
+
+
+class PerdeMsgPack:
+    def pack_bench(b, v):
+        b(perde_msgpack.dumps, v)
+
+    def unpack_bench(b, v, t):
+        b(perde_msgpack.loads, v)
+
+
+class PerdeJsonAs:
+    def pack_bench(b, v):
+        b(perde_json.dumps, v)
+
+    def unpack_bench(b, v, t):
+        b(perde_json.loads_as, t, v)
+
+
+class PerdeYamlAs:
+    def pack_bench(b, v):
+        b(perde_yaml.dumps, v)
+
+    def unpack_bench(b, v, t):
+        b(perde_yaml.loads_as, t, v)
+
+
+class PerdeMsgPackAs:
+    def pack_bench(b, v):
+        b(perde_msgpack.dumps, v)
+
+    def unpack_bench(b, v, t):
+        b(perde_msgpack.loads_as, t, v)
+
+
+def idfn(m):
+    return m.name
+
+
+BENCH_FORMATS = [
+    Format("json", "json", Json, str),
+    Format("yaml", "yaml", Yaml, str),
+    Format("msgpack", "msgpack", MsgPack, bytes),
+    Format("perde_json", "json", PerdeJson, str),
+    Format("perde_yaml", "yaml", PerdeYaml, str),
+    Format("perde_msgpack", "msgpack", PerdeMsgPack, bytes),
+    Format("perde_json_as", "json", PerdeJsonAs, str),
+    Format("perde_yaml_as", "yaml", PerdeYamlAs, str),
+    Format("perde_msgpack_as", "msgpack", PerdeMsgPackAs, bytes)
+]
+
+MARKED_BENCH_FORMATS = [pytest.param(c, marks=[getattr(pytest.mark, c.fmtname)]) for c in BENCH_FORMATS]

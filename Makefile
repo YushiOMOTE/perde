@@ -1,18 +1,22 @@
-packages = perde perde-json perde-msgpack perde-yaml
+packages ?= perde perde-json perde-msgpack perde-yaml
 
-pipenv_opt = $(if $(python_version),--python $(python_version),)
+pipenv_opt ?= $(if $(python_version),--python $(python_version),)
 
 develop-targets = $(foreach p,$(packages), develop-$(p))
 build-targets = $(foreach p,$(packages), build-$(p))
 publish-targets = $(foreach p,$(packages), publish-$(p))
 test-publish-targets = $(foreach p,$(packages), test-publish-$(p))
 
-test_pypi = https://test.pypi.org/legacy/
+test_pypi ?= https://test.pypi.org/legacy/
 
-pipenv = pipenv run
-maturin = $(pipenv) maturin
+pipenv ?= pipenv run
+maturin ?= $(pipenv) maturin
+pytest ?= $(pipenv) pytest
 
-.PHONY: develop build publish test-publish manifest test-manifest
+bench-results = json.svg yaml.svg msgpack.svg
+
+.PHONY: setup install-deps install-perde prepare-test
+.PHONY: test bench develop build publish test-publish manifest test-manifest
 .PHONY: $(develop-targets) $(build-targets) $(publish-targets) $(test-publish-targets)
 
 setup: install-deps install-perde
@@ -22,9 +26,19 @@ install-deps:
 
 install-perde: develop
 
-test:
+prepare-test:
 	make -C perde-tests/gen
-	pipenv run pytest $(test_opt)
+
+test: prepare-test
+	$(pytest) --benchmark-skip $(test_opt)
+
+bench: prepare-test
+	$(pytest) --benchmark-only $(test_opt)
+
+bench-images: $(bench-results)
+
+$(bench-results):
+	$(pytest) --benchmark-only --benchmark-histogram assets/$(@:.svg=) -m $(@:.svg=)
 
 develop: $(develop-targets)
 

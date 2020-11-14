@@ -272,6 +272,18 @@ fn main() {
     add!(Skipped {"ssssss".into(), 3, 1.1, "a".into(), "b".into()});
     add!(SkipDefault {"ssssss".into(), 0, 1.1, "a".into(), "b".into()});
 
+    add_value("BenchNumber", 1311);
+
+    add_value("BenchDict", {
+        let mut map = IndexMap::new();
+        map.insert("10".to_string(), 10000);
+        map.insert("101".into(), 100030);
+        map.insert("102".into(), 102000);
+        map
+    });
+
+    add_value("BenchList", vec![1i64, 2, -3, 4, 5, -8]);
+
     add_value("EnumX", "X");
     add_value("EnumY", "Y");
     add_value("EnumZ", "Z");
