@@ -13,7 +13,8 @@ pipenv ?= pipenv run
 maturin ?= $(pipenv) maturin
 pytest ?= $(pipenv) pytest
 
-bench-results = json.svg yaml.svg msgpack.svg
+bench-result-dir ?= assets
+bench-results = json yaml msgpack
 
 .PHONY: setup install-deps install-perde prepare-test
 .PHONY: test bench develop build publish test-publish manifest test-manifest
@@ -38,7 +39,7 @@ bench: prepare-test
 bench-images: $(bench-results)
 
 $(bench-results):
-	$(pytest) --benchmark-only --benchmark-histogram assets/$(@:.svg=) -m $(@:.svg=)
+	$(pytest) --benchmark-only --benchmark-histogram $(bench-result-dir)/$@ -m $@
 
 develop: $(develop-targets)
 
