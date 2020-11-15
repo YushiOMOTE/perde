@@ -5,6 +5,7 @@ pipenv_opt ?= $(if $(python_version),--python $(python_version),)
 
 develop-targets = $(addprefix develop-,$(packages))
 build-targets = $(addprefix build-,$(packages))
+coverage-targets = $(addprefix coverage-,$(packages))
 publish-targets = $(addprefix publish-,$(packages))
 test-publish-targets = $(addprefix test-publish-,$(packages))
 
@@ -17,10 +18,12 @@ pytest ?= $(pipenv) pytest
 bench-result-dir ?= assets
 bench-histograms = $(format-packages:perde-%=histogram-%)
 
+build-opt ?= --release
+
 
 .PHONY: setup install-deps install-perde prepare-test
-.PHONY: lint pep8 mypy test bench develop build publish test-publish manifest test-manifest
-.PHONY: $(develop-targets) $(build-targets) $(publish-targets) $(test-publish-targets)
+.PHONY: lint pep8 mypy test bench develop build coverage publish test-publish manifest test-manifest
+.PHONY: $(develop-targets) $(build-targets) $(coverage-targets) $(publish-targets) $(test-publish-targets)
 .PHONY: bench-histogram $(bench-histograms)
 
 
@@ -32,6 +35,7 @@ setup: install-deps install-perde
 
 install-deps:
 	pipenv install --dev --skip-lock $(pipenv_opt)
+	cargo install grcov
 
 
 install-perde: develop
@@ -88,11 +92,11 @@ test-manifest:
 
 
 $(develop-targets):
-	cd $(@:develop-%=%); $(maturin) develop --release
+	cd $(@:develop-%=%); $(maturin) develop $(build-opt)
 
 
 $(build-targets):
-	cd $(@:build-%=%); $(maturin) build --release
+	cd $(@:build-%=%); $(maturin) build $(build-opt)
 
 
 $(publish-targets):
@@ -103,3 +107,12 @@ $(publish-targets):
 $(test-publish-targets):
 	cd $(@:test-publish-%=%); $(maturin) publish \
 		-u $(TEST_PYPI_USER) -p $(TEST_PYPI_PASSWORD) -r $(test_pypi)
+
+
+coverage:
+	grcov -s perde-core -t lcov --llvm --branch -o lcov.info \
+		./perde/target/debug/ \
+		./perde-json/target/debug/ \
+		./perde-yaml/target/debug/ \
+		./perde-msgpack/target/debug/ \
+		./perde-toml/target/debug/
