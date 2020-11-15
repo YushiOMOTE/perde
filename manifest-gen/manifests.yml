@@ -21,3 +21,8 @@ formats:
     description: Fast and flexible MessagePack serialization library based on perde.
     deps:
       rmp-serde: "0.14"
+  - crate_name: perde-toml
+    version: 0.0.1
+    description: Fast and flexible TOML serialization library based on perde.
+    deps:
+      toml: "0.5"

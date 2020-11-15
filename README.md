@@ -64,7 +64,7 @@ perde_msgpack.loads_as(A, b'\x82\xA3\x6B\x65\x79\xCD\x01\x2C\xA5\x76\x61\x6C\x75
 * Interpreters (CPython)
     * [x] 3.7
     * [x] 3.8
-    * [ ] 3.9
+    * [x] 3.9
 * Platforms
     * [x] Linux
     * [x] MacOS
@@ -112,7 +112,7 @@ perde_msgpack.loads_as(A, b'\x82\xA3\x6B\x65\x79\xCD\x01\x2C\xA5\x76\x61\x6C\x75
 * [x] YAML
 * [x] MessagePack
 * [ ] CBOR
-* [ ] Toml
+* [x] TOML
 * [ ] Pickle
 * [ ] RON
 * [ ] BSON

@@ -46,6 +46,7 @@ fn add_value_except<T: Serialize + Debug>(name: &str, data: T, excepts: &[&str])
     insert!("json", serde_json::to_vec);
     insert!("yaml", serde_yaml::to_vec);
     insert!("msgpack", rmp_serde::to_vec_named);
+    insert!("toml", toml::to_vec);
 }
 
 macro_rules! add {
@@ -179,7 +180,8 @@ fn main() {
         z: i64,
     }
 
-    add!(NestedRename {"xxx".into(), NestedRenameChild::new("ppp".into(), "qqq".into()), 1111});
+    add!(NestedRename {"xxx".into(), NestedRenameChild::new("ppp".into(), "qqq".into()), 1111}
+     except "toml");
 
     #[derive(Serialize, Debug, new)]
     #[serde(rename_all = "UPPERCASE")]
@@ -195,7 +197,8 @@ fn main() {
         z: i64,
     }
 
-    add!(NestedRenameAll {"xxx".into(), NestedRenameAllChild::new("ppp".into(), "qqq".into()), 1111});
+    add!(NestedRenameAll {"xxx".into(), NestedRenameAllChild::new("ppp".into(), "qqq".into()), 1111}
+     except "toml");
 
     #[derive(Serialize, Debug, new)]
     struct FlattenChild {

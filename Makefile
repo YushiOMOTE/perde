@@ -1,11 +1,12 @@
-packages ?= perde perde-json perde-msgpack perde-yaml
+format-packages ?= perde-json perde-msgpack perde-yaml perde-toml
+packages ?= perde $(format-packages)
 
 pipenv_opt ?= $(if $(python_version),--python $(python_version),)
 
-develop-targets = $(foreach p,$(packages), develop-$(p))
-build-targets = $(foreach p,$(packages), build-$(p))
-publish-targets = $(foreach p,$(packages), publish-$(p))
-test-publish-targets = $(foreach p,$(packages), test-publish-$(p))
+develop-targets = $(addprefix develop-,$(packages))
+build-targets = $(addprefix build-,$(packages))
+publish-targets = $(addprefix publish-,$(packages))
+test-publish-targets = $(addprefix test-publish-,$(packages))
 
 test_pypi ?= https://test.pypi.org/legacy/
 
@@ -14,11 +15,12 @@ maturin ?= $(pipenv) maturin
 pytest ?= $(pipenv) pytest
 
 bench-result-dir ?= assets
-bench-results = json yaml msgpack
+bench-results = $(format-packages:perde-%=%)
 
 .PHONY: setup install-deps install-perde prepare-test
 .PHONY: test bench develop build publish test-publish manifest test-manifest
 .PHONY: $(develop-targets) $(build-targets) $(publish-targets) $(test-publish-targets)
+.PHONY: bench-images $(bench-results)
 
 setup: install-deps install-perde
 
@@ -56,15 +58,15 @@ test-manifest:
 	cd manifest-gen; cargo run -- -t -T templates manifests.yml ..
 
 $(develop-targets):
-	cd $(patsubst develop-%,%,$@); $(maturin) develop --release
+	cd $(@:develop-%=%); $(maturin) develop --release
 
 $(build-targets):
-	cd $(patsubst build-%,%,$@); $(maturin) build --release
+	cd $(@:build-%=%); $(maturin) build --release
 
 $(publish-targets):
-	cd $(patsubst publish-%,%,$@); $(maturin) publish \
+	cd $(@:publish-%=%); $(maturin) publish \
 		-u $(PYPI_USER) -p $(PYPI_PASSWORD)
 
 $(test-publish-targets):
-	cd $(patsubst test-publish-%,%,$@); $(maturin) publish \
+	cd $(@:test-publish-%=%); $(maturin) publish \
 		-u $(TEST_PYPI_USER) -p $(TEST_PYPI_PASSWORD) -r $(test_pypi)

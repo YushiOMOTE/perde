@@ -205,9 +205,10 @@ struct NestedRename {
   z: i64,
 }
 
-add!(NestedRename {"xxx".into(), NestedRenameChild::new("ppp".into(), "qqq".into()), 1111});
+add!(NestedRename {"xxx".into(), NestedRenameChild::new("ppp".into(), "qqq".into()), 1111}
+     except "toml");
 """
-@pytest.mark.parametrize("m", FORMATS)
+@pytest.mark.parametrize("m", FORMATS_EXCEPT("toml"))
 def test_nested_rename(m):
     @dataclass
     class NestedRenameChild:
@@ -238,9 +239,10 @@ struct NestedRenameAll {
   z: i64,
 }
 
-add!(NestedRenameAll {"xxx".into(), NestedRenameAllChild::new("ppp".into(), "qqq".into()), 1111});
+add!(NestedRenameAll {"xxx".into(), NestedRenameAllChild::new("ppp".into(), "qqq".into()), 1111}
+     except "toml");
 """
-@pytest.mark.parametrize("m", FORMATS)
+@pytest.mark.parametrize("m", FORMATS_EXCEPT("toml"))
 def test_nested_rename_all(m):
     @perde.attr(rename_all = "UPPERCASE")
     @dataclass

@@ -8,10 +8,12 @@ import os
 import perde_json
 import perde_yaml
 import perde_msgpack
+import perde_toml
 
 import json
 import yaml
 import msgpack
+import toml
 
 
 @dataclass
@@ -111,18 +113,6 @@ class Format:
         self.package.unpack_bench(benchmark, v, t)
 
 
-
-FORMATS = [
-    Format("json", "json", perde_json, str),
-    Format("yaml", "yaml", perde_yaml, str),
-    Format("msgpack", "msgpack", perde_msgpack, bytes)
-]
-
-
-def FORMATS_EXCEPT(*args):
-    return [f for f in FORMATS if f.name not in args]
-
-
 def repack(m, v):
     print(f'repacking {v}...')
     s = m.package.dumps(v)
@@ -165,6 +155,14 @@ class MsgPack:
         b(msgpack.loads, v)
 
 
+class Toml:
+    def pack_bench(b, v):
+        b(toml.dumps, v)
+
+    def unpack_bench(b, v, t):
+        b(toml.loads, v)
+
+
 class PerdeJson:
     def pack_bench(b, v):
         b(perde_json.dumps, v)
@@ -187,6 +185,14 @@ class PerdeMsgPack:
 
     def unpack_bench(b, v, t):
         b(perde_msgpack.loads, v)
+
+
+class PerdeToml:
+    def pack_bench(b, v):
+        b(perde_toml.dumps, v)
+
+    def unpack_bench(b, v, t):
+        b(perde_toml.loads, v)
 
 
 class PerdeJsonAs:
@@ -213,20 +219,63 @@ class PerdeMsgPackAs:
         b(perde_msgpack.loads_as, t, v)
 
 
+class PerdeTomlAs:
+    def pack_bench(b, v):
+        b(perde_toml.dumps, v)
+
+    def unpack_bench(b, v, t):
+        b(perde_toml.loads_as, t, v)
+
+
 def idfn(m):
     return m.name
 
 
-BENCH_FORMATS = [
+def mark(params):
+    return [pytest.param(c, marks=[getattr(pytest.mark, c.fmtname)]) for c in params]
+
+
+_FORMATS = [
+    Format("json", "json", perde_json, str),
+    Format("yaml", "yaml", perde_yaml, str),
+    Format("msgpack", "msgpack", perde_msgpack, bytes),
+    Format("toml", "toml", perde_toml, str)
+]
+
+
+FORMATS = mark(_FORMATS)
+
+
+def FORMATS_ONLY(*args):
+    return mark([f for f in _FORMATS if f.fmtname in args])
+
+
+def FORMATS_EXCEPT(*args):
+    return mark([f for f in _FORMATS if f.fmtname not in args])
+
+
+_BENCH_FORMATS = [
     Format("json", "json", Json, str),
     Format("yaml", "yaml", Yaml, str),
     Format("msgpack", "msgpack", MsgPack, bytes),
+    Format("toml", "toml", Toml, str),
     Format("perde_json", "json", PerdeJson, str),
     Format("perde_yaml", "yaml", PerdeYaml, str),
     Format("perde_msgpack", "msgpack", PerdeMsgPack, bytes),
+    Format("perde_toml", "toml", PerdeToml, str),
     Format("perde_json_as", "json", PerdeJsonAs, str),
     Format("perde_yaml_as", "yaml", PerdeYamlAs, str),
-    Format("perde_msgpack_as", "msgpack", PerdeMsgPackAs, bytes)
+    Format("perde_msgpack_as", "msgpack", PerdeMsgPackAs, bytes),
+    Format("perde_toml_as", "toml", PerdeTomlAs, str),
 ]
 
-MARKED_BENCH_FORMATS = [pytest.param(c, marks=[getattr(pytest.mark, c.fmtname)]) for c in BENCH_FORMATS]
+
+BENCH_FORMATS = mark(_BENCH_FORMATS)
+
+
+def BENCH_FORMATS_ONLY(*args):
+    return mark([f for f in _BENCH_FORMATS if f.fmtname in args])
+
+
+def BENCH_FORMATS_EXCEPT(*args):
+    return mark([f for f in _BENCH_FORMATS if f.fmtname not in args])
