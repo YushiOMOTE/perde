@@ -1,15 +1,11 @@
-from dataclasses import dataclass, field
-from typing import List, Dict, Optional, Union, Tuple, TypeVar, Any
-from typing_inspect import get_origin
-import enum
+from dataclasses import dataclass
+from typing import Any
 import pytest
 import os
-
 import perde_json
 import perde_yaml
 import perde_msgpack
 import perde_toml
-
 import json
 import yaml
 import msgpack
@@ -23,18 +19,14 @@ class Format:
     package: Any
     argtype: Any
 
-
     def dumps(self, v):
         return self.package.dumps(v)
-
 
     def loads(self, v):
         return self.package.loads(v)
 
-
     def loads_as(self, t, v):
         return self.package.loads_as(t, v)
-
 
     def repack(self, v):
         print(f'repacking {v}...')
@@ -44,7 +36,6 @@ class Format:
         print(f'unpacked: {r}')
         assert r == v
 
-
     def repack_as(self, t, v):
         print(f'repacking {v} as {t}...')
         s = self.package.dumps(v)
@@ -52,7 +43,6 @@ class Format:
         r = self.package.loads_as(t, s)
         print(f'unpacked: {r}')
         assert r == v
-
 
     def data(self, name: str):
         p = self.data_path(name)
@@ -64,14 +54,12 @@ class Format:
             with open(p, 'rb') as f:
                 return f.read()
 
-
     def data_path(self, name: str):
         d = os.path.dirname(__file__)
         base = os.path.join(d, '../data/')
         return f'{base}/{self.fmtname}/{name}'
 
-
-    def unpack_data(self, name: str, astype = None):
+    def unpack_data(self, name: str, astype=None):
         d = self.data(name)
         print(f'unpacking {d}')
         if astype is None:
@@ -81,8 +69,7 @@ class Format:
         print(f'unpacked {s}')
         return s
 
-
-    def repack_data(self, name: str, astype = None, expect = None):
+    def repack_data(self, name: str, astype=None, expect=None):
         d = self.data(name)
         print(f'repacking {d} in `{self.name}`...')
         if astype is not None:
@@ -96,18 +83,14 @@ class Format:
         print(f'packed {v}')
         assert v == d
 
-
     def unpack_type(self, ty):
-        return self.unpack_data(ty.__name__, astype = ty)
-
+        return self.unpack_data(ty.__name__, astype=ty)
 
     def repack_type(self, ty):
-        self.repack_data(ty.__name__, astype = ty)
-
+        self.repack_data(ty.__name__, astype=ty)
 
     def pack_bench(self, benchmark, v):
         self.package.pack_bench(benchmark, v)
-
 
     def unpack_bench(self, benchmark, v, t):
         self.package.unpack_bench(benchmark, v, t)
@@ -232,7 +215,10 @@ def idfn(m):
 
 
 def mark(params):
-    return [pytest.param(c, marks=[getattr(pytest.mark, c.fmtname)]) for c in params]
+    return [
+        pytest.param(c, marks=[getattr(pytest.mark, c.fmtname)])
+        for c in params
+    ]
 
 
 _FORMATS = [
@@ -241,7 +227,6 @@ _FORMATS = [
     Format("msgpack", "msgpack", perde_msgpack, bytes),
     Format("toml", "toml", perde_toml, str)
 ]
-
 
 FORMATS = mark(_FORMATS)
 
@@ -268,7 +253,6 @@ _BENCH_FORMATS = [
     Format("perde_msgpack_as", "msgpack", PerdeMsgPackAs, bytes),
     Format("perde_toml_as", "toml", PerdeTomlAs, str),
 ]
-
 
 BENCH_FORMATS = mark(_BENCH_FORMATS)
 

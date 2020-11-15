@@ -51,6 +51,9 @@ publish: $(publish-targets)
 
 test-publish: test-manifest $(test-publish-targets) manifest
 
+pep8:
+	$(pipenv) flake8
+
 manifests:
 	cd manifest-gen; cargo run -- -T templates manifests.yml ..
 
