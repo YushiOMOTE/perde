@@ -112,7 +112,7 @@ perde_msgpack.loads_as(A, b'\x82\xA3\x6B\x65\x79\xCD\x01\x2C\xA5\x76\x61\x6C\x75
 * [x] YAML
 * [x] MessagePack
 * [ ] CBOR
-* [ ] Toml
+* [x] TOML
 * [ ] Pickle
 * [ ] RON
 * [ ] BSON
