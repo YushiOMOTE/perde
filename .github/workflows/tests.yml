@@ -23,5 +23,7 @@ jobs:
        run: |
          pip install pipenv
          make setup python_version=${{ matrix.python }}
+     - name: Lint
+       run: make lint
      - name: Test
        run: make test

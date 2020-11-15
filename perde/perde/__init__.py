@@ -1,4 +1,4 @@
-from .perde import resolve
+from .perde import resolve  # type: ignore
 import enum
 
 
