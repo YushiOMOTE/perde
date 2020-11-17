@@ -63,14 +63,14 @@ def test_bytearray(m):
 def test_dict(m):
     repack(m, {"a": 10})
     repack(m, {})
-    repack(m, {"a":{"b": 10}})
+    repack(m, {"a": {"b": 10}})
     repack_as(m, dict, {"a": 10})
     repack_as(m, dict, {})
-    repack_as(m, dict, {"a":{"b": 10}})
+    repack_as(m, dict, {"a": {"b": 10}})
     repack_as(m, typing.Dict, {"a": 10})
     repack_as(m, typing.Dict[str, int], {"a": 10})
     repack_as(m, typing.Dict[str, int], {})
-    repack_as(m, typing.Dict[str, typing.Dict[str, int]], {"a":{"b": 10}})
+    repack_as(m, typing.Dict[str, typing.Dict[str, int]], {"a": {"b": 10}})
     repack_as(m, typing.Dict[str, typing.Any], {"xxx": 3.3})
 
 
@@ -123,12 +123,12 @@ def test_frozen_set(m):
 def test_tuple(m):
     repack_as(m, tuple, ("hage", -100, 3.14))
     repack_as(m, tuple, (33, {"a": 10}))
-    repack_as(m, tuple, ("hage",))
+    repack_as(m, tuple, ("hage", ))
     repack_as(m, tuple, ())
     repack_as(m, typing.Tuple, (3, "abc", "def"))
     repack_as(m, typing.Tuple[int, str, bytes], (3, "abc", b"def"))
     repack_as(m, typing.Tuple[str, dict], ("hage", {"a": -10}))
-    repack_as(m, typing.Tuple[str], ("foo",))
+    repack_as(m, typing.Tuple[str], ("foo", ))
     repack_as(m, typing.Tuple[int], ())
     repack_as(m, typing.Tuple[int, str, typing.Any], (3, "abc", "def"))
     repack_as(m, typing.Tuple[int, typing.Any, bytes], (3, "abc", b"def"))
@@ -163,6 +163,7 @@ def test_class(m):
         pass
 
     repack_as(m, V, V())
+
 
 # As `toml` cannot have table before values.
 @pytest.mark.parametrize("m", FORMATS)
@@ -206,7 +207,7 @@ def test_enum(m):
     repack_as(m, E, E.Y)
     repack_as(m, E, E.Z)
 
-    @perde.attr(as_value = True)
+    @perde.attr(as_value=True)
     class EV(enum.Enum):
         X = 1
         Y = "hage"
@@ -225,7 +226,7 @@ def test_enum(m):
     repack_as(m, IE, IE.Y)
     repack_as(m, IE, IE.Z)
 
-    @perde.attr(as_value = True)
+    @perde.attr(as_value=True)
     class IEV(enum.IntEnum):
         X = 1
         Y = 4
@@ -247,7 +248,7 @@ def test_flag(m):
     repack_as(m, E, E.Y)
     repack_as(m, E, E.Z)
 
-    @perde.attr(as_value = True)
+    @perde.attr(as_value=True)
     class EV(enum.Flag):
         X = enum.auto()
         Y = enum.auto()
@@ -266,7 +267,7 @@ def test_flag(m):
     repack_as(m, IE, IE.Y)
     repack_as(m, IE, IE.Z)
 
-    @perde.attr(as_value = True)
+    @perde.attr(as_value=True)
     class IEV(enum.IntFlag):
         X = enum.auto()
         Y = enum.auto()

@@ -180,7 +180,10 @@ fn main() {
         z: i64,
     }
 
-    add!(NestedRename {"xxx".into(), NestedRenameChild::new("ppp".into(), "qqq".into()), 1111}
+    add!(NestedRename
+     {"xxx".into(),
+      NestedRenameChild::new("ppp".into(), "qqq".into()),
+      1111}
      except "toml");
 
     #[derive(Serialize, Debug, new)]
@@ -197,7 +200,10 @@ fn main() {
         z: i64,
     }
 
-    add!(NestedRenameAll {"xxx".into(), NestedRenameAllChild::new("ppp".into(), "qqq".into()), 1111}
+    add!(NestedRenameAll
+     {"xxx".into(),
+      NestedRenameAllChild::new("ppp".into(), "qqq".into()),
+      1111}
      except "toml");
 
     #[derive(Serialize, Debug, new)]
@@ -214,7 +220,10 @@ fn main() {
         z: i64,
     }
 
-    add!(Flatten {"xxx".into(), FlattenChild::new("ppp".into(), "qqq".into()), 1111}
+    add!(Flatten
+     {"xxx".into(),
+      FlattenChild::new("ppp".into(), "qqq".into()),
+      1111}
      except "msgpack");
 
     #[derive(Serialize, Debug, new)]

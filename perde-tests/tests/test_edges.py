@@ -1,9 +1,7 @@
-from enum import Enum
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 import typing
 import pytest
-import perde
-from util import FORMATS, repack, repack_as
+from util import FORMATS, repack_as
 
 
 @pytest.mark.parametrize("m", FORMATS)

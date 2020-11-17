@@ -1,12 +1,7 @@
-from dataclasses import dataclass, field
-from typing import List, Dict, Optional, Union, Tuple, TypeVar
 import enum
-import perde, perde_json
+import perde
 import pytest
-
-from util import *
-
-
+from util import FORMATS_EXCEPT
 """rust
 add_value("EnumX", "X");
 add_value("EnumY", "Y");
@@ -16,6 +11,8 @@ add_value("EnumXValue", "hi");
 add_value("EnumYValue", "foo");
 add_value("EnumZValue", 3);
 """
+
+
 @pytest.mark.parametrize("m", FORMATS_EXCEPT("toml"))
 def test_enum(m):
     class E(enum.Enum):
@@ -33,7 +30,7 @@ def test_enum(m):
 
 @pytest.mark.parametrize("m", FORMATS_EXCEPT("toml"))
 def test_enum_value(m):
-    @perde.attr(as_value = True)
+    @perde.attr(as_value=True)
     class E(enum.Enum):
         X = "hi"
         Y = "foo"
@@ -50,6 +47,8 @@ def test_enum_value(m):
 """rust
 add_value("EnumYRename", "Yay");
 """
+
+
 @pytest.mark.parametrize("m", FORMATS_EXCEPT("toml"))
 def test_enum_rename(m):
     class E(perde.Enum):
@@ -70,9 +69,11 @@ add_value("EnumRenameAllX", "pan-piano");
 add_value("EnumRenameAllY", "pan-piano-good");
 add_value("EnumRenameAllZ", "pan-piano-excellent");
 """
+
+
 @pytest.mark.parametrize("m", FORMATS_EXCEPT("toml"))
 def test_enum_rename_all(m):
-    @perde.attr(rename_all = "kebab-case")
+    @perde.attr(rename_all="kebab-case")
     class E(perde.Enum):
         PanPiano = "itta"
         PanPianoGood = "yatta"
@@ -89,9 +90,11 @@ def test_enum_rename_all(m):
 """rust
 add_value("EnumRenameAllYRename", "PaiPai");
 """
+
+
 @pytest.mark.parametrize("m", FORMATS_EXCEPT("toml"))
 def test_enum_rename_in_rename_all(m):
-    @perde.attr(rename_all = "kebab-case")
+    @perde.attr(rename_all="kebab-case")
     class E(perde.Enum):
         PanPiano = "itta"
         PanPianoGood = "yatta", {"perde_rename": "PaiPai"}
@@ -110,9 +113,11 @@ add_value("EnumRenameAllXRaw", "PanPiano");
 add_value("EnumRenameAllYRaw", "PanPianoGood");
 add_value("EnumRenameAllZRaw", "PanPianoExcellent");
 """
+
+
 @pytest.mark.parametrize("m", FORMATS_EXCEPT("toml"))
 def test_enum_rename_all_serialize(m):
-    @perde.attr(rename_all_serialize = "kebab-case")
+    @perde.attr(rename_all_serialize="kebab-case")
     class E(perde.Enum):
         PanPiano = "itta"
         PanPianoGood = "yatta"
@@ -128,7 +133,7 @@ def test_enum_rename_all_serialize(m):
 
 @pytest.mark.parametrize("m", FORMATS_EXCEPT("toml"))
 def test_enum_rename_all_deserialize(m):
-    @perde.attr(rename_all_deserialize = "kebab-case")
+    @perde.attr(rename_all_deserialize="kebab-case")
     class E(perde.Enum):
         PanPiano = "itta"
         PanPianoGood = "yatta"
@@ -190,8 +195,10 @@ def test_enum_skip_deserializing(m):
 """rust
 add_value("Other", "fafafafa");
 """
+
+
 @pytest.mark.parametrize("m", FORMATS_EXCEPT("toml"))
-def test_enum_skip_deserializing(m):
+def test_enum_skip_other(m):
     class E(perde.Enum):
         X = "hi"
         Y = "foo"

@@ -1,11 +1,8 @@
 from dataclasses import dataclass, field
-from typing import List, Dict, Optional, Union, Tuple, TypeVar
-import enum
-import perde, perde_json
+from typing import Dict
+import perde
 import pytest
-
-from util import *
-
+from util import FORMATS, FORMATS_EXCEPT
 """rust
 #[derive(Serialize, Debug, new)]
 struct Plain {
@@ -16,6 +13,8 @@ struct Plain {
 
 add!(Plain {"xxx".into(), "yyy".into(), 3});
 """
+
+
 @pytest.mark.parametrize("m", FORMATS)
 def test_plain(m):
     @dataclass
@@ -37,9 +36,11 @@ struct RenameAll {
 
 add!(RenameAll {"xxx".into(), "yyy".into()});
 """
+
+
 @pytest.mark.parametrize("m", FORMATS)
 def test_rename_all(m):
-    @perde.attr(rename_all = "camelCase")
+    @perde.attr(rename_all="camelCase")
     @dataclass
     class RenameAll:
         pen_pineapple: str
@@ -66,9 +67,11 @@ struct RenameAllSerializeInput {
 add!(RenameAllSerializeInput {"--".into(), "==".into()});
 add!(RenameAllSerializeOutput {"--".into(), "==".into()});
 """
+
+
 @pytest.mark.parametrize("m", FORMATS)
 def test_rename_all_serialize(m):
-    @perde.attr(rename_all_serialize = "PascalCase")
+    @perde.attr(rename_all_serialize="PascalCase")
     @dataclass
     class RenameAllSerialize:
         pen_pineapple: str
@@ -98,9 +101,11 @@ struct RenameAllDeserializeInput {
 add!(RenameAllDeserializeInput {"--".into(), "==".into()});
 add!(RenameAllDeserializeOutput {"--".into(), "==".into()});
 """
+
+
 @pytest.mark.parametrize("m", FORMATS)
 def test_rename_all_deserialize(m):
-    @perde.attr(rename_all_deserialize = "SCREAMING_SNAKE_CASE")
+    @perde.attr(rename_all_deserialize="SCREAMING_SNAKE_CASE")
     @dataclass
     class RenameAllDeserialize:
         pen_pineapple: str
@@ -123,6 +128,8 @@ struct DenyUnknownFields {
 
 add!(DenyUnknownFields {"aaaaa".into(), 1, -2, "unknown".into()});
 """
+
+
 @pytest.mark.parametrize("m", FORMATS)
 def test_deny_unknown_fields(m):
     @dataclass
@@ -131,7 +138,7 @@ def test_deny_unknown_fields(m):
         y: int
         z: int
 
-    @perde.attr(deny_unknown_fields = True)
+    @perde.attr(deny_unknown_fields=True)
     @dataclass
     class DenyUnknownFields:
         x: str
@@ -156,12 +163,14 @@ struct Rename {
 
 add!(Rename {"xxx".into(), "yyy".into(), 3});
 """
+
+
 @pytest.mark.parametrize("m", FORMATS)
 def test_rename(m):
     @dataclass
     class Rename:
         a: str
-        b: str = field(metadata = {"perde_rename": "x"})
+        b: str = field(metadata={"perde_rename": "x"})
         c: int
 
     m.repack_type(Rename)
@@ -178,13 +187,15 @@ struct RenameAllRename {
 
 add!(RenameAllRename {"xxx".into(), "yyy".into()});
 """
+
+
 @pytest.mark.parametrize("m", FORMATS)
 def test_rename_in_rename_all(m):
-    @perde.attr(rename_all = "camelCase")
+    @perde.attr(rename_all="camelCase")
     @dataclass
     class RenameAllRename:
         pen_pineapple: str
-        apple_pen: str = field(metadata = {"perde_rename": "pen_pen"})
+        apple_pen: str = field(metadata={"perde_rename": "pen_pen"})
 
     m.repack_type(RenameAllRename)
 
@@ -205,20 +216,25 @@ struct NestedRename {
   z: i64,
 }
 
-add!(NestedRename {"xxx".into(), NestedRenameChild::new("ppp".into(), "qqq".into()), 1111}
+add!(NestedRename
+     {"xxx".into(),
+      NestedRenameChild::new("ppp".into(), "qqq".into()),
+      1111}
      except "toml");
 """
+
+
 @pytest.mark.parametrize("m", FORMATS_EXCEPT("toml"))
 def test_nested_rename(m):
     @dataclass
     class NestedRenameChild:
         a: str
-        b: str = field(metadata = {"perde_rename": "d"})
+        b: str = field(metadata={"perde_rename": "d"})
 
     @dataclass
     class NestedRename:
         x: str
-        y: NestedRenameChild = field(metadata = {"perde_rename": "w"})
+        y: NestedRenameChild = field(metadata={"perde_rename": "w"})
         z: int
 
     m.repack_type(NestedRename)
@@ -239,12 +255,17 @@ struct NestedRenameAll {
   z: i64,
 }
 
-add!(NestedRenameAll {"xxx".into(), NestedRenameAllChild::new("ppp".into(), "qqq".into()), 1111}
+add!(NestedRenameAll
+     {"xxx".into(),
+      NestedRenameAllChild::new("ppp".into(), "qqq".into()),
+      1111}
      except "toml");
 """
+
+
 @pytest.mark.parametrize("m", FORMATS_EXCEPT("toml"))
 def test_nested_rename_all(m):
-    @perde.attr(rename_all = "UPPERCASE")
+    @perde.attr(rename_all="UPPERCASE")
     @dataclass
     class NestedRenameAllChild:
         a: str
@@ -274,9 +295,14 @@ struct Flatten {
   z: i64,
 }
 
-add!(Flatten {"xxx".into(), FlattenChild::new("ppp".into(), "qqq".into()), 1111}
+add!(Flatten
+     {"xxx".into(),
+      FlattenChild::new("ppp".into(), "qqq".into()),
+      1111}
      except "msgpack");
 """
+
+
 @pytest.mark.parametrize("m", FORMATS_EXCEPT("msgpack"))
 def test_flatten(m):
     @dataclass
@@ -287,11 +313,10 @@ def test_flatten(m):
     @dataclass
     class Flatten:
         x: str
-        y: FlattenChild = field(metadata = {"perde_flatten": True})
+        y: FlattenChild = field(metadata={"perde_flatten": True})
         z: int
 
     m.repack_type(Flatten)
-
 
 
 """rust
@@ -313,12 +338,14 @@ add!(DictFlatten {"hey".into(), -103223,
     }}
      except "msgpack");
 """
+
+
 @pytest.mark.parametrize("m", FORMATS_EXCEPT("msgpack"))
 def test_dict_flatten(m):
     @dataclass
     class DictFlatten:
         x: str
         y: int
-        z: Dict[str, str] = field(metadata = {"perde_flatten": True})
+        z: Dict[str, str] = field(metadata={"perde_flatten": True})
 
     m.repack_type(DictFlatten)
