@@ -1,6 +1,6 @@
 use super::{AttrStr, Tuple};
 use crate::{
-    error::Result,
+    error::{Convert, Result},
     resolve::resolve_schema,
     schema::{Primitive, Schema, WithSchema},
 };
