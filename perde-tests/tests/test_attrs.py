@@ -147,7 +147,7 @@ def test_deny_unknown_fields(m):
 
     e = m.unpack_data("DenyUnknownFields", astype=NoDenyUnknownFields)
     assert e == NoDenyUnknownFields("aaaaa", 1, -2)
-    with pytest.raises(RuntimeError) as e:
+    with pytest.raises(Exception) as e:
         m.unpack_data("DenyUnknownFields", astype=DenyUnknownFields)
     print(f'{e}')
 

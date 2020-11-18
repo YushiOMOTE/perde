@@ -43,9 +43,8 @@ macro_rules! extract_parse {
             .and_then(|map| {
                 map.get($field).map(|v| {
                     let s = v.as_str()?;
-                    s.parse().with_context(|| {
-                        format!("invalid string `{}` in attribute `{}`", s, $field)
-                    })
+                    s.parse()
+                        .context(format!("invalid string `{}` in attribute `{}`", s, $field))
                 })
             })
             .transpose()?
@@ -58,7 +57,7 @@ macro_rules! extract_bool {
             .as_ref()
             .and_then(|map| map.get($field).map(|v| v.as_bool()))
             .transpose()
-            .with_context(|| format!("expected `bool` in attribute `{}`", $field))?
+            .context(format!("expected `bool` in attribute `{}`", $field))?
             .unwrap_or(false)
     };
 }
@@ -69,7 +68,7 @@ macro_rules! extract_str {
             .as_ref()
             .and_then(|map| map.get($field).map(|v| v.as_str().map(|v| v.to_string())))
             .transpose()
-            .with_context(|| format!("expected `str` in attribute `{}`", $field))?
+            .context(format!("expected `str` in attribute `{}`", $field))?
     };
 }
 

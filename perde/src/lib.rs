@@ -1,11 +1,8 @@
-use perde_core::{
-    bail,
-    error::Convert,
-    method_fastcall, module,
-    types::{FastArgs, Object},
-};
+use perde_core::prelude::*;
 use pyo3::ffi::*;
 use std::collections::HashMap;
+
+pyo3::create_exception!(perde, Error, pyo3::exceptions::PyException);
 
 pub extern "C" fn resolve(
     _self: *mut pyo3::ffi::PyObject,
@@ -35,10 +32,16 @@ pub extern "C" fn resolve(
 
         typeobj.resolve(attr)?;
 
-        Ok(Object::new_none().into_ptr())
+        Ok(Object::new_none())
     };
 
-    inner().restore().unwrap_or(std::ptr::null_mut())
+    match inner() {
+        Ok(p) => p.into_ptr(),
+        Err(e) => {
+            e.restore_as::<Error>();
+            std::ptr::null_mut()
+        }
+    }
 }
 
-module!(perde, method_fastcall!(resolve, ""));
+module!(perde, exception!(Error), method_fastcall!(resolve, ""));

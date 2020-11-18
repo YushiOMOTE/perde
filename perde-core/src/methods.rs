@@ -6,9 +6,18 @@ pub type _PyCFunctionFastWithKeywords = unsafe extern "C" fn(
 ) -> *mut pyo3::ffi::PyObject;
 
 #[macro_export]
+macro_rules! exception {
+    ($exc:ident) => {
+        |py: pyo3::Python<'_>, _: &str, m: &pyo3::types::PyModule| {
+            m.add(stringify!($exc), py.get_type::<$exc>()).unwrap();
+        }
+    };
+}
+
+#[macro_export]
 macro_rules! method_fastcall {
     ($method:ident, $doc:expr) => {
-        |name: &str, m: &pyo3::types::PyModule| {
+        |_: pyo3::Python<'_>, name: &str, m: &pyo3::types::PyModule| {
             let def = pyo3::ffi::PyMethodDef {
                 ml_name: concat!(stringify!($method), "\0").as_ptr() as *const std::os::raw::c_char,
                 ml_meth: Some(unsafe {
@@ -38,7 +47,7 @@ macro_rules! method_fastcall {
 #[macro_export]
 macro_rules! method_varargs {
     ($method:ident, $doc:expr) => {
-        |name: &str, m: &pyo3::types::PyModule| {
+        |_: pyo3::Python<'_>, name: &str, m: &pyo3::types::PyModule| {
             let def = pyo3::ffi::PyMethodDef {
                 ml_name: concat!(stringify!($method), "\0").as_ptr() as *const std::os::raw::c_char,
                 ml_meth: Some($method),
@@ -64,10 +73,10 @@ macro_rules! method_varargs {
 macro_rules! module {
     ($name:tt, $($cls:expr),*) => {
         #[pyo3::proc_macro::pymodule]
-        pub fn $name(_py: pyo3::Python<'_>, m: &pyo3::types::PyModule) -> pyo3::PyResult<()> {
+        pub fn $name(py: pyo3::Python<'_>, m: &pyo3::types::PyModule) -> pyo3::PyResult<()> {
             $({
                 let method = $cls;
-                method(concat!(stringify!($name), "\0"), m);
+                method(py, concat!(stringify!($name), "\0"), m);
             })*
 
             Ok(())
