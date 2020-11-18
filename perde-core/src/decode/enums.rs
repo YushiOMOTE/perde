@@ -47,10 +47,11 @@ impl<'a> EnumVisitor<'a> {
             },
         };
 
-        self.0.object.get(&e.name).ok_or(de::Error::custom(format!(
-            "cannot construct enum from value {}",
-            s
-        )))
+        self.0
+            .object
+            .get(&e.name)
+            .context(format!("cannot construct enum from value {}", s))
+            .de()
     }
 }
 

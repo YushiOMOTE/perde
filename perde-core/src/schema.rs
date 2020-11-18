@@ -36,15 +36,42 @@ impl FromStr for StrCase {
     }
 }
 
-macro_rules! extract_parse {
+macro_rules! field_extract_bool {
+    ($dict:expr, $field:expr) => {
+        $dict
+            .as_ref()
+            .and_then(|map| map.get($field).ok().map(|v| v.as_bool()))
+            .transpose()
+            .context(format!("expected `bool` in attribute `{}`", $field))?
+            .unwrap_or(false)
+    };
+}
+
+macro_rules! field_extract_str {
+    ($dict:expr, $field:expr) => {
+        $dict
+            .as_ref()
+            .and_then(|map| {
+                map.get($field)
+                    .ok()
+                    .map(|v| v.as_str().map(|v| v.to_string()))
+            })
+            .transpose()
+            .context(format!("expected `str` in attribute `{}`", $field))?
+    };
+}
+
+macro_rules! extract_stringcase {
     ($dict:expr, $field:expr) => {
         $dict
             .as_ref()
             .and_then(|map| {
                 map.get($field).map(|v| {
                     let s = v.as_str()?;
-                    s.parse()
-                        .context(format!("invalid string `{}` in attribute `{}`", s, $field))
+                    s.parse().context(format!(
+                        "invalid string case `{}` in attribute `{}`",
+                        s, $field
+                    ))
                 })
             })
             .transpose()?
@@ -91,14 +118,14 @@ impl FieldAttr {
         default_factory: Option<Object>,
     ) -> Result<Self> {
         Ok(Self::new(
-            extract_bool!(attr, "perde_flatten"),
-            extract_str!(attr, "perde_rename"),
+            field_extract_bool!(attr, "perde_flatten"),
+            field_extract_str!(attr, "perde_rename"),
             default,
             default_factory,
-            extract_bool!(attr, "perde_skip"),
-            extract_bool!(attr, "perde_skip_serializing"),
-            extract_bool!(attr, "perde_skip_deserializing"),
-            extract_bool!(attr, "perde_default"),
+            field_extract_bool!(attr, "perde_skip"),
+            field_extract_bool!(attr, "perde_skip_serializing"),
+            field_extract_bool!(attr, "perde_skip_deserializing"),
+            field_extract_bool!(attr, "perde_default"),
         ))
     }
 }
@@ -115,11 +142,11 @@ pub struct VariantAttr {
 impl VariantAttr {
     pub fn parse(attr: &Option<&ObjectRef>) -> Result<Self> {
         Ok(Self::new(
-            extract_str!(attr, "perde_rename"),
-            extract_bool!(attr, "perde_skip"),
-            extract_bool!(attr, "perde_skip_serializing"),
-            extract_bool!(attr, "perde_skip_deserializing"),
-            extract_bool!(attr, "perde_other"),
+            field_extract_str!(attr, "perde_rename"),
+            field_extract_bool!(attr, "perde_skip"),
+            field_extract_bool!(attr, "perde_skip_serializing"),
+            field_extract_bool!(attr, "perde_skip_deserializing"),
+            field_extract_bool!(attr, "perde_other"),
         ))
     }
 }
@@ -137,9 +164,9 @@ pub struct ClassAttr {
 impl ClassAttr {
     pub fn parse(attr: &Option<HashMap<&str, &ObjectRef>>) -> Result<Self> {
         Ok(Self::new(
-            extract_parse!(attr, "rename_all"),
-            extract_parse!(attr, "rename_all_serialize"),
-            extract_parse!(attr, "rename_all_deserialize"),
+            extract_stringcase!(attr, "rename_all"),
+            extract_stringcase!(attr, "rename_all_serialize"),
+            extract_stringcase!(attr, "rename_all_deserialize"),
             extract_str!(attr, "rename"),
             extract_bool!(attr, "deny_unknown_fields"),
             extract_bool!(attr, "default"),
@@ -159,9 +186,9 @@ pub struct EnumAttr {
 impl EnumAttr {
     pub fn parse(attr: &Option<HashMap<&str, &ObjectRef>>) -> Result<Self> {
         Ok(Self::new(
-            extract_parse!(attr, "rename_all"),
-            extract_parse!(attr, "rename_all_serialize"),
-            extract_parse!(attr, "rename_all_deserialize"),
+            extract_stringcase!(attr, "rename_all"),
+            extract_stringcase!(attr, "rename_all_serialize"),
+            extract_stringcase!(attr, "rename_all_deserialize"),
             extract_str!(attr, "rename"),
             extract_bool!(attr, "as_value"),
         ))

@@ -294,9 +294,9 @@ impl ObjectRef {
         Ok(ObjectIter(objnew!(PyObject_GetIter(self.as_ptr()))?))
     }
 
-    pub fn get(&self, s: &str) -> Option<Object> {
-        let key = Object::new_str(s).ok()?;
-        objnew!(PyObject_GetItem(self.as_ptr(), key.as_ptr())).ok()
+    pub fn get(&self, s: &str) -> Result<Object> {
+        let key = Object::new_str(s)?;
+        objnew!(PyObject_GetItem(self.as_ptr(), key.as_ptr()))
     }
 
     pub fn call(&self, tuple: Tuple) -> Result<Object> {
