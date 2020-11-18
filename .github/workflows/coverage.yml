@@ -28,7 +28,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install pipenv
-          make setup python_version=${{ matrix.python }} build-opt=''
+          make setup python-version=${{ matrix.python }} build-opt=''
         env:
           CARGO_INCREMENTAL: '0'
           RUSTFLAGS: "-Zprofile -Ccodegen-units=1 -Cdebug-assertions=no -Copt-level=0 -Clink-dead-code -Coverflow-checks=off -Zpanic_abort_tests -Cpanic=abort"

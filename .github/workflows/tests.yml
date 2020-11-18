@@ -22,7 +22,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install pipenv
-          make setup python_version=${{ matrix.python }}
+          make setup python-version=${{ matrix.python }}
       - name: Lint
         run: make lint
       - name: Test

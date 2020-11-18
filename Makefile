@@ -1,7 +1,7 @@
 format-packages ?= perde-json perde-msgpack perde-yaml perde-toml
 packages ?= perde $(format-packages)
 
-pipenv_opt ?= $(if $(python_version),--python $(python_version),)
+pipenv-opt ?= $(if $(python-version),--python $(python-version),)
 
 develop-targets = $(addprefix develop-,$(packages))
 build-targets = $(addprefix build-,$(packages))
@@ -9,7 +9,7 @@ coverage-targets = $(addprefix coverage-,$(packages))
 publish-targets = $(addprefix publish-,$(packages))
 test-publish-targets = $(addprefix test-publish-,$(packages))
 
-test_pypi ?= https://test.pypi.org/legacy/
+test-pypi ?= https://test.pypi.org/legacy/
 
 pipenv ?= pipenv run
 maturin ?= $(pipenv) maturin
@@ -19,6 +19,7 @@ bench-result-dir ?= assets
 bench-histograms = $(format-packages:perde-%=histogram-%)
 
 build-opt ?= --release
+build-version-opt ?= $(if $(python-version),-i python$(python-version),)
 
 
 .PHONY: setup install-deps install-perde prepare-test
@@ -34,7 +35,7 @@ setup: install-deps install-perde
 
 
 install-deps:
-	pipenv install --dev --skip-lock $(pipenv_opt)
+	pipenv install --dev --skip-lock $(pipenv-opt)
 	cargo install grcov
 
 
@@ -49,11 +50,11 @@ lint: pep8 mypy
 
 
 test: prepare-test
-	$(pytest) --benchmark-skip $(test_opt)
+	$(pytest) --benchmark-skip $(test-opt)
 
 
 bench: prepare-test
-	$(pytest) --benchmark-only $(test_opt)
+	$(pytest) --benchmark-only $(test-opt)
 
 
 bench-histogram: $(bench-histograms)
@@ -92,21 +93,21 @@ test-manifest:
 
 
 $(develop-targets):
-	cd $(@:develop-%=%); $(maturin) develop $(build-opt)
+	cd $(@:develop-%=%); $(maturin) develop $(build-opt) $(build-version-opt)
 
 
 $(build-targets):
-	cd $(@:build-%=%); $(maturin) build $(build-opt)
+	cd $(@:build-%=%); $(maturin) build $(build-opt) $(build-version-opt)
 
 
 $(publish-targets):
 	cd $(@:publish-%=%); $(maturin) publish \
-		-u $(PYPI_USER) -p $(PYPI_PASSWORD)
+		-u $(PYPI_USER) -p $(PYPI_PASSWORD) $(build-opt) $(build-version-opt)
 
 
 $(test-publish-targets):
 	cd $(@:test-publish-%=%); $(maturin) publish \
-		-u $(TEST_PYPI_USER) -p $(TEST_PYPI_PASSWORD) -r $(test_pypi)
+		-u $(TEST_PYPI_USER) -p $(TEST_PYPI_PASSWORD) -r $(test-pypi) $(build-opt) $(build-version-opt)
 
 
 coverage:
