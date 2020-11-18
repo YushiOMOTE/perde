@@ -30,7 +30,7 @@ impl FastArgs {
                 self.num_args()
             )
         }
-        ObjectRef::new(unsafe { *self.args.offset(0) })
+        ObjectRef::new(unsafe { *self.args.offset(index as isize) })
     }
 
     pub fn iter_kwargs<'a>(&'a self) -> Result<Option<KwArgsIter<'a>>> {
