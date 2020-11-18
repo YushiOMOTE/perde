@@ -3,6 +3,7 @@ from typing import Dict, List
 from util import BENCH_FORMATS, BENCH_FORMATS_EXCEPT, idfn
 """rust
 add_value("BenchNumber", 1311);
+add_value("BenchString", "aiueo");
 """
 
 
@@ -17,6 +18,16 @@ def test_bench_pack_number(m, benchmark):
 def test_bench_unpack_number(m, benchmark):
     m.unpack_bench(benchmark, m.data("BenchNumber"), int)
 
+@pytest.mark.benchmark(group="pack-string")
+@pytest.mark.parametrize("m", BENCH_FORMATS_EXCEPT("toml"), ids=idfn)
+def test_bench_pack_string(m, benchmark):
+    m.pack_bench(benchmark, "aiueo")
+
+
+@pytest.mark.benchmark(group="unpack-string")
+@pytest.mark.parametrize("m", BENCH_FORMATS_EXCEPT("toml"), ids=idfn)
+def test_bench_unpack_string(m, benchmark):
+    m.unpack_bench(benchmark, m.data("BenchString"), str)
 
 """rust
 add_value("BenchDict", {

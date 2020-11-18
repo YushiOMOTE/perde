@@ -285,6 +285,7 @@ fn main() {
     add!(SkipDefault {"ssssss".into(), 0, 1.1, "a".into(), "b".into()});
 
     add_value("BenchNumber", 1311);
+    add_value("BenchString", "aiueo");
 
     add_value("BenchDict", {
         let mut map = IndexMap::new();
