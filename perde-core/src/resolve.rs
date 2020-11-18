@@ -1,7 +1,8 @@
 use crate::{
     error::Result,
+    import::import,
     schema::*,
-    types::{self, static_objects, AttrStr, ObjectRef},
+    types::{self, AttrStr, ObjectRef},
 };
 use indexmap::IndexMap;
 use std::collections::HashMap;
@@ -120,8 +121,6 @@ pub fn resolve_schema<'a>(
             p.set_capsule(&SCHEMA_CACHE, s)
         } else if let Some(s) = maybe_enum(p, &attr)? {
             p.set_capsule(&SCHEMA_CACHE, s)
-        } else if is_type_var_instance(p)? || is_any_type(p)? {
-            Ok(&SCHEMA_ANY)
         } else {
             bail!(
                 "unsupported type `{}`",
@@ -137,14 +136,6 @@ pub fn to_schema(p: &ObjectRef) -> Result<Schema> {
     resolve_schema(p, None).map(|s| s.clone())
 }
 
-fn is_type_var_instance(p: &ObjectRef) -> Result<bool> {
-    Ok(p.is_instance(static_objects()?.type_var.as_ptr()))
-}
-
-fn is_any_type(p: &ObjectRef) -> Result<bool> {
-    Ok(p.is(static_objects()?.any.as_ptr()))
-}
-
 fn maybe_dataclass(
     p: &ObjectRef,
     attr: &Option<HashMap<&str, &ObjectRef>>,
@@ -156,7 +147,7 @@ fn maybe_dataclass(
     let cattr = ClassAttr::parse(attr)?;
 
     let arg = types::Tuple::one(p)?;
-    let fields = static_objects()?.fields.call(arg)?;
+    let fields = import()?.fields.call(arg)?;
     let fields = types::Tuple::from(fields);
 
     let mut members = IndexMap::new();
@@ -171,7 +162,7 @@ fn maybe_dataclass(
             .get_attr(&ATTR_DEFAULT)?
             .none_as_optional()
             .filter(|o| {
-                static_objects()
+                import()
                     .ok()
                     .filter(|so| !o.is(so.missing.as_ptr()))
                     .is_some()
@@ -180,7 +171,7 @@ fn maybe_dataclass(
             .get_attr(&ATTR_DEFAULT_FACTORY)?
             .none_as_optional()
             .filter(|o| {
-                static_objects()
+                import()
                     .ok()
                     .filter(|so| !o.is(so.missing.as_ptr()))
                     .is_some()
@@ -243,7 +234,7 @@ fn maybe_dataclass(
 }
 
 fn maybe_enum(p: &ObjectRef, attr: &Option<HashMap<&str, &ObjectRef>>) -> Result<Option<Schema>> {
-    if !p.is_instance(static_objects()?.enum_meta.as_ptr()) {
+    if !p.is_instance(import()?.enum_meta.as_ptr()) {
         return Ok(None);
     }
 
@@ -321,7 +312,7 @@ fn to_tuple(p: &ObjectRef) -> Result<Schema> {
 
     if args.len() == 1 {
         let p = args.get(0).unwrap();
-        if p.is(static_objects()?.empty_tuple.as_ptr()) {
+        if p.is(import()?.empty_tuple.as_ptr()) {
             return Ok(Schema::Tuple(Tuple::new(vec![])));
         }
     }
@@ -373,18 +364,18 @@ fn get_args(p: &ObjectRef) -> Result<types::Tuple> {
 }
 
 fn is_generic_alias(p: &ObjectRef) -> Result<bool> {
-    if p.is_instance(static_objects()?.generic_alias.as_ptr())
-        || static_objects()?
+    if p.is_instance(import()?.generic_alias.as_ptr())
+        || import()?
             .base_generic_alias
             .as_ref()
             .filter(|o| p.is_instance(o.as_ptr()))
             .is_some()
-        || static_objects()?
+        || import()?
             .union_generic_alias
             .as_ref()
             .filter(|o| p.is_instance(o.as_ptr()))
             .is_some()
-        || static_objects()?
+        || import()?
             .special_generic_alias
             .as_ref()
             .filter(|o| p.is_instance(o.as_ptr()))
@@ -396,13 +387,13 @@ fn is_generic_alias(p: &ObjectRef) -> Result<bool> {
 }
 
 fn maybe_generic(p: &ObjectRef) -> Result<Option<Schema>> {
-    if !is_generic_alias(p)? && !p.is(static_objects()?.tuple.as_ptr()) {
+    if !is_generic_alias(p)? {
         return Ok(None);
     }
 
     let origin = p.get_attr(&ATTR_ORIGIN)?;
 
-    let s = if origin.is(static_objects()?.union.as_ptr()) {
+    let s = if origin.is(import()?.union.as_ptr()) {
         to_union(p)?
     } else if origin.is_tuple() {
         to_tuple(p)?

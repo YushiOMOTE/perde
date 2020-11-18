@@ -12,6 +12,8 @@ pub mod schema;
 pub mod decode;
 pub mod encode;
 
+pub mod import;
+
 pub mod prelude {
     pub use crate::error::{Convert, Error, Result};
     pub use crate::types::{FastArgs, Object, TupleRef};

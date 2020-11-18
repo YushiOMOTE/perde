@@ -1,10 +1,11 @@
 use super::{AttrStr, Tuple};
 use crate::{
-    error::{Convert, Result},
+    error::Result,
+    import::import,
     resolve::resolve_schema,
     schema::{Primitive, Schema, WithSchema},
 };
-use pyo3::{conversion::IntoPyPointer, ffi::*};
+use pyo3::ffi::*;
 use std::{
     collections::HashMap,
     ops::{Deref, DerefMut},
@@ -26,7 +27,7 @@ macro_rules! cast {
 
 macro_rules! is_typing {
     ($object:expr, $name:ident) => {
-        static_objects()
+        import()
             .ok()
             .filter(|o| $object.is(o.$name.as_ptr()))
             .is_some()
@@ -250,23 +251,23 @@ impl ObjectRef {
     }
 
     pub fn is_datetime(&self) -> Result<bool> {
-        Ok(self.is(static_objects()?.datetime.as_ptr()))
+        Ok(self.is(import()?.datetime.as_ptr()))
     }
 
     pub fn is_date(&self) -> Result<bool> {
-        Ok(self.is(static_objects()?.date.as_ptr()))
+        Ok(self.is(import()?.date.as_ptr()))
     }
 
     pub fn is_time(&self) -> Result<bool> {
-        Ok(self.is(static_objects()?.time.as_ptr()))
+        Ok(self.is(import()?.time.as_ptr()))
     }
 
     pub fn is_decimal(&self) -> Result<bool> {
-        Ok(self.is(static_objects()?.decimal.as_ptr()))
+        Ok(self.is(import()?.decimal.as_ptr()))
     }
 
     pub fn is_uuid(&self) -> Result<bool> {
-        Ok(self.is(static_objects()?.uuid.as_ptr()))
+        Ok(self.is(import()?.uuid.as_ptr()))
     }
 
     pub fn name(&self) -> &str {
@@ -402,11 +403,11 @@ impl Object {
             Schema::Primitive(Primitive::ByteArray) => {
                 ObjectRef::new(cast!(PyByteArray_Type))?.call_noarg()?
             }
-            Schema::Primitive(Primitive::DateTime) => static_objects()?.datetime.call_noarg()?,
-            Schema::Primitive(Primitive::Date) => static_objects()?.date.call_noarg()?,
-            Schema::Primitive(Primitive::Time) => static_objects()?.time.call_noarg()?,
-            Schema::Primitive(Primitive::Decimal) => static_objects()?.decimal.call_noarg()?,
-            Schema::Primitive(Primitive::Uuid) => static_objects()?.uuid.call_noarg()?,
+            Schema::Primitive(Primitive::DateTime) => import()?.datetime.call_noarg()?,
+            Schema::Primitive(Primitive::Date) => import()?.date.call_noarg()?,
+            Schema::Primitive(Primitive::Time) => import()?.time.call_noarg()?,
+            Schema::Primitive(Primitive::Decimal) => import()?.decimal.call_noarg()?,
+            Schema::Primitive(Primitive::Uuid) => import()?.uuid.call_noarg()?,
             Schema::Dict(_) => ObjectRef::new(cast!(PyDict_Type))?.call_noarg()?,
             Schema::List(_) => ObjectRef::new(cast!(PyList_Type))?.call_noarg()?,
             Schema::Set(_) => ObjectRef::new(cast!(PySet_Type))?.call_noarg()?,
@@ -475,46 +476,9 @@ impl Drop for Object {
     }
 }
 
-#[derive(Debug)]
-pub struct StaticObject(Object);
-
-impl Deref for StaticObject {
-    type Target = Object;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl From<pyo3::PyObject> for StaticObject {
-    fn from(p: pyo3::PyObject) -> Self {
-        StaticObject(Object::new(p.into_ptr()).unwrap())
-    }
-}
-
-pub struct StaticObjects {
-    pub fields: StaticObject,
-    pub missing: StaticObject,
-    pub generic_alias: StaticObject,
-    pub base_generic_alias: Option<StaticObject>,
-    pub union_generic_alias: Option<StaticObject>,
-    pub special_generic_alias: Option<StaticObject>,
-    pub type_var: StaticObject,
-    pub any: StaticObject,
-    pub union: StaticObject,
-    pub tuple: StaticObject,
-    pub empty_tuple: StaticObject,
-    pub optional: StaticObject,
-    pub dict: StaticObject,
-    pub list: StaticObject,
-    pub set: StaticObject,
-    pub frozenset: StaticObject,
-    pub enum_meta: StaticObject,
-    pub datetime: StaticObject,
-    pub date: StaticObject,
-    pub time: StaticObject,
-    pub decimal: StaticObject,
-    pub uuid: StaticObject,
+lazy_static::lazy_static! {
+    static ref ATTR_ISOFORMAT: AttrStr = AttrStr::new("isoformat");
+    static ref ATTR_FROMISOFORMAT: AttrStr = AttrStr::new("fromisoformat");
 }
 
 pub fn isoformat(obj: &ObjectRef) -> Result<Object> {
@@ -524,28 +488,19 @@ pub fn isoformat(obj: &ObjectRef) -> Result<Object> {
 pub fn datetime_fromisoformat(obj: &ObjectRef) -> Result<Object> {
     let mut args = Tuple::new(1)?;
     args.set(0, obj.owned());
-    static_objects()?
-        .datetime
-        .get_attr(&ATTR_FROMISOFORMAT)?
-        .call(args)
+    import()?.datetime.get_attr(&ATTR_FROMISOFORMAT)?.call(args)
 }
 
 pub fn date_fromisoformat(obj: &ObjectRef) -> Result<Object> {
     let mut args = Tuple::new(1)?;
     args.set(0, obj.owned());
-    static_objects()?
-        .date
-        .get_attr(&ATTR_FROMISOFORMAT)?
-        .call(args)
+    import()?.date.get_attr(&ATTR_FROMISOFORMAT)?.call(args)
 }
 
 pub fn time_fromisoformat(obj: &ObjectRef) -> Result<Object> {
     let mut args = Tuple::new(1)?;
     args.set(0, obj.owned());
-    static_objects()?
-        .time
-        .get_attr(&ATTR_FROMISOFORMAT)?
-        .call(args)
+    import()?.time.get_attr(&ATTR_FROMISOFORMAT)?.call(args)
 }
 
 pub fn to_str(obj: &ObjectRef) -> Result<Object> {
@@ -558,101 +513,11 @@ pub fn to_str(obj: &ObjectRef) -> Result<Object> {
 pub fn to_uuid(obj: &ObjectRef) -> Result<Object> {
     let mut args = Tuple::new(1)?;
     args.set(0, obj.owned());
-    static_objects()?.uuid.call(args)
+    import()?.uuid.call(args)
 }
 
 pub fn to_decimal(obj: &ObjectRef) -> Result<Object> {
     let mut args = Tuple::new(1)?;
     args.set(0, obj.owned());
-    static_objects()?.decimal.call(args)
-}
-
-unsafe impl Sync for StaticObject {}
-
-pub fn static_objects() -> Result<&'static StaticObjects> {
-    STATIC_OBJECTS.as_ref().map_err(|e| err!("{}", e))
-}
-
-macro_rules! getattr {
-    ($module:expr, $name:expr) => {
-        $module
-            .getattr($name)
-            .map(|p| pyo3::PyObject::from(p).into())
-            .map_err(|_| err!(concat!("couldn't find function `", $name, "`")))
-    };
-}
-
-lazy_static::lazy_static! {
-    static ref ATTR_ISOFORMAT: AttrStr = AttrStr::new("isoformat");
-    static ref ATTR_FROMISOFORMAT: AttrStr = AttrStr::new("fromisoformat");
-
-    static ref STATIC_OBJECTS: Result<StaticObjects> = {
-        use pyo3::{Python, types::PyModule};
-
-        let py = unsafe { Python::assume_gil_acquired() };
-
-        let dataclasses = PyModule::import(py, "dataclasses")
-            .map_err(|_| err!("couldn't import `dataclasses`"))?;
-        let typing = PyModule::import(py, "typing")
-            .map_err(|_| err!("couldn't import `typing`"))?;
-        let enum_ = PyModule::import(py, "enum")
-            .map_err(|_| err!("couldn't import `enum`"))?;
-        let datetime_ = PyModule::import(py, "datetime")
-            .map_err(|_| err!("couldn't import `datetime`"))?;
-        let decimal_ = PyModule::import(py, "decimal")
-            .map_err(|_| err!("couldn't import `decimal`"))?;
-        let uuid_ = PyModule::import(py, "uuid")
-            .map_err(|_| err!("couldn't import `uuid`"))?;
-
-        let fields = getattr!(dataclasses, "fields")?;
-        let missing = getattr!(dataclasses, "MISSING")?;
-        let generic_alias = getattr!(typing, "_GenericAlias")?;
-        let union_generic_alias = getattr!(typing, "_UnionGenericAlias").ok();
-        let base_generic_alias = getattr!(typing, "_BaseGenericAlias").ok();
-        let special_generic_alias = getattr!(typing, "_SpecialGenericAlias").ok();
-        let type_var = getattr!(typing, "TypeVar")?;
-        let any = getattr!(typing, "Any")?;
-        let union = getattr!(typing, "Union")?;
-        let tuple = getattr!(typing, "Tuple")?;
-        let optional = getattr!(typing, "Optional")?;
-        let dict = getattr!(typing, "Dict")?;
-        let list = getattr!(typing, "List")?;
-        let set = getattr!(typing, "Set")?;
-        let frozenset = getattr!(typing, "FrozenSet")?;
-        let enum_meta = getattr!(enum_, "EnumMeta")?;
-
-        let tuple_type = ObjectRef::new(cast!(PyTuple_Type))?;
-        let empty_tuple = StaticObject(tuple_type.call_noarg()?);
-
-        let datetime = getattr!(datetime_, "datetime")?;
-        let date = getattr!(datetime_, "date")?;
-        let time = getattr!(datetime_, "time")?;
-        let decimal = getattr!(decimal_, "Decimal")?;
-        let uuid = getattr!(uuid_, "UUID")?;
-
-        Ok(StaticObjects {
-            fields,
-            missing,
-            generic_alias,
-            union_generic_alias,
-            base_generic_alias,
-            special_generic_alias,
-            type_var,
-            any,
-            union,
-            tuple,
-            empty_tuple,
-            optional,
-            dict,
-            list,
-            set,
-            frozenset,
-            enum_meta,
-            datetime,
-            date,
-            time,
-            decimal,
-            uuid,
-        })
-    };
+    import()?.decimal.call(args)
 }
