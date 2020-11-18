@@ -93,7 +93,7 @@ test-manifest:
 
 
 $(develop-targets):
-	cd $(@:develop-%=%); $(maturin) develop $(build-opt) $(build-version-opt)
+	cd $(@:develop-%=%); $(maturin) develop $(build-opt)
 
 
 $(build-targets):
