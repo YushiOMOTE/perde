@@ -1,10 +1,7 @@
 use crate::{
     error::Result,
     schema::*,
-    types::{
-        self, is_date, is_datetime, is_decimal, is_time, is_uuid, static_objects, AttrStr,
-        ObjectRef,
-    },
+    types::{self, static_objects, AttrStr, ObjectRef},
 };
 use indexmap::IndexMap;
 use std::collections::HashMap;
@@ -101,15 +98,15 @@ pub fn resolve_schema<'a>(
         Ok(&static_schema().tuple)
     } else if p.is_none_type() || p.is_any() {
         Ok(&SCHEMA_ANY)
-    } else if is_datetime(p)? {
+    } else if p.is_datetime()? {
         Ok(&Schema::Primitive(Primitive::DateTime))
-    } else if is_time(p)? {
+    } else if p.is_time()? {
         Ok(&Schema::Primitive(Primitive::Time))
-    } else if is_date(p)? {
+    } else if p.is_date()? {
         Ok(&Schema::Primitive(Primitive::Date))
-    } else if is_decimal(p)? {
+    } else if p.is_decimal()? {
         Ok(&Schema::Primitive(Primitive::Decimal))
-    } else if is_uuid(p)? {
+    } else if p.is_uuid()? {
         Ok(&Schema::Primitive(Primitive::Uuid))
     } else {
         match p.get_capsule(&SCHEMA_CACHE) {

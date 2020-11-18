@@ -249,6 +249,26 @@ impl ObjectRef {
         unsafe { (*self.as_ptr()).ob_type as *mut PyObject == p }
     }
 
+    pub fn is_datetime(&self) -> Result<bool> {
+        Ok(self.is(static_objects()?.datetime.as_ptr()))
+    }
+
+    pub fn is_date(&self) -> Result<bool> {
+        Ok(self.is(static_objects()?.date.as_ptr()))
+    }
+
+    pub fn is_time(&self) -> Result<bool> {
+        Ok(self.is(static_objects()?.time.as_ptr()))
+    }
+
+    pub fn is_decimal(&self) -> Result<bool> {
+        Ok(self.is(static_objects()?.decimal.as_ptr()))
+    }
+
+    pub fn is_uuid(&self) -> Result<bool> {
+        Ok(self.is(static_objects()?.uuid.as_ptr()))
+    }
+
     pub fn name(&self) -> &str {
         unsafe {
             std::ffi::CStr::from_ptr((*(self.as_ptr() as *mut PyTypeObject)).tp_name)
@@ -495,26 +515,6 @@ pub struct StaticObjects {
     pub time: StaticObject,
     pub decimal: StaticObject,
     pub uuid: StaticObject,
-}
-
-pub fn is_datetime(obj: &ObjectRef) -> Result<bool> {
-    Ok(obj.is(static_objects()?.datetime.as_ptr()))
-}
-
-pub fn is_date(obj: &ObjectRef) -> Result<bool> {
-    Ok(obj.is(static_objects()?.date.as_ptr()))
-}
-
-pub fn is_time(obj: &ObjectRef) -> Result<bool> {
-    Ok(obj.is(static_objects()?.time.as_ptr()))
-}
-
-pub fn is_decimal(obj: &ObjectRef) -> Result<bool> {
-    Ok(obj.is(static_objects()?.decimal.as_ptr()))
-}
-
-pub fn is_uuid(obj: &ObjectRef) -> Result<bool> {
-    Ok(obj.is(static_objects()?.uuid.as_ptr()))
 }
 
 pub fn isoformat(obj: &ObjectRef) -> Result<Object> {
