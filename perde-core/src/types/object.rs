@@ -25,11 +25,27 @@ macro_rules! cast {
     };
 }
 
-macro_rules! is_typing {
+macro_rules! ptr_cast {
+    ($p:expr) => {
+        unsafe { $p as *mut _ as *mut PyObject }
+    };
+}
+
+macro_rules! is_type {
     ($object:expr, $name:ident) => {
         import()
             .ok()
             .filter(|o| $object.is(o.$name.as_ptr()))
+            .is_some()
+    };
+}
+
+macro_rules! is_type_opt {
+    ($object:expr, $name:ident) => {
+        import()
+            .ok()
+            .and_then(|o| o.$name.as_ref())
+            .filter(|o| $object.is(o.as_ptr()))
             .is_some()
     };
 }
@@ -63,7 +79,7 @@ impl ObjectRef {
     }
 
     pub fn get_type(&self) -> Result<&ObjectRef> {
-        Self::new(unsafe { (*self.as_ptr()).ob_type } as *mut PyObject)
+        Self::new(ptr_cast!((*self.as_ptr()).ob_type))
     }
 
     pub fn set_capsule<'a, T>(&self, s: &AttrStr, item: T) -> Result<&'a T> {
@@ -222,52 +238,67 @@ impl ObjectRef {
     }
 
     pub fn is_dict(&self) -> bool {
-        self.is(cast!(PyDict_Type)) || is_typing!(self, dict)
+        self.is(cast!(PyDict_Type)) || is_type!(self, dict)
     }
 
     pub fn is_tuple(&self) -> bool {
-        self.is(cast!(PyTuple_Type)) || is_typing!(self, tuple)
+        self.is(cast!(PyTuple_Type)) || is_type!(self, tuple)
     }
 
     pub fn is_set(&self) -> bool {
-        self.is(cast!(PySet_Type)) || is_typing!(self, set)
+        self.is(cast!(PySet_Type)) || is_type!(self, set)
     }
 
     pub fn is_list(&self) -> bool {
-        self.is(cast!(PyList_Type)) || is_typing!(self, list)
+        self.is(cast!(PyList_Type)) || is_type!(self, list)
     }
 
     pub fn is_frozen_set(&self) -> bool {
-        self.is(cast!(PyFrozenSet_Type)) || is_typing!(self, frozenset)
+        self.is(cast!(PyFrozenSet_Type)) || is_type!(self, frozenset)
     }
 
     pub fn is_any(&self) -> bool {
         // `Any`, bare `Optional` and bare `Union` can be treated as Any.
-        is_typing!(self, any) || is_typing!(self, optional) || is_typing!(self, union)
+        is_type!(self, any) || is_type!(self, optional) || is_type!(self, union)
     }
 
-    pub fn is_instance(&self, p: *mut PyObject) -> bool {
-        unsafe { (*self.as_ptr()).ob_type as *mut PyObject == p }
+    pub fn is_generic(&self) -> bool {
+        self.get_type()
+            .ok()
+            .filter(|o| {
+                is_type!(o, generic_alias)
+                    || is_type_opt!(o, base_generic_alias)
+                    || is_type_opt!(o, union_generic_alias)
+                    || is_type_opt!(o, special_generic_alias)
+            })
+            .is_some()
     }
 
-    pub fn is_datetime(&self) -> Result<bool> {
-        Ok(self.is(import()?.datetime.as_ptr()))
+    pub fn is_enum(&self) -> bool {
+        self.get_type()
+            .ok()
+            .filter(|o| is_type!(o, enum_meta))
+            .is_some()
     }
 
-    pub fn is_date(&self) -> Result<bool> {
-        Ok(self.is(import()?.date.as_ptr()))
+    pub fn is_datetime(&self) -> bool {
+        is_type!(self, datetime)
     }
 
-    pub fn is_time(&self) -> Result<bool> {
-        Ok(self.is(import()?.time.as_ptr()))
+    pub fn is_date(&self) -> bool {
+        is_type!(self, date)
     }
 
-    pub fn is_decimal(&self) -> Result<bool> {
-        Ok(self.is(import()?.decimal.as_ptr()))
+    pub fn is_time(&self) -> bool {
+        is_type!(self, time)
     }
 
-    pub fn is_uuid(&self) -> Result<bool> {
-        Ok(self.is(import()?.uuid.as_ptr()))
+    pub fn is_decimal(&self) -> bool {
+        is_type!(self, decimal)
+    }
+
+    pub fn is_uuid(&self) -> bool {
+        is_type!(self, uuid)
     }
 
     pub fn name(&self) -> &str {

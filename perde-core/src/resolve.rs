@@ -98,29 +98,29 @@ pub fn resolve_schema<'a>(
     } else if p.is_tuple() {
         Ok(&static_schema().tuple)
     } else if p.is_none_type() || p.is_any() {
-        Ok(&SCHEMA_ANY)
-    } else if p.is_datetime()? {
-        Ok(&Schema::Primitive(Primitive::DateTime))
-    } else if p.is_time()? {
-        Ok(&Schema::Primitive(Primitive::Time))
-    } else if p.is_date()? {
-        Ok(&Schema::Primitive(Primitive::Date))
-    } else if p.is_decimal()? {
-        Ok(&Schema::Primitive(Primitive::Decimal))
-    } else if p.is_uuid()? {
-        Ok(&Schema::Primitive(Primitive::Uuid))
+        Ok(&static_schema().any)
+    } else if p.is_datetime() {
+        Ok(&static_schema().datetime)
+    } else if p.is_time() {
+        Ok(&static_schema().time)
+    } else if p.is_date() {
+        Ok(&static_schema().date)
+    } else if p.is_decimal() {
+        Ok(&static_schema().decimal)
+    } else if p.is_uuid() {
+        Ok(&static_schema().uuid)
     } else {
         match p.get_capsule(&SCHEMA_CACHE) {
             Some(p) => return Ok(p),
             _ => {}
         }
 
-        if let Some(s) = maybe_dataclass(p, &attr)? {
-            p.set_capsule(&SCHEMA_CACHE, s)
-        } else if let Some(s) = maybe_generic(p)? {
-            p.set_capsule(&SCHEMA_CACHE, s)
-        } else if let Some(s) = maybe_enum(p, &attr)? {
-            p.set_capsule(&SCHEMA_CACHE, s)
+        let s = if p.has_attr(&DATACLASS_FIELDS) {
+            to_dataclass(p, &attr)?
+        } else if p.is_generic() {
+            to_generic(p)?
+        } else if p.is_enum() {
+            to_enum(p, &attr)?
         } else {
             bail!(
                 "unsupported type `{}`",
@@ -128,7 +128,9 @@ pub fn resolve_schema<'a>(
                     .and_then(|o| { Ok(o.as_str()?.to_string()) })
                     .unwrap_or("<unknown>".into())
             );
-        }
+        };
+
+        p.set_capsule(&SCHEMA_CACHE, s)
     }
 }
 
@@ -136,14 +138,7 @@ pub fn to_schema(p: &ObjectRef) -> Result<Schema> {
     resolve_schema(p, None).map(|s| s.clone())
 }
 
-fn maybe_dataclass(
-    p: &ObjectRef,
-    attr: &Option<HashMap<&str, &ObjectRef>>,
-) -> Result<Option<Schema>> {
-    if !p.has_attr(&DATACLASS_FIELDS) {
-        return Ok(None);
-    }
-
+fn to_dataclass(p: &ObjectRef, attr: &Option<HashMap<&str, &ObjectRef>>) -> Result<Schema> {
     let cattr = ClassAttr::parse(attr)?;
 
     let arg = types::Tuple::one(p)?;
@@ -157,6 +152,7 @@ fn maybe_dataclass(
     for i in 0..fields.len() {
         let field = fields.getref(i)?;
         let name = field.get_attr(&ATTR_NAME)?;
+
         let ty = field.get_attr(&ATTR_TYPE)?;
         let default = field
             .get_attr(&ATTR_DEFAULT)?
@@ -222,7 +218,7 @@ fn maybe_dataclass(
     let class = types::Class::new(p.owned());
     let flatten_members = collect_flatten_members(&members);
 
-    Ok(Some(Schema::Class(Class::new(
+    Ok(Schema::Class(Class::new(
         class,
         name.into(),
         cattr,
@@ -230,14 +226,10 @@ fn maybe_dataclass(
         flatten_members,
         flatten_dict,
         ser_field_len,
-    ))))
+    )))
 }
 
-fn maybe_enum(p: &ObjectRef, attr: &Option<HashMap<&str, &ObjectRef>>) -> Result<Option<Schema>> {
-    if !p.is_instance(import()?.enum_meta.as_ptr()) {
-        return Ok(None);
-    }
-
+fn to_enum(p: &ObjectRef, attr: &Option<HashMap<&str, &ObjectRef>>) -> Result<Schema> {
     let eattr = EnumAttr::parse(&attr)?;
 
     let iter = p.get_iter()?;
@@ -278,12 +270,12 @@ fn maybe_enum(p: &ObjectRef, attr: &Option<HashMap<&str, &ObjectRef>>) -> Result
         })
         .collect();
 
-    Ok(Some(Schema::Enum(Enum::new(
+    Ok(Schema::Enum(Enum::new(
         p.name().into(),
         p.owned(),
         eattr,
         variants?,
-    ))))
+    )))
 }
 
 fn to_union(p: &ObjectRef) -> Result<Schema> {
@@ -363,34 +355,7 @@ fn get_args(p: &ObjectRef) -> Result<types::Tuple> {
     Ok(types::Tuple::from(p.get_attr(&ATTR_ARGS)?))
 }
 
-fn is_generic_alias(p: &ObjectRef) -> Result<bool> {
-    if p.is_instance(import()?.generic_alias.as_ptr())
-        || import()?
-            .base_generic_alias
-            .as_ref()
-            .filter(|o| p.is_instance(o.as_ptr()))
-            .is_some()
-        || import()?
-            .union_generic_alias
-            .as_ref()
-            .filter(|o| p.is_instance(o.as_ptr()))
-            .is_some()
-        || import()?
-            .special_generic_alias
-            .as_ref()
-            .filter(|o| p.is_instance(o.as_ptr()))
-            .is_some()
-    {
-        return Ok(true);
-    }
-    return Ok(false);
-}
-
-fn maybe_generic(p: &ObjectRef) -> Result<Option<Schema>> {
-    if !is_generic_alias(p)? {
-        return Ok(None);
-    }
-
+fn to_generic(p: &ObjectRef) -> Result<Schema> {
     let origin = p.get_attr(&ATTR_ORIGIN)?;
 
     let s = if origin.is(import()?.union.as_ptr()) {
@@ -406,8 +371,8 @@ fn maybe_generic(p: &ObjectRef) -> Result<Option<Schema>> {
     } else if origin.is_frozen_set() {
         to_frozen_set(p)?
     } else {
-        return Ok(None);
+        bail!("unsupported generic type");
     };
 
-    Ok(Some(s))
+    Ok(s)
 }

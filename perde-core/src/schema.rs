@@ -354,8 +354,6 @@ impl Union {
     }
 }
 
-pub const SCHEMA_ANY: &'static Schema = &Schema::Any(Any);
-
 #[derive(Debug, Clone, new, PartialEq, Eq)]
 pub struct Any;
 
@@ -418,6 +416,12 @@ pub struct StaticSchema {
     pub tuple: Schema,
     pub set: Schema,
     pub frozenset: Schema,
+    pub datetime: Schema,
+    pub date: Schema,
+    pub time: Schema,
+    pub decimal: Schema,
+    pub uuid: Schema,
+    pub any: Schema,
 }
 
 pub fn static_schema() -> &'static StaticSchema {
@@ -438,6 +442,12 @@ lazy_static::lazy_static! {
             tuple: Schema::Tuple(Tuple::any_tuple()),
             set: Schema::Set(Set::new(Box::new(Schema::Any(Any::new())))),
             frozenset: Schema::FrozenSet(FrozenSet::new(Box::new(Schema::Any(Any::new())))),
+            datetime: Schema::Primitive(Primitive::DateTime),
+            time: Schema::Primitive(Primitive::Time),
+            date: Schema::Primitive(Primitive::Date),
+            decimal: Schema::Primitive(Primitive::Decimal),
+            uuid: Schema::Primitive(Primitive::Uuid),
+            any: Schema::Any(Any),
         }
     };
 }
