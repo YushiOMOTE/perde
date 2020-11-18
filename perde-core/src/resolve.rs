@@ -77,11 +77,6 @@ pub fn resolve_schema<'a>(
     p: &'a ObjectRef,
     attr: Option<HashMap<&str, &ObjectRef>>,
 ) -> Result<&'a Schema> {
-    match p.get_capsule(&SCHEMA_CACHE) {
-        Some(p) => return Ok(p),
-        _ => {}
-    }
-
     if p.is_bool() {
         Ok(&static_schema().boolean)
     } else if p.is_str() {
@@ -116,21 +111,28 @@ pub fn resolve_schema<'a>(
         Ok(&Schema::Primitive(Primitive::Decimal))
     } else if is_uuid(p)? {
         Ok(&Schema::Primitive(Primitive::Uuid))
-    } else if let Some(s) = maybe_dataclass(p, &attr)? {
-        p.set_capsule(&SCHEMA_CACHE, s)
-    } else if let Some(s) = maybe_generic(p)? {
-        p.set_capsule(&SCHEMA_CACHE, s)
-    } else if let Some(s) = maybe_enum(p, &attr)? {
-        p.set_capsule(&SCHEMA_CACHE, s)
-    } else if is_type_var_instance(p)? || is_any_type(p)? {
-        Ok(&SCHEMA_ANY)
     } else {
-        bail!(
-            "unsupported type `{}`",
-            p.get_attr(&ATTR_TYPENAME)
-                .and_then(|o| { Ok(o.as_str()?.to_string()) })
-                .unwrap_or("<unknown>".into())
-        );
+        match p.get_capsule(&SCHEMA_CACHE) {
+            Some(p) => return Ok(p),
+            _ => {}
+        }
+
+        if let Some(s) = maybe_dataclass(p, &attr)? {
+            p.set_capsule(&SCHEMA_CACHE, s)
+        } else if let Some(s) = maybe_generic(p)? {
+            p.set_capsule(&SCHEMA_CACHE, s)
+        } else if let Some(s) = maybe_enum(p, &attr)? {
+            p.set_capsule(&SCHEMA_CACHE, s)
+        } else if is_type_var_instance(p)? || is_any_type(p)? {
+            Ok(&SCHEMA_ANY)
+        } else {
+            bail!(
+                "unsupported type `{}`",
+                p.get_attr(&ATTR_TYPENAME)
+                    .and_then(|o| { Ok(o.as_str()?.to_string()) })
+                    .unwrap_or("<unknown>".into())
+            );
+        }
     }
 }
 
