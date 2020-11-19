@@ -18,6 +18,7 @@ def test_bench_pack_number(m, benchmark):
 def test_bench_unpack_number(m, benchmark):
     m.unpack_bench(benchmark, m.data("BenchNumber"), int)
 
+
 @pytest.mark.benchmark(group="pack-string")
 @pytest.mark.parametrize("m", BENCH_FORMATS_EXCEPT("toml"), ids=idfn)
 def test_bench_pack_string(m, benchmark):
@@ -28,6 +29,7 @@ def test_bench_pack_string(m, benchmark):
 @pytest.mark.parametrize("m", BENCH_FORMATS_EXCEPT("toml"), ids=idfn)
 def test_bench_unpack_string(m, benchmark):
     m.unpack_bench(benchmark, m.data("BenchString"), str)
+
 
 """rust
 add_value("BenchDict", {
