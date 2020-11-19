@@ -1,8 +1,4 @@
-use crate::{
-    error::Convert,
-    schema::*,
-    types::{self, Object},
-};
+use crate::{error::Convert, schema::*, types::Object};
 use serde::de::{DeserializeSeed, Deserializer, MapAccess, Visitor};
 use std::fmt;
 
@@ -19,7 +15,7 @@ impl<'a, 'de> Visitor<'de> for DictVisitor<'a> {
     where
         M: MapAccess<'de>,
     {
-        let mut dict = types::Dict::new().de()?;
+        let mut dict = Object::build_dict().de()?;
 
         while let Some(key) = access.next_key_seed(&*self.0.key)? {
             let key: Object = key;
@@ -27,7 +23,7 @@ impl<'a, 'de> Visitor<'de> for DictVisitor<'a> {
             dict.set(key, value).de()?;
         }
 
-        Ok(dict.into_inner())
+        Ok(dict.build())
     }
 }
 

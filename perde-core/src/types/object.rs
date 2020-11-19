@@ -201,6 +201,14 @@ impl ObjectRef {
         }
     }
 
+    pub fn as_list<'a>(&'a self) -> ListRef<'a> {
+        ListRef::new(self)
+    }
+
+    pub fn as_set<'a>(&'a self) -> SetRef<'a> {
+        SetRef::new(self)
+    }
+
     pub fn is(&self, p: *mut PyObject) -> bool {
         self.as_ptr() == p
     }
@@ -325,6 +333,14 @@ impl ObjectRef {
         Ok(ObjectIter(objnew!(PyObject_GetIter(self.as_ptr()))?))
     }
 
+    pub fn get_tuple_iter<'a>(&'a self) -> Result<TupleIter<'a>> {
+        TupleIter::new(self)
+    }
+
+    pub fn get_dict_iter<'a>(&'a self) -> Result<DictIter<'a>> {
+        DictIter::new(self)
+    }
+
     pub fn get(&self, s: &str) -> Result<Object> {
         let key = Object::new_str(s)?;
         objnew!(PyObject_GetItem(self.as_ptr(), key.as_ptr()))
@@ -355,6 +371,85 @@ impl Iterator for ObjectIter {
             }
         } else {
             Some(Ok(Object::new(p).unwrap()))
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct TupleIter<'a> {
+    p: &'a ObjectRef,
+    len: usize,
+    index: usize,
+}
+
+impl<'a> TupleIter<'a> {
+    fn new(p: &'a ObjectRef) -> Result<Self> {
+        let len = unsafe { PyTuple_Size(p.as_ptr()) as usize };
+        if unsafe { !PyErr_Occurred().is_null() } {
+            bail!("cannot get the size of tuple")
+        }
+        Ok(Self { p, len, index: 0 })
+    }
+
+    fn get(&self, index: usize) -> Result<&'a ObjectRef> {
+        unsafe { ObjectRef::new(PyTuple_GET_ITEM(self.p.as_ptr(), index as Py_ssize_t)) }
+    }
+
+    pub fn len(&self) -> usize {
+        self.len
+    }
+}
+
+impl<'a> Iterator for TupleIter<'a> {
+    type Item = &'a ObjectRef;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.index >= self.len {
+            None
+        } else {
+            let item = self.get(self.index).ok();
+            self.index += 1;
+            item
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct DictIter<'a> {
+    p: &'a ObjectRef,
+    len: usize,
+    index: Py_ssize_t,
+}
+
+impl<'a> DictIter<'a> {
+    fn new(p: &'a ObjectRef) -> Result<Self> {
+        let len = unsafe { PyDict_Size(p.as_ptr()) as usize };
+        if unsafe { !PyErr_Occurred().is_null() } {
+            bail!("cannot get the size of dict")
+        }
+        Ok(Self { p, len, index: 0 })
+    }
+
+    pub fn len(&self) -> usize {
+        self.len
+    }
+}
+
+impl<'a> Iterator for DictIter<'a> {
+    type Item = (&'a ObjectRef, &'a ObjectRef);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let mut k = std::ptr::null_mut();
+        let mut v = std::ptr::null_mut();
+
+        let res = unsafe { PyDict_Next(self.p.as_ptr(), &mut self.index, &mut k, &mut v) };
+
+        if res == 0 {
+            None
+        } else {
+            let k = ObjectRef::new(k).ok()?;
+            let v = ObjectRef::new(v).ok()?;
+            Some((k, v))
         }
     }
 }
@@ -444,6 +539,18 @@ impl Object {
         Ok(obj)
     }
 
+    pub fn build_list(len: usize) -> Result<ListBuilder> {
+        ListBuilder::new(len)
+    }
+
+    pub fn build_set() -> Result<SetBuilder> {
+        SetBuilder::new()
+    }
+
+    pub fn build_dict() -> Result<DictBuilder> {
+        DictBuilder::new()
+    }
+
     pub fn into_ptr(self) -> *mut PyObject {
         let ptr = self.0.as_ptr();
         std::mem::forget(self);
@@ -499,6 +606,41 @@ impl Drop for Object {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct SetRef<'a>(&'a ObjectRef);
+
+impl<'a> SetRef<'a> {
+    fn new(obj: &'a ObjectRef) -> Self {
+        Self(obj)
+    }
+
+    pub fn len(&self) -> usize {
+        unsafe { PySet_Size(self.0.as_ptr()) as usize }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct ListRef<'a>(&'a ObjectRef);
+
+impl<'a> ListRef<'a> {
+    fn new(obj: &'a ObjectRef) -> Self {
+        Self(obj)
+    }
+
+    pub fn len(&self) -> usize {
+        unsafe { PyList_Size(self.0.as_ptr()) as usize }
+    }
+
+    pub fn get(&self, index: usize) -> Option<&'a ObjectRef> {
+        let p = unsafe { PyList_GetItem(self.0.as_ptr(), index as Py_ssize_t) };
+        if p.is_null() {
+            None
+        } else {
+            Some(ObjectRef::new(p).ok()?)
+        }
+    }
+}
+
 lazy_static::lazy_static! {
     static ref ATTR_ISOFORMAT: AttrStr = AttrStr::new("isoformat");
     static ref ATTR_FROMISOFORMAT: AttrStr = AttrStr::new("fromisoformat");
@@ -543,4 +685,74 @@ pub fn to_decimal(obj: &ObjectRef) -> Result<Object> {
     let mut args = Tuple::new(1)?;
     args.set(0, obj.owned());
     import()?.decimal.call(args)
+}
+
+#[derive(Debug, Clone)]
+pub struct ListBuilder(Object);
+
+impl ListBuilder {
+    fn new(len: usize) -> Result<Self> {
+        Ok(Self(objnew!(PyList_New(len as Py_ssize_t))?))
+    }
+
+    pub fn set(&mut self, index: usize, obj: Object) {
+        unsafe {
+            // This API steals the pointer, so use `into_ptr`.
+            PyList_SET_ITEM(self.0.as_ptr(), index as Py_ssize_t, obj.into_ptr());
+        }
+    }
+
+    pub fn build(self) -> Object {
+        self.0
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct SetBuilder(Object);
+
+impl SetBuilder {
+    fn new() -> Result<Self> {
+        Ok(Self(objnew!(PySet_New(std::ptr::null_mut()))?))
+    }
+
+    pub fn set(&mut self, obj: Object) -> Result<()> {
+        unsafe {
+            // This API doesn't steal.
+            if PySet_Add(self.0.as_ptr(), obj.as_ptr()) != 0 {
+                bail!("cannot add an item to a set")
+            }
+        }
+        Ok(())
+    }
+
+    pub fn build_frozen(self) -> Result<Object> {
+        objnew!(PyFrozenSet_New(self.0.as_ptr()))
+    }
+
+    pub fn build(self) -> Object {
+        self.0
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct DictBuilder(Object);
+
+impl DictBuilder {
+    fn new() -> Result<Self> {
+        Ok(Self(objnew!(PyDict_New())?))
+    }
+
+    pub fn set(&mut self, key: Object, value: Object) -> Result<()> {
+        unsafe {
+            // This API doesn't steal.
+            if PyDict_SetItem(self.0.as_ptr(), key.as_ptr(), value.as_ptr()) != 0 {
+                bail!("cannot set an item to dictionary")
+            }
+        }
+        Ok(())
+    }
+
+    pub fn build(self) -> Object {
+        self.0
+    }
 }

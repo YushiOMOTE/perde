@@ -1,8 +1,4 @@
-use crate::{
-    error::Convert,
-    schema::*,
-    types::{self, Object},
-};
+use crate::{error::Convert, schema::*, types::Object};
 use serde::de::{DeserializeSeed, Deserializer, SeqAccess, Visitor};
 use std::fmt;
 
@@ -19,13 +15,13 @@ impl<'a, 'de> Visitor<'de> for SetVisitor<'a> {
     where
         A: SeqAccess<'de>,
     {
-        let mut set = types::Set::new().de()?;
+        let mut set = Object::build_set().de()?;
 
         while let Some(value) = seq.next_element_seed(&*self.0.value)? {
             set.set(value).de()?;
         }
 
-        Ok(set.into_inner())
+        Ok(set.build())
     }
 }
 

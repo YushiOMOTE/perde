@@ -99,11 +99,11 @@ impl Class {
                         Schema::Class(cls) => return cls.call(map),
                         Schema::Dict(_) => {
                             let map = std::mem::replace(map, IndexMap::new());
-                            let mut dict = types::Dict::new()?;
+                            let mut dict = Object::build_dict()?;
                             for (k, v) in map {
                                 dict.set(Object::new_str(&k)?, v)?;
                             }
-                            return Ok(dict.into_inner());
+                            return Ok(dict.build());
                         }
                         _ => return Err(err!("cannot use `flatten` attribute with an non-map type")),
                     }

@@ -38,12 +38,6 @@ pub struct TupleRefIter<'a> {
     index: usize,
 }
 
-impl<'a> TupleRefIter<'a> {
-    pub fn len(&self) -> usize {
-        self.len
-    }
-}
-
 impl<'a> Iterator for TupleRefIter<'a> {
     type Item = &'a ObjectRef;
 
