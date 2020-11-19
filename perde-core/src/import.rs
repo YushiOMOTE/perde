@@ -1,11 +1,5 @@
-use crate::{
-    error::Result,
-    types::{Object, ObjectRef},
-};
-use pyo3::{
-    ffi::{PyObject, PyTuple_Type},
-    prelude::*,
-};
+use crate::{error::Result, object::Object};
+use pyo3::prelude::*;
 use std::ops::Deref;
 
 #[derive(Debug)]
@@ -102,8 +96,7 @@ lazy_static::lazy_static! {
         let frozenset = getattr!(typing, "FrozenSet")?;
         let enum_meta = getattr!(enum_, "EnumMeta")?;
 
-        let tuple_type = ObjectRef::new(cast!(PyTuple_Type))?;
-        let empty_tuple = StaticObject(tuple_type.call0()?);
+        let empty_tuple = StaticObject(Object::new_unit()?);
 
         let datetime = getattr!(datetime_, "datetime")?;
         let date = getattr!(datetime_, "date")?;

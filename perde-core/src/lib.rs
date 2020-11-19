@@ -1,23 +1,25 @@
 #[macro_use]
 pub mod error;
 
-#[macro_use]
-pub mod types;
-
 pub mod methods;
 
-pub mod resolve;
+mod resolve;
+
 pub mod schema;
 
-pub mod decode;
-pub mod encode;
+mod decode;
+mod encode;
 
-pub mod import;
+pub mod args;
+mod attr;
+mod import;
+pub mod object;
 
 pub mod prelude {
+    pub use crate::args::{Args, FastArgs};
     pub use crate::error::{Convert, Error, Result};
+    pub use crate::object::{Object, ObjectRef};
     pub use crate::schema::{Schema, WithSchema};
-    pub use crate::types::{Args, FastArgs, Object, ObjectRef};
     pub use crate::{
         bail, exception, impl_default_methods, method_fastcall, method_varargs, module,
     };

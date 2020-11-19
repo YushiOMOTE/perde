@@ -1,4 +1,4 @@
-use crate::{decode, schema::*, types::Object};
+use crate::{decode, object::Object, schema::*};
 use serde::de::{
     self, DeserializeSeed, Deserializer, IntoDeserializer, MapAccess, SeqAccess, Unexpected,
     Visitor,

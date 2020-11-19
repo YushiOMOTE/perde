@@ -1,6 +1,7 @@
 use crate::{
+    attr::AttrStr,
     error::{Convert, Error, Result},
-    types::{AttrStr, Object, ObjectRef},
+    object::{Object, ObjectRef},
 };
 use derive_new::new;
 use indexmap::IndexMap;

@@ -1,7 +1,7 @@
 use crate::{
     error::{Convert, Result},
+    object::Object,
     schema::*,
-    types::Object,
 };
 use indexmap::IndexMap;
 use serde::de::{DeserializeSeed, Deserializer, IgnoredAny, MapAccess, Visitor};

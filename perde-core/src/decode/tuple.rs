@@ -1,4 +1,4 @@
-use crate::{error::Convert, schema::*, types::Object};
+use crate::{error::Convert, object::Object, schema::*};
 use serde::de::{DeserializeSeed, Deserializer, IgnoredAny, SeqAccess, Visitor};
 use smallvec::SmallVec;
 use std::fmt;

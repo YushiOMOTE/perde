@@ -1,4 +1,4 @@
-use crate::{error::Convert, types::Object};
+use crate::{error::Convert, object::Object};
 use serde::de::{self, SeqAccess, Visitor};
 use smallvec::SmallVec;
 use std::fmt;

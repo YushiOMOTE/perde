@@ -1,6 +1,6 @@
 use crate::{
     error::Result,
-    types::{ObjectRef, TupleIter, TupleRef},
+    object::{ObjectRef, TupleIter, TupleRef},
 };
 use pyo3::ffi::*;
 use std::iter::Enumerate;

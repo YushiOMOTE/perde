@@ -1,4 +1,4 @@
-use crate::{error::Convert, schema::Any, types::Object};
+use crate::{error::Convert, object::Object, schema::Any};
 use serde::{
     de::{DeserializeSeed, Deserializer, EnumAccess, Error, MapAccess, SeqAccess, Visitor},
     Deserialize,

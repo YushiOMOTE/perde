@@ -1,7 +1,8 @@
 use crate::{
+    attr::AttrStr,
     error::Convert,
+    object::ObjectRef,
     schema::{Any, FieldSchema, Schema, WithSchema},
-    types::{AttrStr, ObjectRef},
 };
 use indexmap::IndexMap;
 use serde::ser::Error;

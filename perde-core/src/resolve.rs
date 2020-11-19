@@ -1,9 +1,4 @@
-use crate::{
-    error::Result,
-    import::import,
-    schema::*,
-    types::{AttrStr, ObjectRef},
-};
+use crate::{attr::AttrStr, error::Result, import::import, object::ObjectRef, schema::*};
 use indexmap::IndexMap;
 use std::collections::HashMap;
 

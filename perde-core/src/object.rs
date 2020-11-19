@@ -1,5 +1,5 @@
-use super::AttrStr;
 use crate::{
+    attr::AttrStr,
     error::Result,
     import::import,
     resolve::resolve_schema,
@@ -15,7 +15,7 @@ use std::{
 
 macro_rules! objnew {
     ($p:expr) => {
-        $crate::types::Object::new(unsafe { $p })
+        $crate::object::Object::new(unsafe { $p })
     };
 }
 
@@ -532,6 +532,11 @@ impl Object {
         Self::new(unsafe {
             PyByteArray_FromStringAndSize(v.as_ptr() as *const c_char, v.len() as Py_ssize_t)
         })
+    }
+
+    pub fn new_unit() -> Result<Object> {
+        let tuple_type = ObjectRef::new(cast!(PyTuple_Type))?;
+        tuple_type.call0()
     }
 
     pub fn new_default(s: &Schema) -> Result<Object> {

@@ -1,12 +1,12 @@
-use crate::{decode::primitive::*, error::Convert, schema::*, types::*};
+use crate::{decode::primitive::*, error::Convert, object::Object, schema::*};
 use serde::de::{DeserializeSeed, Deserializer};
 
+pub mod any;
 pub mod class;
 pub mod dict;
 pub mod enums;
 pub mod frozen_set;
 pub mod list;
-pub mod object;
 pub mod primitive;
 pub mod set;
 pub mod tuple;
