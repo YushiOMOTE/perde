@@ -358,9 +358,6 @@ impl Union {
 pub struct Any;
 
 #[derive(Debug, Clone, new, PartialEq, Eq)]
-pub struct NoneType;
-
-#[derive(Debug, Clone, new, PartialEq, Eq)]
 pub enum Schema {
     Primitive(Primitive),
     Dict(Dict),
