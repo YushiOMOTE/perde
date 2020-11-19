@@ -1,12 +1,12 @@
-use crate::{schema::*, types::Object};
+use crate::{decode::primitive::*, error::Convert, object::Object, schema::*};
 use serde::de::{DeserializeSeed, Deserializer};
 
+pub mod any;
 pub mod class;
 pub mod dict;
 pub mod enums;
 pub mod frozen_set;
 pub mod list;
-pub mod object;
 pub mod primitive;
 pub mod set;
 pub mod tuple;
@@ -20,7 +20,32 @@ impl<'a, 'de> DeserializeSeed<'de> for &'a Schema {
         D: Deserializer<'de>,
     {
         match self {
-            Schema::Primitive(p) => p.deserialize(deserializer),
+            Schema::Bool => deserializer.deserialize_bool(BoolVisitor),
+            Schema::Int => deserializer.deserialize_i64(IntVisitor),
+            Schema::Float => deserializer.deserialize_f64(FloatVisitor),
+            Schema::Str => deserializer.deserialize_str(StrVisitor),
+            Schema::Bytes => deserializer.deserialize_bytes(BytesVisitor(false)),
+            Schema::ByteArray => deserializer.deserialize_bytes(BytesVisitor(true)),
+            Schema::DateTime => {
+                let s = deserializer.deserialize_str(StrVisitor)?;
+                s.into_datetime().de()
+            }
+            Schema::Date => {
+                let s = deserializer.deserialize_str(StrVisitor)?;
+                s.into_date().de()
+            }
+            Schema::Time => {
+                let s = deserializer.deserialize_str(StrVisitor)?;
+                s.into_time().de()
+            }
+            Schema::Decimal => {
+                let s = deserializer.deserialize_str(StrVisitor)?;
+                s.into_decimal().de()
+            }
+            Schema::Uuid => {
+                let s = deserializer.deserialize_str(StrVisitor)?;
+                s.into_uuid().de()
+            }
             Schema::Dict(d) => d.deserialize(deserializer),
             Schema::List(l) => l.deserialize(deserializer),
             Schema::Set(s) => s.deserialize(deserializer),

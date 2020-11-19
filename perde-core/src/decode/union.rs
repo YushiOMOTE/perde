@@ -1,4 +1,4 @@
-use crate::{decode, schema::*, types::Object};
+use crate::{decode, object::Object, schema::*};
 use serde::de::{
     self, DeserializeSeed, Deserializer, IntoDeserializer, MapAccess, SeqAccess, Unexpected,
     Visitor,
@@ -20,7 +20,7 @@ macro_rules! find {
 macro_rules! find_p {
     ($s:expr, $unx:expr, $($kind:tt),*) => {
         $s.0.variants.iter().find(|s| match s {
-            $(Schema::Primitive(Primitive::$kind) => true,)*
+            $(Schema::$kind => true,)*
                 _ => false,
         })
             .ok_or_else(|| de::Error::invalid_type($unx, &$s))
@@ -163,12 +163,8 @@ impl<'a, 'de> Visitor<'de> for UnionVisitor<'a> {
         let schema = find_p!(self, Unexpected::Bytes(v), Bytes, ByteArray)?;
 
         match schema {
-            Schema::Primitive(Primitive::Bytes) => {
-                decode::primitive::BytesVisitor(false).visit_borrowed_bytes(v)
-            }
-            Schema::Primitive(Primitive::ByteArray) => {
-                decode::primitive::BytesVisitor(true).visit_borrowed_bytes(v)
-            }
+            Schema::Bytes => decode::primitive::BytesVisitor(false).visit_borrowed_bytes(v),
+            Schema::ByteArray => decode::primitive::BytesVisitor(true).visit_borrowed_bytes(v),
             _ => Err(de::Error::invalid_type(Unexpected::Bytes(v), &self)),
         }
     }
@@ -219,27 +215,22 @@ impl<'a, 'de> Visitor<'de> for UnionVisitor<'a> {
     where
         A: SeqAccess<'de>,
     {
-        let schema =
-            self.0
-                .variants
-                .iter()
-                .find(|s| match s {
-                    Schema::Primitive(Primitive::Bytes)
-                    | Schema::Primitive(Primitive::ByteArray) => true,
-                    Schema::List(_) => true,
-                    Schema::Tuple(_) => true,
-                    Schema::Set(_) => true,
-                    _ => false,
-                })
-                .ok_or_else(|| de::Error::invalid_type(Unexpected::Seq, &self))?;
+        let schema = self
+            .0
+            .variants
+            .iter()
+            .find(|s| match s {
+                Schema::Bytes | Schema::ByteArray => true,
+                Schema::List(_) => true,
+                Schema::Tuple(_) => true,
+                Schema::Set(_) => true,
+                _ => false,
+            })
+            .ok_or_else(|| de::Error::invalid_type(Unexpected::Seq, &self))?;
 
         match schema {
-            Schema::Primitive(Primitive::Bytes) => {
-                decode::primitive::BytesVisitor(false).visit_seq(seq)
-            }
-            Schema::Primitive(Primitive::ByteArray) => {
-                decode::primitive::BytesVisitor(true).visit_seq(seq)
-            }
+            Schema::Bytes => decode::primitive::BytesVisitor(false).visit_seq(seq),
+            Schema::ByteArray => decode::primitive::BytesVisitor(true).visit_seq(seq),
             Schema::List(l) => decode::list::ListVisitor(l).visit_seq(seq),
             Schema::Tuple(t) => decode::tuple::TupleVisitor(t).visit_seq(seq),
             Schema::Set(s) => decode::set::SetVisitor(s).visit_seq(seq),

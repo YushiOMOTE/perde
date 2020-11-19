@@ -1,6 +1,7 @@
 use crate::{
+    attr::AttrStr,
     error::{Convert, Error, Result},
-    types::{self, AttrStr, Object, ObjectRef},
+    object::{Object, ObjectRef},
 };
 use derive_new::new;
 use indexmap::IndexMap;
@@ -36,16 +37,42 @@ impl FromStr for StrCase {
     }
 }
 
-macro_rules! extract_parse {
+macro_rules! field_extract_bool {
+    ($dict:expr, $field:expr) => {
+        $dict
+            .as_ref()
+            .and_then(|map| map.get($field).ok().map(|v| v.as_bool()))
+            .transpose()
+            .context(format!("expected `bool` in attribute `{}`", $field))?
+            .unwrap_or(false)
+    };
+}
+
+macro_rules! field_extract_str {
+    ($dict:expr, $field:expr) => {
+        $dict
+            .as_ref()
+            .and_then(|map| {
+                map.get($field)
+                    .ok()
+                    .map(|v| v.as_str().map(|v| v.to_string()))
+            })
+            .transpose()
+            .context(format!("expected `str` in attribute `{}`", $field))?
+    };
+}
+
+macro_rules! extract_stringcase {
     ($dict:expr, $field:expr) => {
         $dict
             .as_ref()
             .and_then(|map| {
                 map.get($field).map(|v| {
                     let s = v.as_str()?;
-                    s.parse().with_context(|| {
-                        format!("invalid string `{}` in attribute `{}`", s, $field)
-                    })
+                    s.parse().context(format!(
+                        "invalid string case `{}` in attribute `{}`",
+                        s, $field
+                    ))
                 })
             })
             .transpose()?
@@ -58,7 +85,7 @@ macro_rules! extract_bool {
             .as_ref()
             .and_then(|map| map.get($field).map(|v| v.as_bool()))
             .transpose()
-            .with_context(|| format!("expected `bool` in attribute `{}`", $field))?
+            .context(format!("expected `bool` in attribute `{}`", $field))?
             .unwrap_or(false)
     };
 }
@@ -69,7 +96,7 @@ macro_rules! extract_str {
             .as_ref()
             .and_then(|map| map.get($field).map(|v| v.as_str().map(|v| v.to_string())))
             .transpose()
-            .with_context(|| format!("expected `str` in attribute `{}`", $field))?
+            .context(format!("expected `str` in attribute `{}`", $field))?
     };
 }
 
@@ -92,14 +119,14 @@ impl FieldAttr {
         default_factory: Option<Object>,
     ) -> Result<Self> {
         Ok(Self::new(
-            extract_bool!(attr, "perde_flatten"),
-            extract_str!(attr, "perde_rename"),
+            field_extract_bool!(attr, "perde_flatten"),
+            field_extract_str!(attr, "perde_rename"),
             default,
             default_factory,
-            extract_bool!(attr, "perde_skip"),
-            extract_bool!(attr, "perde_skip_serializing"),
-            extract_bool!(attr, "perde_skip_deserializing"),
-            extract_bool!(attr, "perde_default"),
+            field_extract_bool!(attr, "perde_skip"),
+            field_extract_bool!(attr, "perde_skip_serializing"),
+            field_extract_bool!(attr, "perde_skip_deserializing"),
+            field_extract_bool!(attr, "perde_default"),
         ))
     }
 }
@@ -116,11 +143,11 @@ pub struct VariantAttr {
 impl VariantAttr {
     pub fn parse(attr: &Option<&ObjectRef>) -> Result<Self> {
         Ok(Self::new(
-            extract_str!(attr, "perde_rename"),
-            extract_bool!(attr, "perde_skip"),
-            extract_bool!(attr, "perde_skip_serializing"),
-            extract_bool!(attr, "perde_skip_deserializing"),
-            extract_bool!(attr, "perde_other"),
+            field_extract_str!(attr, "perde_rename"),
+            field_extract_bool!(attr, "perde_skip"),
+            field_extract_bool!(attr, "perde_skip_serializing"),
+            field_extract_bool!(attr, "perde_skip_deserializing"),
+            field_extract_bool!(attr, "perde_other"),
         ))
     }
 }
@@ -138,9 +165,9 @@ pub struct ClassAttr {
 impl ClassAttr {
     pub fn parse(attr: &Option<HashMap<&str, &ObjectRef>>) -> Result<Self> {
         Ok(Self::new(
-            extract_parse!(attr, "rename_all"),
-            extract_parse!(attr, "rename_all_serialize"),
-            extract_parse!(attr, "rename_all_deserialize"),
+            extract_stringcase!(attr, "rename_all"),
+            extract_stringcase!(attr, "rename_all_serialize"),
+            extract_stringcase!(attr, "rename_all_deserialize"),
             extract_str!(attr, "rename"),
             extract_bool!(attr, "deny_unknown_fields"),
             extract_bool!(attr, "default"),
@@ -160,45 +187,12 @@ pub struct EnumAttr {
 impl EnumAttr {
     pub fn parse(attr: &Option<HashMap<&str, &ObjectRef>>) -> Result<Self> {
         Ok(Self::new(
-            extract_parse!(attr, "rename_all"),
-            extract_parse!(attr, "rename_all_serialize"),
-            extract_parse!(attr, "rename_all_deserialize"),
+            extract_stringcase!(attr, "rename_all"),
+            extract_stringcase!(attr, "rename_all_serialize"),
+            extract_stringcase!(attr, "rename_all_deserialize"),
             extract_str!(attr, "rename"),
             extract_bool!(attr, "as_value"),
         ))
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Primitive {
-    Bool,
-    Int,
-    Float,
-    Str,
-    Bytes,
-    ByteArray,
-    DateTime,
-    Date,
-    Time,
-    Decimal,
-    Uuid,
-}
-
-impl Primitive {
-    pub fn name(&self) -> &str {
-        match self {
-            Self::Bool => "bool".into(),
-            Self::Int => "int".into(),
-            Self::Float => "float".into(),
-            Self::Str => "str".into(),
-            Self::Bytes => "bytes".into(),
-            Self::ByteArray => "bytearray".into(),
-            Self::DateTime => "datetime".into(),
-            Self::Date => "date".into(),
-            Self::Time => "time".into(),
-            Self::Decimal => "Decimal".into(),
-            Self::Uuid => "Uuid".into(),
-        }
     }
 }
 
@@ -292,7 +286,7 @@ pub struct VariantSchema {
 
 #[derive(Debug, Clone, new, PartialEq, Eq)]
 pub struct Class {
-    pub ty: types::Class,
+    pub ty: Object,
     pub name: String,
     pub attr: ClassAttr,
     pub fields: IndexMap<String, FieldSchema>,
@@ -328,17 +322,22 @@ impl Union {
     }
 }
 
-pub const SCHEMA_ANY: &'static Schema = &Schema::Any(Any);
-
 #[derive(Debug, Clone, new, PartialEq, Eq)]
 pub struct Any;
 
 #[derive(Debug, Clone, new, PartialEq, Eq)]
-pub struct NoneType;
-
-#[derive(Debug, Clone, new, PartialEq, Eq)]
 pub enum Schema {
-    Primitive(Primitive),
+    Bool,
+    Int,
+    Float,
+    Str,
+    Bytes,
+    ByteArray,
+    DateTime,
+    Date,
+    Time,
+    Decimal,
+    Uuid,
     Dict(Dict),
     List(List),
     Set(Set),
@@ -353,7 +352,17 @@ pub enum Schema {
 impl Schema {
     pub fn name(&self) -> &str {
         match self {
-            Self::Primitive(p) => p.name(),
+            Self::Bool => "bool".into(),
+            Self::Int => "int".into(),
+            Self::Float => "float".into(),
+            Self::Str => "str".into(),
+            Self::Bytes => "bytes".into(),
+            Self::ByteArray => "bytearray".into(),
+            Self::DateTime => "datetime".into(),
+            Self::Date => "date".into(),
+            Self::Time => "time".into(),
+            Self::Decimal => "Decimal".into(),
+            Self::Uuid => "Uuid".into(),
             Self::Dict(d) => d.name(),
             Self::List(l) => l.name(),
             Self::Set(s) => s.name(),
@@ -392,6 +401,12 @@ pub struct StaticSchema {
     pub tuple: Schema,
     pub set: Schema,
     pub frozenset: Schema,
+    pub datetime: Schema,
+    pub date: Schema,
+    pub time: Schema,
+    pub decimal: Schema,
+    pub uuid: Schema,
+    pub any: Schema,
 }
 
 pub fn static_schema() -> &'static StaticSchema {
@@ -401,17 +416,23 @@ pub fn static_schema() -> &'static StaticSchema {
 lazy_static::lazy_static! {
     static ref STATIC_SCHEMA: StaticSchema = {
         StaticSchema {
-            boolean: Schema::Primitive(Primitive::Bool),
-            int: Schema::Primitive(Primitive::Int),
-            string: Schema::Primitive(Primitive::Str),
-            float: Schema::Primitive(Primitive::Float),
-            bytes: Schema::Primitive(Primitive::Bytes),
-            bytearray: Schema::Primitive(Primitive::ByteArray),
+            boolean: Schema::Bool,
+            int: Schema::Int,
+            string: Schema::Str,
+            float: Schema::Float,
+            bytes: Schema::Bytes,
+            bytearray: Schema::ByteArray,
             dict: Schema::Dict(Dict::new(Box::new(Schema::Any(Any::new())), Box::new(Schema::Any(Any::new())))),
             list: Schema::List(List::new(Box::new(Schema::Any(Any::new())))),
             tuple: Schema::Tuple(Tuple::any_tuple()),
             set: Schema::Set(Set::new(Box::new(Schema::Any(Any::new())))),
             frozenset: Schema::FrozenSet(FrozenSet::new(Box::new(Schema::Any(Any::new())))),
+            datetime: Schema::DateTime,
+            time: Schema::Time,
+            date: Schema::Date,
+            decimal: Schema::Decimal,
+            uuid: Schema::Uuid,
+            any: Schema::Any(Any),
         }
     };
 }

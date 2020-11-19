@@ -1,8 +1,4 @@
-use crate::{
-    error::Convert,
-    schema::Any,
-    types::{self, Object},
-};
+use crate::{error::Convert, object::Object, schema::Any};
 use serde::{
     de::{DeserializeSeed, Deserializer, EnumAccess, Error, MapAccess, SeqAccess, Visitor},
     Deserialize,
@@ -183,19 +179,19 @@ impl<'de> Visitor<'de> for AnyVisitor {
             args.push(arg);
         }
 
-        let mut list = types::List::new(args.len()).de()?;
+        let mut list = Object::build_list(args.len()).de()?;
         for (i, arg) in args.into_iter().enumerate() {
             list.set(i, arg);
         }
 
-        Ok(list.into_inner())
+        Ok(list.build())
     }
 
     fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
     where
         A: MapAccess<'de>,
     {
-        let mut dict = types::Dict::new().de()?;
+        let mut dict = Object::build_dict().de()?;
 
         while let Some(k) = map.next_key()? {
             let k: Cow<str> = k;
@@ -203,7 +199,7 @@ impl<'de> Visitor<'de> for AnyVisitor {
             dict.set(Object::new_str(&k).de()?, v).de()?;
         }
 
-        Ok(dict.into_inner())
+        Ok(dict.build())
     }
 
     fn visit_enum<A>(self, data: A) -> Result<Self::Value, A::Error>

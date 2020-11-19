@@ -4,7 +4,7 @@ verify_ssl = true
 name = "pypi"
 
 [dev-packages]
-yapf = "0.30"
+yapf = "~=0.30"
 typing_inspect = "~=0.6"
 maturin = "~=0.8"
 pytest = "~=6.0"

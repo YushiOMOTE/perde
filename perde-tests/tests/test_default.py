@@ -178,7 +178,7 @@ def test_field_skip_serializing(m):
         b: str
 
     p = m.unpack_data("Skip", astype=Skip)
-    with pytest.raises(RuntimeError):
+    with pytest.raises(Exception):
         m.unpack_data("Skipped", astype=Skip)
     assert p == Skip("ssssss", 3, 1.1, "a", "b")
     assert m.dumps(p) == m.data("Skipped")

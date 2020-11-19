@@ -1,9 +1,25 @@
 use crate::{
     error::Result,
-    types::{ObjectRef, TupleRef, TupleRefIter},
+    object::{ObjectRef, TupleIter, TupleRef},
 };
 use pyo3::ffi::*;
 use std::iter::Enumerate;
+
+pub struct Args<'a> {
+    tuple: TupleRef<'a>,
+}
+
+impl<'a> Args<'a> {
+    pub fn new(ptr: *mut PyObject) -> Result<Self> {
+        Ok(Self {
+            tuple: ObjectRef::new(ptr)?.as_tuple(),
+        })
+    }
+
+    pub fn arg(&self, index: usize) -> Result<&ObjectRef> {
+        self.tuple.get(index)
+    }
+}
 
 pub struct FastArgs {
     args: *const *mut PyObject,
@@ -30,7 +46,7 @@ impl FastArgs {
                 self.num_args()
             )
         }
-        ObjectRef::new(unsafe { *self.args.offset(0) })
+        ObjectRef::new(unsafe { *self.args.offset(index as isize) })
     }
 
     pub fn iter_kwargs<'a>(&'a self) -> Result<Option<KwArgsIter<'a>>> {
@@ -38,10 +54,10 @@ impl FastArgs {
             return Ok(None);
         }
 
+        let obj = ObjectRef::new(self.kwnames)?;
+
         Ok(Some(KwArgsIter {
-            iter: TupleRef::new(ObjectRef::new(self.kwnames)?)
-                .iter()
-                .enumerate(),
+            iter: obj.get_tuple_iter()?.enumerate(),
             args: self.args,
             nargs: self.nargs,
         }))
@@ -53,7 +69,7 @@ impl FastArgs {
 }
 
 pub struct KwArgsIter<'a> {
-    iter: Enumerate<TupleRefIter<'a>>,
+    iter: Enumerate<TupleIter<'a>>,
     args: *const *mut PyObject,
     nargs: usize,
 }

@@ -1,4 +1,4 @@
-use pyo3::{exceptions::PyRuntimeError, PyErr, Python};
+use pyo3::{type_object::PyTypeObject, PyErr, Python};
 use serde::{de, ser};
 use std::fmt::{self, Display};
 
@@ -6,8 +6,7 @@ pub type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Debug)]
 pub struct Error {
-    pyerr: PyErr,
-    hints: Vec<String>,
+    msg: String,
 }
 
 #[macro_export]
@@ -34,12 +33,14 @@ impl Error {
         if PyErr::occurred(py) {
             unsafe { pyo3::ffi::PyErr_Clear() };
         }
-        let pyerr = PyErr::new::<PyRuntimeError, _>(t.to_string());
 
-        Self {
-            pyerr,
-            hints: vec![t.to_string()],
-        }
+        Self { msg: t.to_string() }
+    }
+
+    pub fn restore_as<T: PyTypeObject>(self) {
+        let py = unsafe { Python::assume_gil_acquired() };
+        let pyerr = PyErr::new::<T, _>(self.msg);
+        pyerr.restore(py);
     }
 }
 
@@ -54,7 +55,7 @@ where
 
 impl Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.pyerr)
+        write!(f, "{}", self.msg)
     }
 }
 
@@ -69,18 +70,9 @@ pub trait Convert<T> {
         E: ser::Error,
         Self: Sized;
 
-    fn restore(self) -> Option<T>
-    where
-        Self: Sized;
-
     fn context<C>(self, context: C) -> Result<T>
     where
-        C: Display + Send + Sync + 'static;
-
-    fn with_context<C, F>(self, f: F) -> Result<T>
-    where
-        C: Display + Send + Sync + 'static,
-        F: FnOnce() -> C;
+        C: ToString;
 }
 
 impl<T> Convert<T> for Result<T> {
@@ -100,35 +92,12 @@ impl<T> Convert<T> for Result<T> {
         self.map_err(|e| ser::Error::custom(e.to_string()))
     }
 
-    fn restore(self) -> Option<T> {
-        match self {
-            Ok(t) => Some(t),
-            Err(e) => {
-                let py = unsafe { Python::assume_gil_acquired() };
-                e.pyerr.restore(py);
-                None
-            }
-        }
-    }
-
-    fn context<C>(mut self, context: C) -> Result<T>
+    fn context<C>(self, context: C) -> Result<T>
     where
-        C: Display + Send + Sync + 'static,
+        C: ToString,
     {
-        if let Err(e) = self.as_mut() {
-            e.hints.push(context.to_string());
-        }
-        self
-    }
-
-    fn with_context<C, F>(mut self, f: F) -> Result<T>
-    where
-        C: Display + Send + Sync + 'static,
-        F: FnOnce() -> C,
-    {
-        if let Err(e) = self.as_mut() {
-            e.hints.push(f().to_string());
-        }
-        self
+        self.map_err(|e| Error {
+            msg: format!("{}: {}", context.to_string(), e),
+        })
     }
 }

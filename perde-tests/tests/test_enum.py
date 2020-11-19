@@ -156,9 +156,9 @@ def test_enum_skip(m):
 
     m.repack_as(E, E.X)
     m.repack_as(E, E.Z)
-    with pytest.raises(RuntimeError):
+    with pytest.raises(Exception):
         m.dumps(E.Y)
-    with pytest.raises(RuntimeError) as e:
+    with pytest.raises(Exception) as e:
         m.loads_as(E, m.data("EnumY"))
     print(f'{e}')
 
@@ -172,7 +172,7 @@ def test_enum_skip_serializing(m):
 
     m.repack_as(E, E.X)
     m.repack_as(E, E.Z)
-    with pytest.raises(RuntimeError):
+    with pytest.raises(Exception):
         m.dumps(E.Y)
     assert E.Y == m.loads_as(E, m.data("EnumY"))
 
@@ -187,7 +187,7 @@ def test_enum_skip_deserializing(m):
     m.repack_as(E, E.X)
     m.repack_as(E, E.Z)
     assert m.data("EnumY") == m.dumps(E.Y)
-    with pytest.raises(RuntimeError) as e:
+    with pytest.raises(Exception) as e:
         m.loads_as(E, m.data("EnumY"))
     print(f'{e}')
 

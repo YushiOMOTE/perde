@@ -1,8 +1,4 @@
-use crate::{
-    error::Convert,
-    schema::*,
-    types::{self, Object},
-};
+use crate::{error::Convert, object::Object, schema::*};
 use serde::de::{DeserializeSeed, Deserializer, SeqAccess, Visitor};
 use smallvec::SmallVec;
 use std::fmt;
@@ -26,13 +22,13 @@ impl<'a, 'de> Visitor<'de> for ListVisitor<'a> {
             items.push(value);
         }
 
-        let mut list = types::List::new(items.len()).de()?;
+        let mut list = Object::build_list(items.len()).de()?;
 
         for (i, a) in items.into_iter().enumerate() {
             list.set(i, a);
         }
 
-        Ok(list.into_inner())
+        Ok(list.build())
     }
 }
 

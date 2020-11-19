@@ -1,9 +1,4 @@
-use crate::{
-    decode::object::AnyVisitor,
-    error::Convert,
-    schema::*,
-    types::{Object, Tuple},
-};
+use crate::{decode::any::AnyVisitor, error::Convert, object::Object, schema::*};
 use serde::de::{self, DeserializeSeed, Deserializer, Visitor};
 use std::fmt;
 
@@ -47,10 +42,11 @@ impl<'a> EnumVisitor<'a> {
             },
         };
 
-        self.0.object.get(&e.name).ok_or(de::Error::custom(format!(
-            "cannot construct enum from value {}",
-            s
-        )))
+        self.0
+            .object
+            .get(&e.name)
+            .context(format!("cannot construct enum from value {}", s))
+            .de()
     }
 }
 
@@ -99,9 +95,7 @@ impl<'a, 'de> DeserializeSeed<'de> for &'a Enum {
     {
         if self.attr.as_value {
             let obj = deserializer.deserialize_any(AnyVisitor)?;
-            let mut args = Tuple::new(1).de()?;
-            args.set(0, obj);
-            self.object.call(args).de()
+            self.object.call1(obj).de()
         } else {
             deserializer.deserialize_any(EnumVisitor(self))
         }

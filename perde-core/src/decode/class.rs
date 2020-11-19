@@ -1,7 +1,7 @@
 use crate::{
     error::{Convert, Result},
+    object::Object,
     schema::*,
-    types::{self, Object},
 };
 use indexmap::IndexMap;
 use serde::de::{DeserializeSeed, Deserializer, IgnoredAny, MapAccess, Visitor};
@@ -99,11 +99,11 @@ impl Class {
                         Schema::Class(cls) => return cls.call(map),
                         Schema::Dict(_) => {
                             let map = std::mem::replace(map, IndexMap::new());
-                            let mut dict = types::Dict::new()?;
+                            let mut dict = Object::build_dict()?;
                             for (k, v) in map {
                                 dict.set(Object::new_str(&k)?, v)?;
                             }
-                            return Ok(dict.into_inner());
+                            return Ok(dict.build());
                         }
                         _ => return Err(err!("cannot use `flatten` attribute with an non-map type")),
                     }
@@ -116,7 +116,7 @@ impl Class {
                     if let Some(obj) = s.attr.default.as_ref() {
                         return Ok(obj.owned());
                     } else if let Some(obj) = s.attr.default_factory.as_ref() {
-                        return obj.call_noarg();
+                        return obj.call0();
                     } else if self.attr.default || s.attr.default_construct {
                         return Object::new_default(&s.schema);
                     } else {
@@ -134,7 +134,7 @@ impl Class {
                         if let Some(d) = s.attr.default.as_ref() {
                             return Ok(d.clone());
                         } else if let Some(d) = s.attr.default_factory.as_ref() {
-                            return d.call_noarg();
+                            return d.call0();
                         } else if s.schema.is_optional() {
                             return Ok(Object::new_none());
                         } else if self.attr.default || s.attr.default_construct {
@@ -147,14 +147,6 @@ impl Class {
             })
             .collect();
 
-        self.construct(args?)
-    }
-
-    pub fn construct(&self, args: Vec<Object>) -> Result<Object> {
-        let mut tuple = types::Tuple::new(args.len())?;
-        for (i, arg) in args.into_iter().enumerate() {
-            tuple.set(i, arg);
-        }
-        self.ty.construct(tuple)
+        self.ty.call(args?)
     }
 }

@@ -1,11 +1,4 @@
-use crate::{
-    error::Result,
-    schema::*,
-    types::{
-        self, is_date, is_datetime, is_decimal, is_time, is_uuid, static_objects, AttrStr,
-        ObjectRef,
-    },
-};
+use crate::{attr::AttrStr, error::Result, import::import, object::ObjectRef, schema::*};
 use indexmap::IndexMap;
 use std::collections::HashMap;
 
@@ -77,11 +70,6 @@ pub fn resolve_schema<'a>(
     p: &'a ObjectRef,
     attr: Option<HashMap<&str, &ObjectRef>>,
 ) -> Result<&'a Schema> {
-    match p.get_capsule(&SCHEMA_CACHE) {
-        Some(p) => return Ok(p),
-        _ => {}
-    }
-
     if p.is_bool() {
         Ok(&static_schema().boolean)
     } else if p.is_str() {
@@ -105,32 +93,39 @@ pub fn resolve_schema<'a>(
     } else if p.is_tuple() {
         Ok(&static_schema().tuple)
     } else if p.is_none_type() || p.is_any() {
-        Ok(&SCHEMA_ANY)
-    } else if is_datetime(p)? {
-        Ok(&Schema::Primitive(Primitive::DateTime))
-    } else if is_time(p)? {
-        Ok(&Schema::Primitive(Primitive::Time))
-    } else if is_date(p)? {
-        Ok(&Schema::Primitive(Primitive::Date))
-    } else if is_decimal(p)? {
-        Ok(&Schema::Primitive(Primitive::Decimal))
-    } else if is_uuid(p)? {
-        Ok(&Schema::Primitive(Primitive::Uuid))
-    } else if let Some(s) = maybe_dataclass(p, &attr)? {
-        p.set_capsule(&SCHEMA_CACHE, s)
-    } else if let Some(s) = maybe_generic(p)? {
-        p.set_capsule(&SCHEMA_CACHE, s)
-    } else if let Some(s) = maybe_enum(p, &attr)? {
-        p.set_capsule(&SCHEMA_CACHE, s)
-    } else if is_type_var_instance(p)? || is_any_type(p)? {
-        Ok(&SCHEMA_ANY)
+        Ok(&static_schema().any)
+    } else if p.is_datetime() {
+        Ok(&static_schema().datetime)
+    } else if p.is_time() {
+        Ok(&static_schema().time)
+    } else if p.is_date() {
+        Ok(&static_schema().date)
+    } else if p.is_decimal() {
+        Ok(&static_schema().decimal)
+    } else if p.is_uuid() {
+        Ok(&static_schema().uuid)
     } else {
-        bail!(
-            "unsupported type `{}`",
-            p.get_attr(&ATTR_TYPENAME)
-                .and_then(|o| { Ok(o.as_str()?.to_string()) })
-                .unwrap_or("<unknown>".into())
-        );
+        match p.get_capsule(&SCHEMA_CACHE) {
+            Some(p) => return Ok(p),
+            _ => {}
+        }
+
+        let s = if p.has_attr(&DATACLASS_FIELDS) {
+            to_dataclass(p, &attr)?
+        } else if p.is_generic() {
+            to_generic(p)?
+        } else if p.is_enum() {
+            to_enum(p, &attr)?
+        } else {
+            bail!(
+                "unsupported type `{}`",
+                p.get_attr(&ATTR_TYPENAME)
+                    .and_then(|o| { Ok(o.as_str()?.to_string()) })
+                    .unwrap_or("<unknown>".into())
+            );
+        };
+
+        p.set_capsule(&SCHEMA_CACHE, s)
     }
 }
 
@@ -138,41 +133,25 @@ pub fn to_schema(p: &ObjectRef) -> Result<Schema> {
     resolve_schema(p, None).map(|s| s.clone())
 }
 
-fn is_type_var_instance(p: &ObjectRef) -> Result<bool> {
-    Ok(p.is_instance(static_objects()?.type_var.as_ptr()))
-}
-
-fn is_any_type(p: &ObjectRef) -> Result<bool> {
-    Ok(p.is(static_objects()?.any.as_ptr()))
-}
-
-fn maybe_dataclass(
-    p: &ObjectRef,
-    attr: &Option<HashMap<&str, &ObjectRef>>,
-) -> Result<Option<Schema>> {
-    if !p.has_attr(&DATACLASS_FIELDS) {
-        return Ok(None);
-    }
-
+fn to_dataclass(p: &ObjectRef, attr: &Option<HashMap<&str, &ObjectRef>>) -> Result<Schema> {
     let cattr = ClassAttr::parse(attr)?;
 
-    let arg = types::Tuple::one(p)?;
-    let fields = static_objects()?.fields.call(arg)?;
-    let fields = types::Tuple::from(fields);
+    let fields = import()?.fields.call1(p.owned())?;
+    let fields = fields.get_tuple_iter()?;
 
     let mut members = IndexMap::new();
     let mut ser_field_len = 0;
     let mut flatten_dict = None;
 
-    for i in 0..fields.len() {
-        let field = fields.getref(i)?;
+    for (i, field) in fields.enumerate() {
         let name = field.get_attr(&ATTR_NAME)?;
+
         let ty = field.get_attr(&ATTR_TYPE)?;
         let default = field
             .get_attr(&ATTR_DEFAULT)?
             .none_as_optional()
             .filter(|o| {
-                static_objects()
+                import()
                     .ok()
                     .filter(|so| !o.is(so.missing.as_ptr()))
                     .is_some()
@@ -181,7 +160,7 @@ fn maybe_dataclass(
             .get_attr(&ATTR_DEFAULT_FACTORY)?
             .none_as_optional()
             .filter(|o| {
-                static_objects()
+                import()
                     .ok()
                     .filter(|so| !o.is(so.missing.as_ptr()))
                     .is_some()
@@ -229,10 +208,10 @@ fn maybe_dataclass(
     }
 
     let name = p.name();
-    let class = types::Class::new(p.owned());
+    let class = p.owned();
     let flatten_members = collect_flatten_members(&members);
 
-    Ok(Some(Schema::Class(Class::new(
+    Ok(Schema::Class(Class::new(
         class,
         name.into(),
         cattr,
@@ -240,20 +219,17 @@ fn maybe_dataclass(
         flatten_members,
         flatten_dict,
         ser_field_len,
-    ))))
+    )))
 }
 
-fn maybe_enum(p: &ObjectRef, attr: &Option<HashMap<&str, &ObjectRef>>) -> Result<Option<Schema>> {
-    if !p.is_instance(static_objects()?.enum_meta.as_ptr()) {
-        return Ok(None);
-    }
-
+fn to_enum(p: &ObjectRef, attr: &Option<HashMap<&str, &ObjectRef>>) -> Result<Schema> {
     let eattr = EnumAttr::parse(&attr)?;
 
     let iter = p.get_iter()?;
 
     let variants: Result<_> = iter
         .map(|item| {
+            let item = item?;
             let name = item.get_attr(&ATTR_NAME)?;
             let value = item.get_attr(&ATTR_VALUE)?;
 
@@ -288,21 +264,19 @@ fn maybe_enum(p: &ObjectRef, attr: &Option<HashMap<&str, &ObjectRef>>) -> Result
         })
         .collect();
 
-    Ok(Some(Schema::Enum(Enum::new(
+    Ok(Schema::Enum(Enum::new(
         p.name().into(),
         p.owned(),
         eattr,
         variants?,
-    ))))
+    )))
 }
 
-fn to_union(p: &ObjectRef) -> Result<Schema> {
-    let args = get_args(p)?;
-    let args = args.as_ref();
-    let iter = args.iter();
+fn to_union(args: &ObjectRef) -> Result<Schema> {
+    let args = args.get_tuple_iter()?;
 
     let mut optional = false;
-    let variants: Result<Vec<_>> = iter
+    let variants: Result<Vec<_>> = args
         .filter_map(|arg| {
             if arg.is_none_type() {
                 optional = true;
@@ -316,19 +290,17 @@ fn to_union(p: &ObjectRef) -> Result<Schema> {
     Ok(Schema::Union(Union::new(variants?, optional)))
 }
 
-fn to_tuple(p: &ObjectRef) -> Result<Schema> {
-    let args = get_args(p)?;
-    let args = args.as_ref();
+fn to_tuple(args: &ObjectRef) -> Result<Schema> {
+    let mut args = args.get_tuple_iter()?;
 
     if args.len() == 1 {
-        let p = args.get(0).unwrap();
-        if p.is(static_objects()?.empty_tuple.as_ptr()) {
+        let p = args.next().ok_or(err!("missing tuple element"))?;
+        if p.is(import()?.empty_tuple.as_ptr()) {
             return Ok(Schema::Tuple(Tuple::new(vec![])));
         }
     }
 
-    let iter = args.iter();
-    let args: Result<_> = iter.map(|arg| to_schema(arg)).collect();
+    let args: Result<_> = args.map(|arg| to_schema(arg)).collect();
     let args: Vec<_> = args?;
     if args.is_empty() {
         // Here is for Tuple without subscription.
@@ -340,84 +312,50 @@ fn to_tuple(p: &ObjectRef) -> Result<Schema> {
     Ok(Schema::Tuple(Tuple::new(args)))
 }
 
-fn to_dict(p: &ObjectRef) -> Result<Schema> {
-    let args = get_args(p)?;
-    let args = args.as_ref();
-    let key = to_schema(args.get(0)?)?;
-    let value = to_schema(args.get(1)?)?;
+fn to_dict(args: &ObjectRef) -> Result<Schema> {
+    let mut args = args.get_tuple_iter()?;
+    let key = to_schema(args.next().ok_or(err!("missing key type in dict"))?)?;
+    let value = to_schema(args.next().ok_or(err!("missing value type in dict"))?)?;
     Ok(Schema::Dict(Dict::new(Box::new(key), Box::new(value))))
 }
 
-fn to_list(p: &ObjectRef) -> Result<Schema> {
-    let args = get_args(p)?;
-    let args = args.as_ref();
-    let value = to_schema(args.get(0)?)?;
+fn to_list(args: &ObjectRef) -> Result<Schema> {
+    let mut args = args.get_tuple_iter()?;
+    let value = to_schema(args.next().ok_or(err!("missing value type in list"))?)?;
     Ok(Schema::List(List::new(Box::new(value))))
 }
 
-fn to_set(p: &ObjectRef) -> Result<Schema> {
-    let args = get_args(p)?;
-    let args = args.as_ref();
-    let value = to_schema(args.get(0)?)?;
+fn to_set(args: &ObjectRef) -> Result<Schema> {
+    let mut args = args.get_tuple_iter()?;
+    let value = to_schema(args.next().ok_or(err!("missing value type in set"))?)?;
     Ok(Schema::Set(Set::new(Box::new(value))))
 }
 
-fn to_frozen_set(p: &ObjectRef) -> Result<Schema> {
-    let args = get_args(p)?;
-    let args = args.as_ref();
-    let value = to_schema(args.get(0)?)?;
+fn to_frozen_set(args: &ObjectRef) -> Result<Schema> {
+    let mut args = args.get_tuple_iter()?;
+    let value = to_schema(args.next().ok_or(err!("missing value type in frozenset"))?)?;
     Ok(Schema::FrozenSet(FrozenSet::new(Box::new(value))))
 }
 
-fn get_args(p: &ObjectRef) -> Result<types::Tuple> {
-    Ok(types::Tuple::from(p.get_attr(&ATTR_ARGS)?))
-}
-
-fn is_generic_alias(p: &ObjectRef) -> Result<bool> {
-    if p.is_instance(static_objects()?.generic_alias.as_ptr())
-        || static_objects()?
-            .base_generic_alias
-            .as_ref()
-            .filter(|o| p.is_instance(o.as_ptr()))
-            .is_some()
-        || static_objects()?
-            .union_generic_alias
-            .as_ref()
-            .filter(|o| p.is_instance(o.as_ptr()))
-            .is_some()
-        || static_objects()?
-            .special_generic_alias
-            .as_ref()
-            .filter(|o| p.is_instance(o.as_ptr()))
-            .is_some()
-    {
-        return Ok(true);
-    }
-    return Ok(false);
-}
-
-fn maybe_generic(p: &ObjectRef) -> Result<Option<Schema>> {
-    if !is_generic_alias(p)? && !p.is(static_objects()?.tuple.as_ptr()) {
-        return Ok(None);
-    }
-
+fn to_generic(p: &ObjectRef) -> Result<Schema> {
     let origin = p.get_attr(&ATTR_ORIGIN)?;
+    let args = p.get_attr(&ATTR_ARGS)?;
 
-    let s = if origin.is(static_objects()?.union.as_ptr()) {
-        to_union(p)?
+    let s = if origin.is(import()?.union.as_ptr()) {
+        to_union(&args)?
     } else if origin.is_tuple() {
-        to_tuple(p)?
+        to_tuple(&args)?
     } else if origin.is_dict() {
-        to_dict(p)?
+        to_dict(&args)?
     } else if origin.is_set() {
-        to_set(p)?
+        to_set(&args)?
     } else if origin.is_list() {
-        to_list(p)?
+        to_list(&args)?
     } else if origin.is_frozen_set() {
-        to_frozen_set(p)?
+        to_frozen_set(&args)?
     } else {
-        return Ok(None);
+        bail!("unsupported generic type");
     };
 
-    Ok(Some(s))
+    Ok(s)
 }

@@ -1,7 +1,8 @@
 use crate::{
+    attr::AttrStr,
     error::Convert,
-    schema::{Any, FieldSchema, Primitive, Schema, WithSchema},
-    types::{isoformat, to_str, AttrStr, DictRef, ListRef, ObjectRef, Set, SetRef, TupleRef},
+    object::ObjectRef,
+    schema::{Any, FieldSchema, Schema, WithSchema},
 };
 use indexmap::IndexMap;
 use serde::ser::Error;
@@ -21,67 +22,53 @@ impl<'a> Serialize for WithSchema<'a> {
         S: Serializer,
     {
         match self.schema {
-            Schema::Primitive(Primitive::Bool) => s.serialize_bool(self.object.as_bool().ser()?),
-            Schema::Primitive(Primitive::Int) => s.serialize_i64(self.object.as_i64().ser()?),
-            Schema::Primitive(Primitive::Str) => s.serialize_str(self.object.as_str().ser()?),
-            Schema::Primitive(Primitive::Float) => s.serialize_f64(self.object.as_f64().ser()?),
-            Schema::Primitive(Primitive::ByteArray) => {
-                s.serialize_bytes(self.object.as_bytearray().ser()?)
-            }
-            Schema::Primitive(Primitive::Bytes) => s.serialize_bytes(self.object.as_bytes().ser()?),
-            Schema::Primitive(Primitive::DateTime) => {
-                s.serialize_str(isoformat(self.object).ser()?.as_str().ser()?)
-            }
-            Schema::Primitive(Primitive::Time) => {
-                s.serialize_str(isoformat(self.object).ser()?.as_str().ser()?)
-            }
-            Schema::Primitive(Primitive::Date) => {
-                s.serialize_str(isoformat(self.object).ser()?.as_str().ser()?)
-            }
-            Schema::Primitive(Primitive::Decimal) => {
-                s.serialize_str(to_str(&self.object).ser()?.as_str().ser()?)
-            }
-            Schema::Primitive(Primitive::Uuid) => {
-                s.serialize_str(to_str(&self.object).ser()?.as_str().ser()?)
-            }
+            Schema::Bool => s.serialize_bool(self.object.as_bool().ser()?),
+            Schema::Int => s.serialize_i64(self.object.as_i64().ser()?),
+            Schema::Str => s.serialize_str(self.object.as_str().ser()?),
+            Schema::Float => s.serialize_f64(self.object.as_f64().ser()?),
+            Schema::ByteArray => s.serialize_bytes(self.object.as_bytearray().ser()?),
+            Schema::Bytes => s.serialize_bytes(self.object.as_bytes().ser()?),
+            Schema::DateTime => s.serialize_str(self.object.isoformat().ser()?.as_str().ser()?),
+            Schema::Time => s.serialize_str(self.object.isoformat().ser()?.as_str().ser()?),
+            Schema::Date => s.serialize_str(self.object.isoformat().ser()?.as_str().ser()?),
+            Schema::Decimal => s.serialize_str(self.object.to_str().ser()?.as_str().ser()?),
+            Schema::Uuid => s.serialize_str(self.object.to_str().ser()?.as_str().ser()?),
             Schema::List(l) => {
-                let list = ListRef::new(self.object);
-                let len = list.len();
+                let len = self.object.as_list().len();
                 let mut seq = s.serialize_seq(Some(len))?;
-                for i in 0..len {
-                    let obj = list.get(i).unwrap();
-                    let w = obj.with_schema(&l.value);
+
+                for item in self.object.get_iter().ser()? {
+                    let item = item.ser()?;
+                    let w = item.with_schema(&l.value);
                     seq.serialize_element(&w)?;
                 }
                 seq.end()
             }
             Schema::Set(l) => {
-                let set = SetRef::new(self.object);
-                let len = set.len();
+                let len = self.object.as_set().len();
                 let mut seq = s.serialize_seq(Some(len))?;
 
-                for item in set.iter().ser()? {
+                for item in self.object.get_iter().ser()? {
+                    let item = item.ser()?;
                     let w = item.with_schema(&l.value);
                     seq.serialize_element(&w)?;
                 }
                 seq.end()
             }
             Schema::FrozenSet(l) => {
-                let set = Set::from_iter(self.object).ser()?;
-                let len = set.len();
+                let len = self.object.as_set().len();
                 let mut seq = s.serialize_seq(Some(len))?;
 
-                for item in set.iter().ser()? {
+                for item in self.object.get_iter().ser()? {
+                    let item = item.ser()?;
                     let w = item.with_schema(&l.value);
                     seq.serialize_element(&w)?;
                 }
                 seq.end()
             }
             Schema::Tuple(t) => {
-                let tuple = TupleRef::new(self.object);
-                let iter = tuple.iter();
-                let len = iter.len();
-                let mut seq = s.serialize_seq(Some(len))?;
+                let iter = self.object.get_tuple_iter().ser()?;
+                let mut seq = s.serialize_seq(Some(iter.len()))?;
                 if t.any {
                     for obj in iter {
                         let w = obj.with_schema(&Schema::Any(Any));
@@ -96,9 +83,9 @@ impl<'a> Serialize for WithSchema<'a> {
                 seq.end()
             }
             Schema::Dict(d) => {
-                let dict = DictRef::new(self.object);
+                let dict = self.object.get_dict_iter().ser()?;
                 let mut map = s.serialize_map(Some(dict.len()))?;
-                for (k, v) in dict.iter() {
+                for (k, v) in dict {
                     let k = k.with_schema(&d.key);
                     let v = v.with_schema(&d.value);
                     map.serialize_entry(&k, &v)?;
@@ -169,8 +156,8 @@ where
                     serialize_fields(&obj, &cls.fields, map)?;
                 }
                 Schema::Dict(d) => {
-                    let dict = DictRef::new(&obj);
-                    for (k, v) in dict.iter() {
+                    let dict = obj.get_dict_iter().ser()?;
+                    for (k, v) in dict {
                         let k = k.with_schema(&d.key);
                         let v = v.with_schema(&d.value);
                         map.serialize_entry(&k, &v)?;
