@@ -1,11 +1,5 @@
-use crate::{
-    error::Convert,
-    schema::*,
-    types::{
-        date_fromisoformat, datetime_fromisoformat, time_fromisoformat, to_decimal, to_uuid, Object,
-    },
-};
-use serde::de::{self, DeserializeSeed, Deserializer, SeqAccess, Visitor};
+use crate::{error::Convert, types::Object};
+use serde::de::{self, SeqAccess, Visitor};
 use smallvec::SmallVec;
 use std::fmt;
 
@@ -195,43 +189,5 @@ impl<'de> Visitor<'de> for BytesVisitor {
         }
 
         self.visit_borrowed_bytes(&bytes)
-    }
-}
-
-impl<'a, 'de> DeserializeSeed<'de> for &'a Primitive {
-    type Value = Object;
-
-    fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        match self {
-            Primitive::Bool => deserializer.deserialize_bool(BoolVisitor),
-            Primitive::Int => deserializer.deserialize_i64(IntVisitor),
-            Primitive::Float => deserializer.deserialize_f64(FloatVisitor),
-            Primitive::Str => deserializer.deserialize_str(StrVisitor),
-            Primitive::Bytes => deserializer.deserialize_bytes(BytesVisitor(false)),
-            Primitive::ByteArray => deserializer.deserialize_bytes(BytesVisitor(true)),
-            Primitive::DateTime => {
-                let s = deserializer.deserialize_str(StrVisitor)?;
-                datetime_fromisoformat(&s).de()
-            }
-            Primitive::Date => {
-                let s = deserializer.deserialize_str(StrVisitor)?;
-                date_fromisoformat(&s).de()
-            }
-            Primitive::Time => {
-                let s = deserializer.deserialize_str(StrVisitor)?;
-                time_fromisoformat(&s).de()
-            }
-            Primitive::Decimal => {
-                let s = deserializer.deserialize_str(StrVisitor)?;
-                to_decimal(&s).de()
-            }
-            Primitive::Uuid => {
-                let s = deserializer.deserialize_str(StrVisitor)?;
-                to_uuid(&s).de()
-            }
-        }
     }
 }

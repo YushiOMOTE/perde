@@ -3,7 +3,7 @@ use crate::{
     error::Result,
     import::import,
     resolve::resolve_schema,
-    schema::{Primitive, Schema, WithSchema},
+    schema::{Schema, WithSchema},
 };
 use pyo3::ffi::*;
 use std::{
@@ -416,29 +416,17 @@ impl Object {
 
     pub fn new_default(s: &Schema) -> Result<Object> {
         let obj = match s {
-            Schema::Primitive(Primitive::Bool) => {
-                ObjectRef::new(cast!(PyBool_Type))?.call_noarg()?
-            }
-            Schema::Primitive(Primitive::Int) => {
-                ObjectRef::new(cast!(PyLong_Type))?.call_noarg()?
-            }
-            Schema::Primitive(Primitive::Float) => {
-                ObjectRef::new(cast!(PyFloat_Type))?.call_noarg()?
-            }
-            Schema::Primitive(Primitive::Str) => {
-                ObjectRef::new(cast!(PyUnicode_Type))?.call_noarg()?
-            }
-            Schema::Primitive(Primitive::Bytes) => {
-                ObjectRef::new(cast!(PyBytes_Type))?.call_noarg()?
-            }
-            Schema::Primitive(Primitive::ByteArray) => {
-                ObjectRef::new(cast!(PyByteArray_Type))?.call_noarg()?
-            }
-            Schema::Primitive(Primitive::DateTime) => import()?.datetime.call_noarg()?,
-            Schema::Primitive(Primitive::Date) => import()?.date.call_noarg()?,
-            Schema::Primitive(Primitive::Time) => import()?.time.call_noarg()?,
-            Schema::Primitive(Primitive::Decimal) => import()?.decimal.call_noarg()?,
-            Schema::Primitive(Primitive::Uuid) => import()?.uuid.call_noarg()?,
+            Schema::Bool => ObjectRef::new(cast!(PyBool_Type))?.call_noarg()?,
+            Schema::Int => ObjectRef::new(cast!(PyLong_Type))?.call_noarg()?,
+            Schema::Float => ObjectRef::new(cast!(PyFloat_Type))?.call_noarg()?,
+            Schema::Str => ObjectRef::new(cast!(PyUnicode_Type))?.call_noarg()?,
+            Schema::Bytes => ObjectRef::new(cast!(PyBytes_Type))?.call_noarg()?,
+            Schema::ByteArray => ObjectRef::new(cast!(PyByteArray_Type))?.call_noarg()?,
+            Schema::DateTime => import()?.datetime.call_noarg()?,
+            Schema::Date => import()?.date.call_noarg()?,
+            Schema::Time => import()?.time.call_noarg()?,
+            Schema::Decimal => import()?.decimal.call_noarg()?,
+            Schema::Uuid => import()?.uuid.call_noarg()?,
             Schema::Dict(_) => ObjectRef::new(cast!(PyDict_Type))?.call_noarg()?,
             Schema::List(_) => ObjectRef::new(cast!(PyList_Type))?.call_noarg()?,
             Schema::Set(_) => ObjectRef::new(cast!(PySet_Type))?.call_noarg()?,

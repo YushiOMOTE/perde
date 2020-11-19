@@ -195,39 +195,6 @@ impl EnumAttr {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Primitive {
-    Bool,
-    Int,
-    Float,
-    Str,
-    Bytes,
-    ByteArray,
-    DateTime,
-    Date,
-    Time,
-    Decimal,
-    Uuid,
-}
-
-impl Primitive {
-    pub fn name(&self) -> &str {
-        match self {
-            Self::Bool => "bool".into(),
-            Self::Int => "int".into(),
-            Self::Float => "float".into(),
-            Self::Str => "str".into(),
-            Self::Bytes => "bytes".into(),
-            Self::ByteArray => "bytearray".into(),
-            Self::DateTime => "datetime".into(),
-            Self::Date => "date".into(),
-            Self::Time => "time".into(),
-            Self::Decimal => "Decimal".into(),
-            Self::Uuid => "Uuid".into(),
-        }
-    }
-}
-
 #[derive(Debug, Clone, new, PartialEq, Eq)]
 pub struct Dict {
     pub key: Box<Schema>,
@@ -359,7 +326,17 @@ pub struct Any;
 
 #[derive(Debug, Clone, new, PartialEq, Eq)]
 pub enum Schema {
-    Primitive(Primitive),
+    Bool,
+    Int,
+    Float,
+    Str,
+    Bytes,
+    ByteArray,
+    DateTime,
+    Date,
+    Time,
+    Decimal,
+    Uuid,
     Dict(Dict),
     List(List),
     Set(Set),
@@ -374,7 +351,17 @@ pub enum Schema {
 impl Schema {
     pub fn name(&self) -> &str {
         match self {
-            Self::Primitive(p) => p.name(),
+            Self::Bool => "bool".into(),
+            Self::Int => "int".into(),
+            Self::Float => "float".into(),
+            Self::Str => "str".into(),
+            Self::Bytes => "bytes".into(),
+            Self::ByteArray => "bytearray".into(),
+            Self::DateTime => "datetime".into(),
+            Self::Date => "date".into(),
+            Self::Time => "time".into(),
+            Self::Decimal => "Decimal".into(),
+            Self::Uuid => "Uuid".into(),
             Self::Dict(d) => d.name(),
             Self::List(l) => l.name(),
             Self::Set(s) => s.name(),
@@ -428,22 +415,22 @@ pub fn static_schema() -> &'static StaticSchema {
 lazy_static::lazy_static! {
     static ref STATIC_SCHEMA: StaticSchema = {
         StaticSchema {
-            boolean: Schema::Primitive(Primitive::Bool),
-            int: Schema::Primitive(Primitive::Int),
-            string: Schema::Primitive(Primitive::Str),
-            float: Schema::Primitive(Primitive::Float),
-            bytes: Schema::Primitive(Primitive::Bytes),
-            bytearray: Schema::Primitive(Primitive::ByteArray),
+            boolean: Schema::Bool,
+            int: Schema::Int,
+            string: Schema::Str,
+            float: Schema::Float,
+            bytes: Schema::Bytes,
+            bytearray: Schema::ByteArray,
             dict: Schema::Dict(Dict::new(Box::new(Schema::Any(Any::new())), Box::new(Schema::Any(Any::new())))),
             list: Schema::List(List::new(Box::new(Schema::Any(Any::new())))),
             tuple: Schema::Tuple(Tuple::any_tuple()),
             set: Schema::Set(Set::new(Box::new(Schema::Any(Any::new())))),
             frozenset: Schema::FrozenSet(FrozenSet::new(Box::new(Schema::Any(Any::new())))),
-            datetime: Schema::Primitive(Primitive::DateTime),
-            time: Schema::Primitive(Primitive::Time),
-            date: Schema::Primitive(Primitive::Date),
-            decimal: Schema::Primitive(Primitive::Decimal),
-            uuid: Schema::Primitive(Primitive::Uuid),
+            datetime: Schema::DateTime,
+            time: Schema::Time,
+            date: Schema::Date,
+            decimal: Schema::Decimal,
+            uuid: Schema::Uuid,
             any: Schema::Any(Any),
         }
     };

@@ -1,6 +1,6 @@
 use crate::{
     error::Convert,
-    schema::{Any, FieldSchema, Primitive, Schema, WithSchema},
+    schema::{Any, FieldSchema, Schema, WithSchema},
     types::{isoformat, to_str, AttrStr, DictRef, ListRef, ObjectRef, Set, SetRef, TupleRef},
 };
 use indexmap::IndexMap;
@@ -21,29 +21,17 @@ impl<'a> Serialize for WithSchema<'a> {
         S: Serializer,
     {
         match self.schema {
-            Schema::Primitive(Primitive::Bool) => s.serialize_bool(self.object.as_bool().ser()?),
-            Schema::Primitive(Primitive::Int) => s.serialize_i64(self.object.as_i64().ser()?),
-            Schema::Primitive(Primitive::Str) => s.serialize_str(self.object.as_str().ser()?),
-            Schema::Primitive(Primitive::Float) => s.serialize_f64(self.object.as_f64().ser()?),
-            Schema::Primitive(Primitive::ByteArray) => {
-                s.serialize_bytes(self.object.as_bytearray().ser()?)
-            }
-            Schema::Primitive(Primitive::Bytes) => s.serialize_bytes(self.object.as_bytes().ser()?),
-            Schema::Primitive(Primitive::DateTime) => {
-                s.serialize_str(isoformat(self.object).ser()?.as_str().ser()?)
-            }
-            Schema::Primitive(Primitive::Time) => {
-                s.serialize_str(isoformat(self.object).ser()?.as_str().ser()?)
-            }
-            Schema::Primitive(Primitive::Date) => {
-                s.serialize_str(isoformat(self.object).ser()?.as_str().ser()?)
-            }
-            Schema::Primitive(Primitive::Decimal) => {
-                s.serialize_str(to_str(&self.object).ser()?.as_str().ser()?)
-            }
-            Schema::Primitive(Primitive::Uuid) => {
-                s.serialize_str(to_str(&self.object).ser()?.as_str().ser()?)
-            }
+            Schema::Bool => s.serialize_bool(self.object.as_bool().ser()?),
+            Schema::Int => s.serialize_i64(self.object.as_i64().ser()?),
+            Schema::Str => s.serialize_str(self.object.as_str().ser()?),
+            Schema::Float => s.serialize_f64(self.object.as_f64().ser()?),
+            Schema::ByteArray => s.serialize_bytes(self.object.as_bytearray().ser()?),
+            Schema::Bytes => s.serialize_bytes(self.object.as_bytes().ser()?),
+            Schema::DateTime => s.serialize_str(isoformat(self.object).ser()?.as_str().ser()?),
+            Schema::Time => s.serialize_str(isoformat(self.object).ser()?.as_str().ser()?),
+            Schema::Date => s.serialize_str(isoformat(self.object).ser()?.as_str().ser()?),
+            Schema::Decimal => s.serialize_str(to_str(&self.object).ser()?.as_str().ser()?),
+            Schema::Uuid => s.serialize_str(to_str(&self.object).ser()?.as_str().ser()?),
             Schema::List(l) => {
                 let list = ListRef::new(self.object);
                 let len = list.len();
