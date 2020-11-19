@@ -1,7 +1,7 @@
 use crate::{
     error::Convert,
     schema::{Any, FieldSchema, Schema, WithSchema},
-    types::{isoformat, to_str, AttrStr, ObjectRef},
+    types::{AttrStr, ObjectRef},
 };
 use indexmap::IndexMap;
 use serde::ser::Error;
@@ -27,11 +27,11 @@ impl<'a> Serialize for WithSchema<'a> {
             Schema::Float => s.serialize_f64(self.object.as_f64().ser()?),
             Schema::ByteArray => s.serialize_bytes(self.object.as_bytearray().ser()?),
             Schema::Bytes => s.serialize_bytes(self.object.as_bytes().ser()?),
-            Schema::DateTime => s.serialize_str(isoformat(self.object).ser()?.as_str().ser()?),
-            Schema::Time => s.serialize_str(isoformat(self.object).ser()?.as_str().ser()?),
-            Schema::Date => s.serialize_str(isoformat(self.object).ser()?.as_str().ser()?),
-            Schema::Decimal => s.serialize_str(to_str(&self.object).ser()?.as_str().ser()?),
-            Schema::Uuid => s.serialize_str(to_str(&self.object).ser()?.as_str().ser()?),
+            Schema::DateTime => s.serialize_str(self.object.isoformat().ser()?.as_str().ser()?),
+            Schema::Time => s.serialize_str(self.object.isoformat().ser()?.as_str().ser()?),
+            Schema::Date => s.serialize_str(self.object.isoformat().ser()?.as_str().ser()?),
+            Schema::Decimal => s.serialize_str(self.object.to_str().ser()?.as_str().ser()?),
+            Schema::Uuid => s.serialize_str(self.object.to_str().ser()?.as_str().ser()?),
             Schema::List(l) => {
                 let len = self.object.as_list().len();
                 let mut seq = s.serialize_seq(Some(len))?;

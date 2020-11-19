@@ -1,4 +1,4 @@
-use super::{AttrStr, Tuple};
+use super::AttrStr;
 use crate::{
     error::Result,
     import::import,
@@ -209,6 +209,15 @@ impl ObjectRef {
         SetRef::new(self)
     }
 
+    pub fn as_tuple<'a>(&'a self) -> TupleRef<'a> {
+        TupleRef::new(self)
+    }
+
+    pub fn to_str(&self) -> Result<Object> {
+        let strtype = ObjectRef::new(cast!(PyUnicode_Type))?;
+        strtype.call1(self.owned())
+    }
+
     pub fn is(&self, p: *mut PyObject) -> bool {
         self.as_ptr() == p
     }
@@ -346,12 +355,24 @@ impl ObjectRef {
         objnew!(PyObject_GetItem(self.as_ptr(), key.as_ptr()))
     }
 
-    pub fn call(&self, tuple: Tuple) -> Result<Object> {
-        objnew!(PyObject_CallObject(self.as_ptr(), tuple.as_ptr()))
+    pub fn call(&self, args: Vec<Object>) -> Result<Object> {
+        let mut tuple = Object::build_tuple(args.len())?;
+        for (i, arg) in args.into_iter().enumerate() {
+            tuple.set(i, arg);
+        }
+        objnew!(PyObject_CallObject(self.as_ptr(), tuple.build().as_ptr()))
     }
 
-    pub fn call_noarg(&self) -> Result<Object> {
-        self.call(Tuple::new(0)?)
+    pub fn call1(&self, obj: Object) -> Result<Object> {
+        self.call(vec![obj])
+    }
+
+    pub fn call0(&self) -> Result<Object> {
+        self.call(vec![])
+    }
+
+    pub fn isoformat(&self) -> Result<Object> {
+        self.get_attr(&ATTR_ISOFORMAT)?.call0()
     }
 }
 
@@ -377,7 +398,7 @@ impl Iterator for ObjectIter {
 
 #[derive(Debug)]
 pub struct TupleIter<'a> {
-    p: &'a ObjectRef,
+    p: TupleRef<'a>,
     len: usize,
     index: usize,
 }
@@ -388,11 +409,11 @@ impl<'a> TupleIter<'a> {
         if unsafe { !PyErr_Occurred().is_null() } {
             bail!("cannot get the size of tuple")
         }
-        Ok(Self { p, len, index: 0 })
-    }
-
-    fn get(&self, index: usize) -> Result<&'a ObjectRef> {
-        unsafe { ObjectRef::new(PyTuple_GET_ITEM(self.p.as_ptr(), index as Py_ssize_t)) }
+        Ok(Self {
+            p: TupleRef::new(p),
+            len,
+            index: 0,
+        })
     }
 
     pub fn len(&self) -> usize {
@@ -407,7 +428,7 @@ impl<'a> Iterator for TupleIter<'a> {
         if self.index >= self.len {
             None
         } else {
-            let item = self.get(self.index).ok();
+            let item = self.p.get(self.index).ok();
             self.index += 1;
             item
         }
@@ -515,28 +536,51 @@ impl Object {
 
     pub fn new_default(s: &Schema) -> Result<Object> {
         let obj = match s {
-            Schema::Bool => ObjectRef::new(cast!(PyBool_Type))?.call_noarg()?,
-            Schema::Int => ObjectRef::new(cast!(PyLong_Type))?.call_noarg()?,
-            Schema::Float => ObjectRef::new(cast!(PyFloat_Type))?.call_noarg()?,
-            Schema::Str => ObjectRef::new(cast!(PyUnicode_Type))?.call_noarg()?,
-            Schema::Bytes => ObjectRef::new(cast!(PyBytes_Type))?.call_noarg()?,
-            Schema::ByteArray => ObjectRef::new(cast!(PyByteArray_Type))?.call_noarg()?,
-            Schema::DateTime => import()?.datetime.call_noarg()?,
-            Schema::Date => import()?.date.call_noarg()?,
-            Schema::Time => import()?.time.call_noarg()?,
-            Schema::Decimal => import()?.decimal.call_noarg()?,
-            Schema::Uuid => import()?.uuid.call_noarg()?,
-            Schema::Dict(_) => ObjectRef::new(cast!(PyDict_Type))?.call_noarg()?,
-            Schema::List(_) => ObjectRef::new(cast!(PyList_Type))?.call_noarg()?,
-            Schema::Set(_) => ObjectRef::new(cast!(PySet_Type))?.call_noarg()?,
-            Schema::FrozenSet(_) => ObjectRef::new(cast!(PyFrozenSet_Type))?.call_noarg()?,
+            Schema::Bool => ObjectRef::new(cast!(PyBool_Type))?.call0()?,
+            Schema::Int => ObjectRef::new(cast!(PyLong_Type))?.call0()?,
+            Schema::Float => ObjectRef::new(cast!(PyFloat_Type))?.call0()?,
+            Schema::Str => ObjectRef::new(cast!(PyUnicode_Type))?.call0()?,
+            Schema::Bytes => ObjectRef::new(cast!(PyBytes_Type))?.call0()?,
+            Schema::ByteArray => ObjectRef::new(cast!(PyByteArray_Type))?.call0()?,
+            Schema::DateTime => import()?.datetime.call0()?,
+            Schema::Date => import()?.date.call0()?,
+            Schema::Time => import()?.time.call0()?,
+            Schema::Decimal => import()?.decimal.call0()?,
+            Schema::Uuid => import()?.uuid.call0()?,
+            Schema::Dict(_) => ObjectRef::new(cast!(PyDict_Type))?.call0()?,
+            Schema::List(_) => ObjectRef::new(cast!(PyList_Type))?.call0()?,
+            Schema::Set(_) => ObjectRef::new(cast!(PySet_Type))?.call0()?,
+            Schema::FrozenSet(_) => ObjectRef::new(cast!(PyFrozenSet_Type))?.call0()?,
             Schema::Tuple(_) => bail!("cannot use default construction for `tuple`"),
-            Schema::Class(c) => c.ty.call_noarg()?,
+            Schema::Class(c) => c.ty.call0()?,
             Schema::Enum(_) => bail!("cannot use default construction for `enum`"),
             Schema::Union(_) => bail!("cannot use default construction for `union`"),
             Schema::Any(_) => bail!("cannot use default construction for `any`"),
         };
         Ok(obj)
+    }
+
+    pub fn into_datetime(self) -> Result<Object> {
+        import()?
+            .datetime
+            .get_attr(&ATTR_FROMISOFORMAT)?
+            .call1(self)
+    }
+
+    pub fn into_date(self) -> Result<Object> {
+        import()?.date.get_attr(&ATTR_FROMISOFORMAT)?.call1(self)
+    }
+
+    pub fn into_time(self) -> Result<Object> {
+        import()?.time.get_attr(&ATTR_FROMISOFORMAT)?.call1(self)
+    }
+
+    pub fn into_uuid(self) -> Result<Object> {
+        import()?.uuid.call1(self)
+    }
+
+    pub fn into_decimal(self) -> Result<Object> {
+        import()?.decimal.call1(self)
     }
 
     pub fn build_list(len: usize) -> Result<ListBuilder> {
@@ -549,6 +593,10 @@ impl Object {
 
     pub fn build_dict() -> Result<DictBuilder> {
         DictBuilder::new()
+    }
+
+    pub fn build_tuple(len: usize) -> Result<TupleBuilder> {
+        TupleBuilder::new(len)
     }
 
     pub fn into_ptr(self) -> *mut PyObject {
@@ -641,50 +689,26 @@ impl<'a> ListRef<'a> {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct TupleRef<'a>(&'a ObjectRef);
+
+impl<'a> TupleRef<'a> {
+    fn new(args: &'a ObjectRef) -> Self {
+        Self(args)
+    }
+
+    pub fn len(&self) -> usize {
+        unsafe { PyTuple_Size(self.0.as_ptr()) as usize }
+    }
+
+    pub fn get(&self, index: usize) -> Result<&'a ObjectRef> {
+        unsafe { ObjectRef::new(PyTuple_GET_ITEM(self.0.as_ptr(), index as Py_ssize_t)) }
+    }
+}
+
 lazy_static::lazy_static! {
     static ref ATTR_ISOFORMAT: AttrStr = AttrStr::new("isoformat");
     static ref ATTR_FROMISOFORMAT: AttrStr = AttrStr::new("fromisoformat");
-}
-
-pub fn isoformat(obj: &ObjectRef) -> Result<Object> {
-    obj.get_attr(&ATTR_ISOFORMAT)?.call_noarg()
-}
-
-pub fn datetime_fromisoformat(obj: &ObjectRef) -> Result<Object> {
-    let mut args = Tuple::new(1)?;
-    args.set(0, obj.owned());
-    import()?.datetime.get_attr(&ATTR_FROMISOFORMAT)?.call(args)
-}
-
-pub fn date_fromisoformat(obj: &ObjectRef) -> Result<Object> {
-    let mut args = Tuple::new(1)?;
-    args.set(0, obj.owned());
-    import()?.date.get_attr(&ATTR_FROMISOFORMAT)?.call(args)
-}
-
-pub fn time_fromisoformat(obj: &ObjectRef) -> Result<Object> {
-    let mut args = Tuple::new(1)?;
-    args.set(0, obj.owned());
-    import()?.time.get_attr(&ATTR_FROMISOFORMAT)?.call(args)
-}
-
-pub fn to_str(obj: &ObjectRef) -> Result<Object> {
-    let strtype = ObjectRef::new(cast!(PyUnicode_Type))?;
-    let mut args = Tuple::new(1)?;
-    args.set(0, obj.owned());
-    strtype.call(args)
-}
-
-pub fn to_uuid(obj: &ObjectRef) -> Result<Object> {
-    let mut args = Tuple::new(1)?;
-    args.set(0, obj.owned());
-    import()?.uuid.call(args)
-}
-
-pub fn to_decimal(obj: &ObjectRef) -> Result<Object> {
-    let mut args = Tuple::new(1)?;
-    args.set(0, obj.owned());
-    import()?.decimal.call(args)
 }
 
 #[derive(Debug, Clone)]
@@ -750,6 +774,26 @@ impl DictBuilder {
             }
         }
         Ok(())
+    }
+
+    pub fn build(self) -> Object {
+        self.0
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct TupleBuilder(Object);
+
+impl TupleBuilder {
+    fn new(len: usize) -> Result<Self> {
+        Ok(Self(objnew!(PyTuple_New(len as Py_ssize_t))?))
+    }
+
+    pub fn set(&mut self, index: usize, obj: Object) {
+        unsafe {
+            // This API steals the pointer, so use `into_ptr`.
+            PyTuple_SET_ITEM(self.0.as_ptr(), index as Py_ssize_t, obj.into_ptr());
+        }
     }
 
     pub fn build(self) -> Object {

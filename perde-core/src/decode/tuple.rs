@@ -1,8 +1,4 @@
-use crate::{
-    error::Convert,
-    schema::*,
-    types::{self, Object},
-};
+use crate::{error::Convert, schema::*, types::Object};
 use serde::de::{DeserializeSeed, Deserializer, IgnoredAny, SeqAccess, Visitor};
 use smallvec::SmallVec;
 use std::fmt;
@@ -44,12 +40,12 @@ impl<'a, 'de> Visitor<'de> for TupleVisitor<'a> {
             }
         }
 
-        let mut tuple = types::Tuple::new(items.len()).de()?;
+        let mut tuple = Object::build_tuple(items.len()).de()?;
         for (i, a) in items.into_iter().enumerate() {
             tuple.set(i, a);
         }
 
-        Ok(tuple.into_inner())
+        Ok(tuple.build())
     }
 }
 

@@ -28,23 +28,23 @@ impl<'a, 'de> DeserializeSeed<'de> for &'a Schema {
             Schema::ByteArray => deserializer.deserialize_bytes(BytesVisitor(true)),
             Schema::DateTime => {
                 let s = deserializer.deserialize_str(StrVisitor)?;
-                datetime_fromisoformat(&s).de()
+                s.into_datetime().de()
             }
             Schema::Date => {
                 let s = deserializer.deserialize_str(StrVisitor)?;
-                date_fromisoformat(&s).de()
+                s.into_date().de()
             }
             Schema::Time => {
                 let s = deserializer.deserialize_str(StrVisitor)?;
-                time_fromisoformat(&s).de()
+                s.into_time().de()
             }
             Schema::Decimal => {
                 let s = deserializer.deserialize_str(StrVisitor)?;
-                to_decimal(&s).de()
+                s.into_decimal().de()
             }
             Schema::Uuid => {
                 let s = deserializer.deserialize_str(StrVisitor)?;
-                to_uuid(&s).de()
+                s.into_uuid().de()
             }
             Schema::Dict(d) => d.deserialize(deserializer),
             Schema::List(l) => l.deserialize(deserializer),

@@ -103,7 +103,7 @@ lazy_static::lazy_static! {
         let enum_meta = getattr!(enum_, "EnumMeta")?;
 
         let tuple_type = ObjectRef::new(cast!(PyTuple_Type))?;
-        let empty_tuple = StaticObject(tuple_type.call_noarg()?);
+        let empty_tuple = StaticObject(tuple_type.call0()?);
 
         let datetime = getattr!(datetime_, "datetime")?;
         let date = getattr!(datetime_, "date")?;

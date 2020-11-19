@@ -1,11 +1,9 @@
 #[macro_use]
 mod object;
 mod args;
-mod tuple;
 
 pub use self::args::*;
 pub use self::object::*;
-pub use self::tuple::*;
 
 use std::{
     fmt::{self, Display},

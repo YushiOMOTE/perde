@@ -16,6 +16,9 @@ pub mod import;
 
 pub mod prelude {
     pub use crate::error::{Convert, Error, Result};
-    pub use crate::types::{FastArgs, Object, TupleRef};
-    pub use crate::{bail, exception, method_fastcall, method_varargs, module};
+    pub use crate::schema::{Schema, WithSchema};
+    pub use crate::types::{Args, FastArgs, Object, ObjectRef};
+    pub use crate::{
+        bail, exception, impl_default_methods, method_fastcall, method_varargs, module,
+    };
 }

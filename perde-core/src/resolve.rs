@@ -2,7 +2,7 @@ use crate::{
     error::Result,
     import::import,
     schema::*,
-    types::{self, AttrStr, ObjectRef},
+    types::{AttrStr, ObjectRef},
 };
 use indexmap::IndexMap;
 use std::collections::HashMap;
@@ -141,16 +141,14 @@ pub fn to_schema(p: &ObjectRef) -> Result<Schema> {
 fn to_dataclass(p: &ObjectRef, attr: &Option<HashMap<&str, &ObjectRef>>) -> Result<Schema> {
     let cattr = ClassAttr::parse(attr)?;
 
-    let arg = types::Tuple::one(p)?;
-    let fields = import()?.fields.call(arg)?;
-    let fields = types::Tuple::from(fields);
+    let fields = import()?.fields.call1(p.owned())?;
+    let fields = fields.get_tuple_iter()?;
 
     let mut members = IndexMap::new();
     let mut ser_field_len = 0;
     let mut flatten_dict = None;
 
-    for i in 0..fields.len() {
-        let field = fields.getref(i)?;
+    for (i, field) in fields.enumerate() {
         let name = field.get_attr(&ATTR_NAME)?;
 
         let ty = field.get_attr(&ATTR_TYPE)?;
@@ -279,13 +277,11 @@ fn to_enum(p: &ObjectRef, attr: &Option<HashMap<&str, &ObjectRef>>) -> Result<Sc
     )))
 }
 
-fn to_union(p: &ObjectRef) -> Result<Schema> {
-    let args = get_args(p)?;
-    let args = args.as_ref();
-    let iter = args.iter();
+fn to_union(args: &ObjectRef) -> Result<Schema> {
+    let args = args.get_tuple_iter()?;
 
     let mut optional = false;
-    let variants: Result<Vec<_>> = iter
+    let variants: Result<Vec<_>> = args
         .filter_map(|arg| {
             if arg.is_none_type() {
                 optional = true;
@@ -299,19 +295,17 @@ fn to_union(p: &ObjectRef) -> Result<Schema> {
     Ok(Schema::Union(Union::new(variants?, optional)))
 }
 
-fn to_tuple(p: &ObjectRef) -> Result<Schema> {
-    let args = get_args(p)?;
-    let args = args.as_ref();
+fn to_tuple(args: &ObjectRef) -> Result<Schema> {
+    let mut args = args.get_tuple_iter()?;
 
     if args.len() == 1 {
-        let p = args.get(0).unwrap();
+        let p = args.next().ok_or(err!("missing tuple element"))?;
         if p.is(import()?.empty_tuple.as_ptr()) {
             return Ok(Schema::Tuple(Tuple::new(vec![])));
         }
     }
 
-    let iter = args.iter();
-    let args: Result<_> = iter.map(|arg| to_schema(arg)).collect();
+    let args: Result<_> = args.map(|arg| to_schema(arg)).collect();
     let args: Vec<_> = args?;
     if args.is_empty() {
         // Here is for Tuple without subscription.
@@ -323,54 +317,47 @@ fn to_tuple(p: &ObjectRef) -> Result<Schema> {
     Ok(Schema::Tuple(Tuple::new(args)))
 }
 
-fn to_dict(p: &ObjectRef) -> Result<Schema> {
-    let args = get_args(p)?;
-    let args = args.as_ref();
-    let key = to_schema(args.get(0)?)?;
-    let value = to_schema(args.get(1)?)?;
+fn to_dict(args: &ObjectRef) -> Result<Schema> {
+    let mut args = args.get_tuple_iter()?;
+    let key = to_schema(args.next().ok_or(err!("missing key type in dict"))?)?;
+    let value = to_schema(args.next().ok_or(err!("missing value type in dict"))?)?;
     Ok(Schema::Dict(Dict::new(Box::new(key), Box::new(value))))
 }
 
-fn to_list(p: &ObjectRef) -> Result<Schema> {
-    let args = get_args(p)?;
-    let args = args.as_ref();
-    let value = to_schema(args.get(0)?)?;
+fn to_list(args: &ObjectRef) -> Result<Schema> {
+    let mut args = args.get_tuple_iter()?;
+    let value = to_schema(args.next().ok_or(err!("missing value type in list"))?)?;
     Ok(Schema::List(List::new(Box::new(value))))
 }
 
-fn to_set(p: &ObjectRef) -> Result<Schema> {
-    let args = get_args(p)?;
-    let args = args.as_ref();
-    let value = to_schema(args.get(0)?)?;
+fn to_set(args: &ObjectRef) -> Result<Schema> {
+    let mut args = args.get_tuple_iter()?;
+    let value = to_schema(args.next().ok_or(err!("missing value type in set"))?)?;
     Ok(Schema::Set(Set::new(Box::new(value))))
 }
 
-fn to_frozen_set(p: &ObjectRef) -> Result<Schema> {
-    let args = get_args(p)?;
-    let args = args.as_ref();
-    let value = to_schema(args.get(0)?)?;
+fn to_frozen_set(args: &ObjectRef) -> Result<Schema> {
+    let mut args = args.get_tuple_iter()?;
+    let value = to_schema(args.next().ok_or(err!("missing value type in frozenset"))?)?;
     Ok(Schema::FrozenSet(FrozenSet::new(Box::new(value))))
-}
-
-fn get_args(p: &ObjectRef) -> Result<types::Tuple> {
-    Ok(types::Tuple::from(p.get_attr(&ATTR_ARGS)?))
 }
 
 fn to_generic(p: &ObjectRef) -> Result<Schema> {
     let origin = p.get_attr(&ATTR_ORIGIN)?;
+    let args = p.get_attr(&ATTR_ARGS)?;
 
     let s = if origin.is(import()?.union.as_ptr()) {
-        to_union(p)?
+        to_union(&args)?
     } else if origin.is_tuple() {
-        to_tuple(p)?
+        to_tuple(&args)?
     } else if origin.is_dict() {
-        to_dict(p)?
+        to_dict(&args)?
     } else if origin.is_set() {
-        to_set(p)?
+        to_set(&args)?
     } else if origin.is_list() {
-        to_list(p)?
+        to_list(&args)?
     } else if origin.is_frozen_set() {
-        to_frozen_set(p)?
+        to_frozen_set(&args)?
     } else {
         bail!("unsupported generic type");
     };
