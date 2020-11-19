@@ -57,7 +57,7 @@ bench: prepare-test
 	$(pytest) --benchmark-only $(test-opt)
 
 
-bench-histogram: $(bench-histograms)
+histogram: $(bench-histograms)
 
 
 $(bench-histograms):
