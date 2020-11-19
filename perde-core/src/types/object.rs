@@ -343,14 +343,18 @@ impl ObjectRef {
 pub struct ObjectIter(Object);
 
 impl Iterator for ObjectIter {
-    type Item = Object;
+    type Item = Result<Object>;
 
     fn next(&mut self) -> Option<Self::Item> {
         let p = unsafe { PyIter_Next(self.0.as_ptr()) };
         if p.is_null() {
-            None
+            if unsafe { !PyErr_Occurred().is_null() } {
+                Some(Err(err!("an error occurred during iteration")))
+            } else {
+                None
+            }
         } else {
-            Some(Object::new(p).unwrap())
+            Some(Ok(Object::new(p).unwrap()))
         }
     }
 }

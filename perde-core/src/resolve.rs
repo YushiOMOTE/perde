@@ -236,6 +236,7 @@ fn to_enum(p: &ObjectRef, attr: &Option<HashMap<&str, &ObjectRef>>) -> Result<Sc
 
     let variants: Result<_> = iter
         .map(|item| {
+            let item = item?;
             let name = item.get_attr(&ATTR_NAME)?;
             let value = item.get_attr(&ATTR_VALUE)?;
 
