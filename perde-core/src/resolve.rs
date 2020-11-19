@@ -215,7 +215,7 @@ fn to_dataclass(p: &ObjectRef, attr: &Option<HashMap<&str, &ObjectRef>>) -> Resu
     }
 
     let name = p.name();
-    let class = types::Class::new(p.owned());
+    let class = p.owned();
     let flatten_members = collect_flatten_members(&members);
 
     Ok(Schema::Class(Class::new(

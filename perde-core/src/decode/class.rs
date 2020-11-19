@@ -155,6 +155,6 @@ impl Class {
         for (i, arg) in args.into_iter().enumerate() {
             tuple.set(i, arg);
         }
-        self.ty.construct(tuple)
+        self.ty.call(tuple)
     }
 }

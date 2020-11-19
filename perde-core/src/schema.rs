@@ -1,6 +1,6 @@
 use crate::{
     error::{Convert, Error, Result},
-    types::{self, AttrStr, Object, ObjectRef},
+    types::{AttrStr, Object, ObjectRef},
 };
 use derive_new::new;
 use indexmap::IndexMap;
@@ -285,7 +285,7 @@ pub struct VariantSchema {
 
 #[derive(Debug, Clone, new, PartialEq, Eq)]
 pub struct Class {
-    pub ty: types::Class,
+    pub ty: Object,
     pub name: String,
     pub attr: ClassAttr,
     pub fields: IndexMap<String, FieldSchema>,

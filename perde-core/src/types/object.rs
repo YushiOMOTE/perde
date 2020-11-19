@@ -432,7 +432,7 @@ impl Object {
             Schema::Set(_) => ObjectRef::new(cast!(PySet_Type))?.call_noarg()?,
             Schema::FrozenSet(_) => ObjectRef::new(cast!(PyFrozenSet_Type))?.call_noarg()?,
             Schema::Tuple(_) => bail!("cannot use default construction for `tuple`"),
-            Schema::Class(c) => c.ty.default_construct()?,
+            Schema::Class(c) => c.ty.call_noarg()?,
             Schema::Enum(_) => bail!("cannot use default construction for `enum`"),
             Schema::Union(_) => bail!("cannot use default construction for `union`"),
             Schema::Any(_) => bail!("cannot use default construction for `any`"),

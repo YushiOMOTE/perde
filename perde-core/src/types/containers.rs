@@ -1,7 +1,6 @@
-use super::{AttrStr, Object, ObjectRef, Tuple};
+use super::{Object, ObjectRef};
 use crate::error::Result;
 use pyo3::ffi::*;
-use std::os::raw::c_char;
 
 #[derive(Debug, Clone)]
 pub struct ListRef<'a>(&'a ObjectRef);
@@ -200,67 +199,6 @@ impl Dict {
             }
         }
         Ok(())
-    }
-
-    pub fn into_inner(self) -> Object {
-        self.0
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct ClassRef<'a>(&'a ObjectRef);
-
-impl<'a> ClassRef<'a> {
-    pub fn new(obj: &'a ObjectRef) -> Self {
-        Self(obj)
-    }
-
-    pub fn get(&self, name: &str) -> Result<Object> {
-        Object::new(unsafe {
-            PyObject_GetAttrString(self.0.as_ptr(), name.as_ptr() as *const c_char)
-        })
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Class(Object);
-
-impl Class {
-    pub fn new(obj: Object) -> Self {
-        Self(obj)
-    }
-
-    pub fn construct(&self, args: Tuple) -> Result<Object> {
-        self.0.call(args)
-    }
-
-    pub fn default_construct(&self) -> Result<Object> {
-        self.0.call_noarg()
-    }
-
-    pub fn name(&self) -> &str {
-        self.0.name()
-    }
-
-    pub fn into_inner(self) -> Object {
-        self.0
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct Enum(Object);
-
-impl Enum {
-    pub fn new(obj: Object) -> Self {
-        Self(obj)
-    }
-
-    pub fn value(&self, name: &AttrStr) -> Result<Object> {
-        self.0.get_attr(name)
-    }
-
-    pub fn is_typeof(&self, p: *mut PyObject) -> bool {
-        p == self.0.as_ptr()
     }
 
     pub fn into_inner(self) -> Object {
