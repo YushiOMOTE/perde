@@ -1,50 +1,33 @@
-use crate::{error::Result, object::Object};
+use crate::{
+    error::Result,
+    object::{Object, SyncObject},
+};
 use pyo3::prelude::*;
-use std::ops::Deref;
-
-#[derive(Debug)]
-pub struct StaticObject(Object);
-
-impl Deref for StaticObject {
-    type Target = Object;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl From<pyo3::PyObject> for StaticObject {
-    fn from(p: pyo3::PyObject) -> Self {
-        StaticObject(Object::new(p.into_ptr()).unwrap())
-    }
-}
 
 pub struct Import {
-    pub fields: StaticObject,
-    pub missing: StaticObject,
-    pub generic_alias: StaticObject,
-    pub base_generic_alias: Option<StaticObject>,
-    pub union_generic_alias: Option<StaticObject>,
-    pub special_generic_alias: Option<StaticObject>,
-    pub type_var: StaticObject,
-    pub any: StaticObject,
-    pub union: StaticObject,
-    pub tuple: StaticObject,
-    pub empty_tuple: StaticObject,
-    pub optional: StaticObject,
-    pub dict: StaticObject,
-    pub list: StaticObject,
-    pub set: StaticObject,
-    pub frozenset: StaticObject,
-    pub enum_meta: StaticObject,
-    pub datetime: StaticObject,
-    pub date: StaticObject,
-    pub time: StaticObject,
-    pub decimal: StaticObject,
-    pub uuid: StaticObject,
+    pub fields: SyncObject,
+    pub missing: SyncObject,
+    pub generic_alias: SyncObject,
+    pub base_generic_alias: Option<SyncObject>,
+    pub union_generic_alias: Option<SyncObject>,
+    pub special_generic_alias: Option<SyncObject>,
+    pub type_var: SyncObject,
+    pub any: SyncObject,
+    pub union: SyncObject,
+    pub tuple: SyncObject,
+    pub empty_tuple: SyncObject,
+    pub optional: SyncObject,
+    pub dict: SyncObject,
+    pub list: SyncObject,
+    pub set: SyncObject,
+    pub frozenset: SyncObject,
+    pub enum_meta: SyncObject,
+    pub datetime: SyncObject,
+    pub date: SyncObject,
+    pub time: SyncObject,
+    pub decimal: SyncObject,
+    pub uuid: SyncObject,
 }
-
-unsafe impl Sync for StaticObject {}
 
 pub fn import() -> Result<&'static Import> {
     STATIC_OBJECTS.as_ref().map_err(|e| err!("{}", e))
@@ -54,7 +37,11 @@ macro_rules! getattr {
     ($module:expr, $name:expr) => {
         $module
             .getattr($name)
-            .map(|p| pyo3::PyObject::from(p).into())
+            .map(|p| {
+                Object::new(pyo3::PyObject::from(p).into_ptr())
+                    .unwrap()
+                    .into()
+            })
             .map_err(|_| err!(concat!("couldn't find function `", $name, "`")))
     };
 }
@@ -96,7 +83,7 @@ lazy_static::lazy_static! {
         let frozenset = getattr!(typing, "FrozenSet")?;
         let enum_meta = getattr!(enum_, "EnumMeta")?;
 
-        let empty_tuple = StaticObject(Object::new_unit()?);
+        let empty_tuple = SyncObject::new(Object::new_unit()?);
 
         let datetime = getattr!(datetime_, "datetime")?;
         let date = getattr!(datetime_, "date")?;

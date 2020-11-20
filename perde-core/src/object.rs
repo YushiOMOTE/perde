@@ -11,6 +11,7 @@ use std::{
     ops::{Deref, DerefMut},
     os::raw::c_char,
     ptr::NonNull,
+    sync::atomic::{AtomicPtr, Ordering},
 };
 
 macro_rules! objnew {
@@ -803,5 +804,42 @@ impl TupleBuilder {
 
     pub fn build(self) -> Object {
         self.0
+    }
+}
+
+#[derive(Debug)]
+pub struct SyncObject(AtomicPtr<PyObject>);
+
+impl SyncObject {
+    pub fn new(obj: Object) -> Self {
+        Self(AtomicPtr::new(obj.into_ptr()))
+    }
+}
+
+impl From<Object> for SyncObject {
+    fn from(obj: Object) -> Self {
+        Self::new(obj)
+    }
+}
+
+impl Deref for SyncObject {
+    type Target = ObjectRef;
+
+    fn deref(&self) -> &Self::Target {
+        ObjectRef::new(self.0.load(Ordering::Relaxed)).unwrap()
+    }
+}
+
+impl PartialEq for SyncObject {
+    fn eq(&self, other: &SyncObject) -> bool {
+        self.as_ptr() == other.as_ptr()
+    }
+}
+
+impl Eq for SyncObject {}
+
+impl Clone for SyncObject {
+    fn clone(&self) -> Self {
+        Self::new(self.owned())
     }
 }

@@ -132,7 +132,7 @@ impl Class {
                         // If default is defined, use it.
                         // If this is optional, return `None`.
                         if let Some(d) = s.attr.default.as_ref() {
-                            return Ok(d.clone());
+                            return Ok(d.owned());
                         } else if let Some(d) = s.attr.default_factory.as_ref() {
                             return d.call0();
                         } else if s.schema.is_optional() {

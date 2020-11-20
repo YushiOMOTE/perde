@@ -212,7 +212,7 @@ fn to_dataclass(p: &ObjectRef, attr: &Option<HashMap<&str, &ObjectRef>>) -> Resu
     let flatten_members = collect_flatten_members(&members);
 
     Ok(Schema::Class(Class::new(
-        class,
+        class.into(),
         name.into(),
         cattr,
         members,
@@ -259,14 +259,14 @@ fn to_enum(p: &ObjectRef, attr: &Option<HashMap<&str, &ObjectRef>>) -> Result<Sc
                 sername,
                 dename,
                 attr,
-                value,
+                value.into(),
             ))
         })
         .collect();
 
     Ok(Schema::Enum(Enum::new(
         p.name().into(),
-        p.owned(),
+        p.owned().into(),
         eattr,
         variants?,
     )))
