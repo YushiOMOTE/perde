@@ -7,6 +7,7 @@ pub type Result<T> = std::result::Result<T, Error>;
 #[derive(Debug)]
 pub enum Error {
     TypeError(String),
+    ValueError(String),
     Else(String),
 }
 
@@ -25,6 +26,13 @@ macro_rules! type_err {
 }
 
 #[macro_export]
+macro_rules! value_err {
+    ($($t:tt)*) => {
+        $crate::error::Error::value_error(format!($($t)*))
+    }
+}
+
+#[macro_export]
 macro_rules! bail {
     ($($t:tt)*) => {
         return Err($crate::err!($($t)*));
@@ -35,6 +43,13 @@ macro_rules! bail {
 macro_rules! bail_type_err {
     ($($t:tt)*) => {
         return Err($crate::type_err!($($t)*))
+    }
+}
+
+#[macro_export]
+macro_rules! bail_value_err {
+    ($($t:tt)*) => {
+        return Err($crate::value_err!($($t)*))
     }
 }
 
@@ -67,16 +82,33 @@ impl Error {
         Self::TypeError(t.to_string())
     }
 
+    pub fn value_error<T>(t: T) -> Self
+    where
+        T: ToString,
+    {
+        clear();
+        Self::ValueError(t.to_string())
+    }
+
     pub fn restore_as<T: PyTypeObject>(self) {
         match self {
             Error::TypeError(t) => raise::<pyo3::exceptions::PyTypeError, _>(t),
+            Error::ValueError(t) => raise::<pyo3::exceptions::PyValueError, _>(t),
             Error::Else(t) => raise::<T, _>(t),
+        }
+    }
+
+    pub fn set_message(&mut self, message: String) {
+        match self {
+            Error::TypeError(m) | Error::ValueError(m) | Error::Else(m) => {
+                *m = message;
+            }
         }
     }
 
     pub fn message(&self) -> &str {
         match self {
-            Self::TypeError(m) | Self::Else(m) => &m,
+            Self::TypeError(m) | Self::ValueError(m) | Self::Else(m) => &m,
         }
     }
 }
@@ -96,7 +128,7 @@ impl Display for Error {
             f,
             "{}",
             match self {
-                Error::TypeError(s) | Error::Else(s) => s,
+                Error::TypeError(m) | Error::ValueError(m) | Error::Else(m) => m,
             }
         )
     }
@@ -140,12 +172,7 @@ impl<T> Convert<T> for Result<T> {
         C: ToString,
     {
         self.map_err(|mut e| {
-            let new_msg = format!("{}: {}", context.to_string(), e);
-            match &mut e {
-                Error::TypeError(m) | Error::Else(m) => {
-                    *m = new_msg;
-                }
-            };
+            e.set_message(format!("{}: {}", context.to_string(), e));
             e
         })
     }

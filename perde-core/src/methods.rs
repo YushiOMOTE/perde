@@ -113,7 +113,10 @@ macro_rules! impl_default_methods {
                     ));
                 }
 
-                $loads_as(args.arg(0)?.resolve(None)?, args.arg(1)?)
+                $loads_as(
+                    args.arg(0)?.resolve(None).context("invalid argument")?,
+                    args.arg(1)?,
+                )
             };
 
             match inner() {
@@ -140,7 +143,7 @@ macro_rules! impl_default_methods {
                 }
 
                 let obj = args.arg(0)?;
-                let resolved = obj.resolved_object()?;
+                let resolved = obj.resolved_object().context("invalid argument")?;
 
                 $dumps(resolved)
             };

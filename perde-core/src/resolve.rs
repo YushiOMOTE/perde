@@ -118,7 +118,7 @@ pub fn resolve_schema<'a>(
             to_enum(p, &attr)?
         } else {
             if !p.is_type() {
-                bail_type_err!("invalid argument: `{:?}` is not a type", p)
+                bail_type_err!("`{:?}` is not a type", p)
             } else {
                 bail_type_err!("unsupported type `{:?}`", p)
             }
@@ -128,7 +128,7 @@ pub fn resolve_schema<'a>(
     }
 }
 
-pub fn to_schema(p: &ObjectRef) -> Result<Schema> {
+fn to_schema(p: &ObjectRef) -> Result<Schema> {
     resolve_schema(p, None).map(|s| s.clone())
 }
 

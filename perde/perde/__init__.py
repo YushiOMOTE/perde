@@ -2,7 +2,10 @@ from .perde import resolve  # type: ignore
 import enum
 
 
-def attr(**kwargs):
+def attr(*args, **kwargs):
+    if args:
+        return resolve(args[0])
+
     def func(ty):
         resolve(ty, **kwargs)
         return ty

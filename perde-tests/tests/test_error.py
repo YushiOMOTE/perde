@@ -1,5 +1,30 @@
+import enum
+from dataclasses import dataclass, field
 import pytest
+import perde
 from util import FORMATS, FORMATS_EXCEPT, FORMATS_ONLY
+
+
+def test_error_perde():
+    with pytest.raises(TypeError) as e:
+
+        @perde.attr
+        class X:
+            pass
+
+    assert e.value.args[0] == (
+        "unsupported type "
+        "`<class 'test_error.test_error_perde.<locals>.X'>`")
+
+    with pytest.raises(TypeError) as e:
+
+        @perde.attr()
+        class Y:
+            pass
+
+    assert e.value.args[0] == (
+        "unsupported type "
+        "`<class 'test_error.test_error_perde.<locals>.Y'>`")
 
 
 @pytest.mark.parametrize("m", FORMATS)
@@ -92,6 +117,96 @@ def test_error_loads_invalid_argument_type_msgpack(m):
 
 
 @pytest.mark.parametrize("m", FORMATS)
+def test_error_invalid_class_attribute(m):
+    for attr, ty in [("rename_all", "str"), ("rename_all_serialize", "str"),
+                     ("rename_all_deserialize", "str"), ("rename", "str"),
+                     ("deny_unknown_fields", "bool"), ("default", "bool")]:
+        with pytest.raises(TypeError) as e:
+
+            @perde.attr(**{attr: 3})
+            @dataclass
+            class A:
+                pass
+
+        assert e.value.args[
+            0] == f"invalid attribute `{attr}`: expected `{ty}` got `int`: 3"
+
+    for attr in [
+            "rename_all", "rename_all_serialize", "rename_all_deserialize"
+    ]:
+        with pytest.raises(ValueError) as e:
+
+            @perde.attr(**{attr: "hage"})
+            @dataclass
+            class B:
+                pass
+
+        assert e.value.args[
+            0] == f"invalid attribute `{attr}`: invalid string case: `hage`"
+
+
+@pytest.mark.parametrize("m", FORMATS)
+def test_error_invalid_enum_attribute(m):
+    for attr, ty in [("rename_all", "str"), ("rename_all_serialize", "str"),
+                     ("rename_all_deserialize", "str"), ("rename", "str"),
+                     ("as_value", "bool")]:
+        with pytest.raises(TypeError) as e:
+
+            @perde.attr(**{attr: 3})
+            class A(enum.Enum):
+                X = 10
+
+        assert e.value.args[
+            0] == f"invalid attribute `{attr}`: expected `{ty}` got `int`: 3"
+
+    for attr in [
+            "rename_all", "rename_all_serialize", "rename_all_deserialize"
+    ]:
+        with pytest.raises(ValueError) as e:
+
+            @perde.attr(**{attr: "hage"})
+            class B(enum.Enum):
+                X = 10
+
+        assert e.value.args[
+            0] == f"invalid attribute `{attr}`: invalid string case: `hage`"
+
+
+@pytest.mark.parametrize("m", FORMATS)
+def test_error_invalid_class_field_attribute(m):
+    for attr, ty in [("perde_flatten", "bool"), ("perde_rename", "str"),
+                     ("perde_skip", "bool"),
+                     ("perde_skip_serializing", "bool"),
+                     ("perde_skip_deserializing", "bool"),
+                     ("perde_default", "bool")]:
+        with pytest.raises(TypeError) as e:
+
+            @perde.attr()
+            @dataclass
+            class A:
+                foo: int = field(metadata={attr: 3})
+
+        assert e.value.args[
+            0] == f"invalid attribute `{attr}`: expected `{ty}` got `int`: 3"
+
+
+@pytest.mark.parametrize("m", FORMATS)
+def test_error_invalid_enum_field_attribute(m):
+    for attr, ty in [("perde_rename", "str"), ("perde_skip", "bool"),
+                     ("perde_skip_serializing", "bool"),
+                     ("perde_skip_deserializing", "bool"),
+                     ("perde_other", "bool")]:
+        with pytest.raises(TypeError) as e:
+
+            @perde.attr()
+            class A(perde.Enum):
+                X = 100, {attr: 3}
+
+        assert e.value.args[
+            0] == f"invalid attribute `{attr}`: expected `{ty}` got `int`: 3"
+
+
+@pytest.mark.parametrize("m", FORMATS)
 def test_error_unsupported_type(m):
     class Abc:
         pass
@@ -99,5 +214,5 @@ def test_error_unsupported_type(m):
     with pytest.raises(TypeError) as e:
         m.dumps(Abc())
     assert e.value.args[0] == (
-        "unsupported type "
+        "invalid argument: unsupported type "
         "`<class 'test_error.test_error_unsupported_type.<locals>.Abc'>`")
