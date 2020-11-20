@@ -54,7 +54,8 @@ macro_rules! bail_value_err {
 }
 
 pub fn raise<T: PyTypeObject, U: ToString>(msg: U) {
-    let py = unsafe { Python::assume_gil_acquired() };
+    let gil = Python::acquire_gil();
+    let py = gil.python();
     let pyerr = PyErr::new::<T, _>(msg.to_string());
     pyerr.restore(py);
 }

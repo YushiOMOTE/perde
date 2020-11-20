@@ -50,7 +50,8 @@ lazy_static::lazy_static! {
     static ref STATIC_OBJECTS: Result<Import> = {
         use pyo3::{Python, types::PyModule};
 
-        let py = unsafe { Python::assume_gil_acquired() };
+        let gil = Python::acquire_gil();
+        let py = gil.python();
 
         macro_rules! import {
             ($name:expr) => {
