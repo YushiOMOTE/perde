@@ -8,6 +8,7 @@ use crate::{
 use pyo3::ffi::*;
 use std::{
     collections::HashMap,
+    fmt::{self, Debug},
     ops::{Deref, DerefMut},
     os::raw::c_char,
     ptr::NonNull,
@@ -51,7 +52,6 @@ macro_rules! is_type_opt {
     };
 }
 
-#[derive(Debug)]
 pub struct ObjectRef;
 
 impl ObjectRef {
@@ -128,14 +128,14 @@ impl ObjectRef {
         } else if self.is(unsafe { Py_False() }) {
             Ok(false)
         } else {
-            bail!("object is not boolean type")
+            bail_type_err!("expected `bool` got `{}`: {:?}", self.typename(), self)
         }
     }
 
     pub fn as_i64(&self) -> Result<i64> {
         let p = unsafe { PyLong_AsLongLong(self.as_ptr()) };
         if unsafe { !PyErr_Occurred().is_null() } {
-            bail!("object is not integer type")
+            bail_type_err!("expected `int` got `{}`: {:?}", self.typename(), self)
         } else {
             Ok(p)
         }
@@ -144,7 +144,7 @@ impl ObjectRef {
     pub fn as_u64(&self) -> Result<u64> {
         let p = unsafe { PyLong_AsLongLong(self.as_ptr()) };
         if unsafe { !PyErr_Occurred().is_null() } {
-            bail!("object is not integer type")
+            bail_type_err!("expected `int` got `{}`: {:?}", self.typename(), self)
         } else {
             Ok(p as u64)
         }
@@ -153,7 +153,7 @@ impl ObjectRef {
     pub fn as_f64(&self) -> Result<f64> {
         let p = unsafe { PyFloat_AsDouble(self.as_ptr()) };
         if unsafe { !PyErr_Occurred().is_null() } {
-            bail!("object is not double float")
+            bail_type_err!("expected `float` got `{}`: {:?}", self.typename(), self)
         } else {
             Ok(p)
         }
@@ -164,7 +164,7 @@ impl ObjectRef {
         let p = unsafe { PyUnicode_AsUTF8AndSize(self.as_ptr(), &mut len) };
 
         if p.is_null() {
-            bail!("object is not a string")
+            bail_type_err!("expected `str` got `{}`: {:?}", self.typename(), self)
         } else {
             unsafe {
                 let slice = std::slice::from_raw_parts(p as *const u8, len as usize);
@@ -179,7 +179,7 @@ impl ObjectRef {
         let p = unsafe { PyBytes_AsStringAndSize(self.as_ptr(), &mut buf, &mut len) };
 
         if p == -1 {
-            bail!("object is not bytes")
+            bail_type_err!("expected `bytes` got `{}`: {:?}", self.typename(), self)
         } else {
             unsafe {
                 let slice = std::slice::from_raw_parts(buf as *const u8, len as usize);
@@ -193,7 +193,7 @@ impl ObjectRef {
         let len = unsafe { PyByteArray_Size(self.as_ptr()) };
 
         if p.is_null() {
-            bail!("object is not bytearray")
+            bail_type_err!("expected `bytearray` got `{}`: {:?}", self.typename(), self)
         } else {
             unsafe {
                 let slice = std::slice::from_raw_parts(p as *const u8, len as usize);
@@ -215,8 +215,7 @@ impl ObjectRef {
     }
 
     pub fn to_str(&self) -> Result<Object> {
-        let strtype = ObjectRef::new(cast!(PyUnicode_Type))?;
-        strtype.call1(self.owned())
+        Object::new(unsafe { PyObject_Str(self.as_ptr()) })
     }
 
     pub fn is(&self, p: *mut PyObject) -> bool {
@@ -227,8 +226,12 @@ impl ObjectRef {
         self.is(unsafe { Py_None() })
     }
 
+    pub fn is_type(&self) -> bool {
+        unsafe { (*self.as_ptr()).ob_type == &mut PyType_Type }
+    }
+
     pub fn is_none_type(&self) -> bool {
-        self.is(unsafe { (*Py_None()).ob_type as *mut PyObject })
+        self.is(ptr_cast!((*Py_None()).ob_type))
     }
 
     pub fn is_bool(&self) -> bool {
@@ -321,10 +324,19 @@ impl ObjectRef {
 
     pub fn name(&self) -> &str {
         unsafe {
-            std::ffi::CStr::from_ptr((*(self.as_ptr() as *mut PyTypeObject)).tp_name)
-                .to_str()
-                .unwrap_or("<unknown>")
+            if self.is_type() {
+                let p = (*(self.as_ptr() as *mut PyTypeObject)).tp_name;
+                std::ffi::CStr::from_ptr(p)
+                    .to_str()
+                    .unwrap_or("__unknown__")
+            } else {
+                "__unknown__"
+            }
         }
+    }
+
+    pub fn typename(&self) -> &str {
+        self.get_type().map(|t| t.name()).unwrap_or("__unknown__")
     }
 
     pub fn as_ptr(&self) -> *mut PyObject {
@@ -374,6 +386,15 @@ impl ObjectRef {
 
     pub fn isoformat(&self) -> Result<Object> {
         self.get_attr(&ATTR_ISOFORMAT)?.call0()
+    }
+}
+
+impl Debug for ObjectRef {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        self.to_str()
+            .ok()
+            .and_then(|o| o.as_str().ok().map(|s| write!(f, "{}", s)))
+            .unwrap_or_else(|| write!(f, "<unknown>"))
     }
 }
 
@@ -476,7 +497,7 @@ impl<'a> Iterator for DictIter<'a> {
     }
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(PartialEq, Eq)]
 pub struct Object(NonNull<ObjectRef>);
 
 impl Object {
@@ -657,6 +678,12 @@ impl Clone for Object {
 impl Drop for Object {
     fn drop(&mut self) {
         self.decref()
+    }
+}
+
+impl Debug for Object {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        self.deref().fmt(f)
     }
 }
 

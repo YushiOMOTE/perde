@@ -2,13 +2,13 @@ use perde_core::prelude::*;
 use serde::de::DeserializeSeed;
 
 fn loads_as_(schema: &Schema, object: &ObjectRef) -> Result<Object> {
-    let buf = object.as_str()?;
+    let buf = object.as_str().context("invalid argument")?;
     let mut deserializer = toml::de::Deserializer::new(&buf);
     Ok(schema.deserialize(&mut deserializer)?)
 }
 
 fn loads_(object: &ObjectRef) -> Result<Object> {
-    let s = object.as_str()?;
+    let s = object.as_str().context("invalid argument")?;
     Ok(toml::from_str(&s)?)
 }
 

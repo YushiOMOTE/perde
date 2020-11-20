@@ -2,7 +2,9 @@
 
 ## How this works?
 
-
+* `gen/datagen` parses Rust code (serde derived structs) in the comments in Python unit tests. It generates the Rust program `gen/datagen`, which dumps serialized data in each format.
+* `gen/datagen` generates serialized data in each format. The output is stored in `data`.
+* The Python unit tests uses the serialized data for testing.
 
 ## Types
 
@@ -76,6 +78,20 @@
 * [x] `perde_skip_serializing`
 * [x] `perde_skip_deserialzing`
 * [x] `perde_other`
+
+## Error testing
+
+* Arguments error
+    * [ ] `dumps`
+    * [ ] `loads`
+    * [ ] `loads_as`
+* Serialization error
+    * [ ] Parsing invalid objects.
+    * [ ] Serializing skipped enum variant.
+    * [ ] Serializing flatten struct in msgpack.
+* Deserialization error
+    * [ ] Parsing broken data.
+    * [ ] Parsing valid format but doesn't match the specified type.
 
 ## Known issues / Constraints
 

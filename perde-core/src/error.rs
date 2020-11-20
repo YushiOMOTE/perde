@@ -5,8 +5,9 @@ use std::fmt::{self, Display};
 pub type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Debug)]
-pub struct Error {
-    msg: String,
+pub enum Error {
+    TypeError(String),
+    Else(String),
 }
 
 #[macro_export]
@@ -17,9 +18,35 @@ macro_rules! err {
 }
 
 #[macro_export]
+macro_rules! type_err {
+    ($($t:tt)*) => {
+        $crate::error::Error::type_error(format!($($t)*))
+    }
+}
+
+#[macro_export]
 macro_rules! bail {
     ($($t:tt)*) => {
         return Err($crate::err!($($t)*));
+    }
+}
+
+#[macro_export]
+macro_rules! bail_type_err {
+    ($($t:tt)*) => {
+        return Err($crate::type_err!($($t)*))
+    }
+}
+
+pub fn raise<T: PyTypeObject, U: ToString>(msg: U) {
+    let py = unsafe { Python::assume_gil_acquired() };
+    let pyerr = PyErr::new::<T, _>(msg.to_string());
+    pyerr.restore(py);
+}
+
+fn clear() {
+    if unsafe { !pyo3::ffi::PyErr_Occurred().is_null() } {
+        unsafe { pyo3::ffi::PyErr_Clear() };
     }
 }
 
@@ -28,19 +55,29 @@ impl Error {
     where
         T: ToString,
     {
-        let py = unsafe { Python::assume_gil_acquired() };
+        clear();
+        Self::Else(t.to_string())
+    }
 
-        if PyErr::occurred(py) {
-            unsafe { pyo3::ffi::PyErr_Clear() };
-        }
-
-        Self { msg: t.to_string() }
+    pub fn type_error<T>(t: T) -> Self
+    where
+        T: ToString,
+    {
+        clear();
+        Self::TypeError(t.to_string())
     }
 
     pub fn restore_as<T: PyTypeObject>(self) {
-        let py = unsafe { Python::assume_gil_acquired() };
-        let pyerr = PyErr::new::<T, _>(self.msg);
-        pyerr.restore(py);
+        match self {
+            Error::TypeError(t) => raise::<pyo3::exceptions::PyTypeError, _>(t),
+            Error::Else(t) => raise::<T, _>(t),
+        }
+    }
+
+    pub fn message(&self) -> &str {
+        match self {
+            Self::TypeError(m) | Self::Else(m) => &m,
+        }
     }
 }
 
@@ -55,7 +92,13 @@ where
 
 impl Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.msg)
+        write!(
+            f,
+            "{}",
+            match self {
+                Error::TypeError(s) | Error::Else(s) => s,
+            }
+        )
     }
 }
 
@@ -96,8 +139,14 @@ impl<T> Convert<T> for Result<T> {
     where
         C: ToString,
     {
-        self.map_err(|e| Error {
-            msg: format!("{}: {}", context.to_string(), e),
+        self.map_err(|mut e| {
+            let new_msg = format!("{}: {}", context.to_string(), e);
+            match &mut e {
+                Error::TypeError(m) | Error::Else(m) => {
+                    *m = new_msg;
+                }
+            };
+            e
         })
     }
 }

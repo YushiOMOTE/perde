@@ -117,12 +117,11 @@ pub fn resolve_schema<'a>(
         } else if p.is_enum() {
             to_enum(p, &attr)?
         } else {
-            bail!(
-                "unsupported type `{}`",
-                p.get_attr(&ATTR_TYPENAME)
-                    .and_then(|o| { Ok(o.as_str()?.to_string()) })
-                    .unwrap_or("<unknown>".into())
-            );
+            if !p.is_type() {
+                bail_type_err!("invalid argument: `{:?}` is not a type", p)
+            } else {
+                bail_type_err!("unsupported type `{:?}`", p)
+            }
         };
 
         p.set_capsule(&SCHEMA_CACHE, s)
@@ -354,7 +353,7 @@ fn to_generic(p: &ObjectRef) -> Result<Schema> {
     } else if origin.is_frozen_set() {
         to_frozen_set(&args)?
     } else {
-        bail!("unsupported generic type");
+        bail_type_err!("unsupported generic type");
     };
 
     Ok(s)

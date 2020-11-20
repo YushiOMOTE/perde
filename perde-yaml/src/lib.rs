@@ -1,12 +1,12 @@
 use perde_core::prelude::*;
 
 fn loads_as_(schema: &Schema, object: &ObjectRef) -> Result<Object> {
-    let s = object.as_str()?;
+    let s = object.as_str().context("invalid argument")?;
     Ok(serde_yaml::seed::from_str_seed(s, schema)?)
 }
 
 fn loads_(object: &ObjectRef) -> Result<Object> {
-    let s = object.as_str()?;
+    let s = object.as_str().context("invalid argument")?;
     Ok(serde_yaml::from_str(s)?)
 }
 
