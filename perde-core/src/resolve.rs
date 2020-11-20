@@ -142,29 +142,20 @@ fn to_dataclass(p: &ObjectRef, attr: &Option<HashMap<&str, &ObjectRef>>) -> Resu
     let mut ser_field_len = 0;
     let mut flatten_dict = None;
 
+    let missing = &import()?.missing;
+
     for (i, field) in fields.enumerate() {
         let name = field.get_attr(&ATTR_NAME)?;
-
         let ty = field.get_attr(&ATTR_TYPE)?;
         let default = field
             .get_attr(&ATTR_DEFAULT)?
-            .none_as_optional()
-            .filter(|o| {
-                import()
-                    .ok()
-                    .filter(|so| !o.is(so.missing.as_ptr()))
-                    .is_some()
-            });
+            .into_opt()
+            .filter(|o| !o.is(missing.as_ptr()));
         let default_factory = field
             .get_attr(&ATTR_DEFAULT_FACTORY)?
-            .none_as_optional()
-            .filter(|o| {
-                import()
-                    .ok()
-                    .filter(|so| !o.is(so.missing.as_ptr()))
-                    .is_some()
-            });
-        let metadata = field.get_attr(&ATTR_METADATA)?.none_as_optional();
+            .into_opt()
+            .filter(|o| !o.is(missing.as_ptr()));
+        let metadata = field.get_attr(&ATTR_METADATA)?.into_opt();
 
         let fattr = FieldAttr::parse(metadata, default, default_factory)?;
 

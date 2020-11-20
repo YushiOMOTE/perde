@@ -632,7 +632,7 @@ impl Object {
         ptr as *mut PyObject
     }
 
-    pub fn none_as_optional(self) -> Option<Object> {
+    pub fn into_opt(self) -> Option<Object> {
         if self.is_none() {
             None
         } else {
