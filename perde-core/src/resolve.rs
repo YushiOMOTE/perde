@@ -1,4 +1,6 @@
-use crate::{attr::AttrStr, error::Result, import::import, object::ObjectRef, schema::*};
+use crate::{
+    attr::AttrStr, error::Convert, error::Result, import::import, object::ObjectRef, schema::*,
+};
 use indexmap::IndexMap;
 use std::collections::HashMap;
 
@@ -284,7 +286,7 @@ fn to_tuple(args: &ObjectRef) -> Result<Schema> {
     let mut args = args.get_tuple_iter()?;
 
     if args.len() == 1 {
-        let p = args.next().ok_or(err!("missing tuple element"))?;
+        let p = args.next().ok_or(type_err!("cannot get element type"))?;
         if p.is(import()?.empty_tuple.as_ptr()) {
             return Ok(Schema::Tuple(Tuple::new(vec![])));
         }
@@ -304,26 +306,26 @@ fn to_tuple(args: &ObjectRef) -> Result<Schema> {
 
 fn to_dict(args: &ObjectRef) -> Result<Schema> {
     let mut args = args.get_tuple_iter()?;
-    let key = to_schema(args.next().ok_or(err!("missing key type in dict"))?)?;
-    let value = to_schema(args.next().ok_or(err!("missing value type in dict"))?)?;
+    let key = to_schema(args.next().ok_or(type_err!("cannot get key type"))?)?;
+    let value = to_schema(args.next().ok_or(type_err!("cannot get value type"))?)?;
     Ok(Schema::Dict(Dict::new(Box::new(key), Box::new(value))))
 }
 
 fn to_list(args: &ObjectRef) -> Result<Schema> {
     let mut args = args.get_tuple_iter()?;
-    let value = to_schema(args.next().ok_or(err!("missing value type in list"))?)?;
+    let value = to_schema(args.next().ok_or(type_err!("cannot get element type"))?)?;
     Ok(Schema::List(List::new(Box::new(value))))
 }
 
 fn to_set(args: &ObjectRef) -> Result<Schema> {
     let mut args = args.get_tuple_iter()?;
-    let value = to_schema(args.next().ok_or(err!("missing value type in set"))?)?;
+    let value = to_schema(args.next().ok_or(type_err!("cannot get element type"))?)?;
     Ok(Schema::Set(Set::new(Box::new(value))))
 }
 
 fn to_frozen_set(args: &ObjectRef) -> Result<Schema> {
     let mut args = args.get_tuple_iter()?;
-    let value = to_schema(args.next().ok_or(err!("missing value type in frozenset"))?)?;
+    let value = to_schema(args.next().ok_or(type_err!("cannot get element type"))?)?;
     Ok(Schema::FrozenSet(FrozenSet::new(Box::new(value))))
 }
 
@@ -332,20 +334,20 @@ fn to_generic(p: &ObjectRef) -> Result<Schema> {
     let args = p.get_attr(&ATTR_ARGS)?;
 
     let s = if origin.is(import()?.union.as_ptr()) {
-        to_union(&args)?
+        to_union(&args)
     } else if origin.is_tuple() {
-        to_tuple(&args)?
+        to_tuple(&args)
     } else if origin.is_dict() {
-        to_dict(&args)?
+        to_dict(&args)
     } else if origin.is_set() {
-        to_set(&args)?
+        to_set(&args)
     } else if origin.is_list() {
-        to_list(&args)?
+        to_list(&args)
     } else if origin.is_frozen_set() {
-        to_frozen_set(&args)?
+        to_frozen_set(&args)
     } else {
-        bail_type_err!("unsupported generic type");
+        bail_type_err!("unsupported generic type: {:?}", p);
     };
 
-    Ok(s)
+    s.context(format!("cannot get generic type information: `{:?}`", p))
 }
