@@ -4,8 +4,11 @@ use crate::{
 use indexmap::IndexMap;
 use std::collections::HashMap;
 
-fn collect_members(mems: &IndexMap<String, FieldSchema>) -> (IndexMap<String, FieldSchema>, bool) {
+fn collect_members(
+    mems: &IndexMap<String, FieldSchema>,
+) -> (IndexMap<String, FieldSchema>, bool, usize) {
     let mut has_flatten = false;
+    let mut skip_field_len = 0;
 
     let mems = mems
         .iter()
@@ -18,6 +21,10 @@ fn collect_members(mems: &IndexMap<String, FieldSchema>) -> (IndexMap<String, Fi
                     }
                     _ => {}
                 }
+            } else {
+                if field.attr.skip || field.attr.skip_serializing {
+                    skip_field_len += 1;
+                }
             }
             let mut map = IndexMap::new();
             map.insert(key.to_string(), field.clone());
@@ -25,15 +32,17 @@ fn collect_members(mems: &IndexMap<String, FieldSchema>) -> (IndexMap<String, Fi
         })
         .collect();
 
-    (mems, has_flatten)
+    (mems, has_flatten, skip_field_len)
 }
 
-fn collect_flatten_members(mems: &IndexMap<String, FieldSchema>) -> IndexMap<String, FieldSchema> {
-    let (mems, has_flatten) = collect_members(mems);
+fn collect_flatten_members(
+    mems: &IndexMap<String, FieldSchema>,
+) -> (IndexMap<String, FieldSchema>, usize) {
+    let (mems, has_flatten, skip_len) = collect_members(mems);
     if has_flatten {
-        mems
+        (mems, skip_len)
     } else {
-        IndexMap::new()
+        (IndexMap::new(), 0)
     }
 }
 
@@ -141,7 +150,7 @@ fn to_dataclass(p: &ObjectRef, attr: &Option<HashMap<&str, &ObjectRef>>) -> Resu
     let fields = fields.get_tuple_iter()?;
 
     let mut members = IndexMap::new();
-    let mut ser_field_len = 0;
+    let mut skip_field_len = 0;
     let mut flatten_dict = None;
 
     let missing = &import()?.missing;
@@ -174,8 +183,8 @@ fn to_dataclass(p: &ObjectRef, attr: &Option<HashMap<&str, &ObjectRef>>) -> Resu
             )
         };
 
-        if !fattr.skip && !fattr.skip_serializing {
-            ser_field_len += 1;
+        if (fattr.skip || fattr.skip_serializing) && !fattr.flatten {
+            skip_field_len += 1;
         }
 
         let schema = to_schema(ty.as_ref())?;
@@ -201,7 +210,13 @@ fn to_dataclass(p: &ObjectRef, attr: &Option<HashMap<&str, &ObjectRef>>) -> Resu
 
     let name = p.name();
     let class = p.owned();
-    let flatten_members = collect_flatten_members(&members);
+    let (flatten_members, flatten_skip_len) = collect_flatten_members(&members);
+
+    let ser_field_len = if flatten_members.is_empty() {
+        members.len() - skip_field_len
+    } else {
+        flatten_members.len() - flatten_skip_len
+    };
 
     Ok(Schema::Class(Class::new(
         class.into(),

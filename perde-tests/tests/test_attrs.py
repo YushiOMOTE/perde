@@ -349,3 +349,59 @@ def test_dict_flatten(m):
         z: Dict[str, str] = field(metadata={"perde_flatten": True})
 
     m.repack_type(DictFlatten)
+
+
+"""rust
+#[derive(Serialize, Debug, new)]
+struct Flatten2 {
+  x: String,
+  a: i64,
+  b: i64,
+}
+
+add!(Flatten2 { "haa".into(), 11, 33 });
+"""
+
+
+@pytest.mark.parametrize("m", FORMATS)
+def test_flatten2(m):
+    @dataclass
+    class Flatten2Child:
+        a: int
+        b: int
+
+    @dataclass
+    class Flatten2:
+        x: str
+        y: Flatten2Child = field(metadata={"perde_flatten": True})
+
+    m.repack_type(Flatten2)
+
+
+"""rust
+#[derive(Serialize, Debug, new)]
+struct DictFlatten2 {
+  x: String,
+  y: i64,
+  pp: String,
+  ppp: String,
+  pppp: String,
+}
+
+add!(DictFlatten2 {
+     "hey".into(), -103223,
+     "q1".into(), "q2".into(), "q3".into()
+    });
+"""
+
+
+# Hopefully support msgpack.
+@pytest.mark.parametrize("m", FORMATS_EXCEPT("msgpack"))
+def test_dict_flatten2(m):
+    @dataclass
+    class DictFlatten2:
+        x: str
+        y: int
+        z: Dict[str, str] = field(metadata={"perde_flatten": True})
+
+    m.repack_type(DictFlatten2)

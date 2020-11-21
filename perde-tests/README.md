@@ -81,18 +81,12 @@
 
 ## Error testing
 
-* Arguments error
-    * [ ] `dumps`
-    * [ ] `loads`
-    * [ ] `loads_as`
-* Serialization error
-    * [ ] Parsing invalid objects.
-    * [ ] Serializing skipped enum variant.
-    * [ ] Serializing flatten struct in msgpack.
-* Deserialization error
-    * [ ] Parsing broken data.
-    * [ ] Parsing valid format but doesn't match the specified type.
+* [x] Arguments error
+* [x] Serialization error
+* [x] Deserialization error
 
 ## Known issues / Constraints
 
 * Flatten for msgpack doesn't work due to [the issue](https://github.com/3Hren/msgpack-rust/issues/196) in `rmp-serde`.
+    * Flatten for nested classes works in perde. The Rust issue has been bypassed.
+    * Flatten for dict isn't yet supported in perde.
