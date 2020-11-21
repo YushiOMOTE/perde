@@ -11,15 +11,18 @@ pub extern "C" fn resolve(
     kwnames: *mut pyo3::ffi::PyObject,
 ) -> *mut pyo3::ffi::PyObject {
     let inner = || {
-        let fargs = FastArgs::new(args, nargs, kwnames);
+        let args = FastArgs::new(args, nargs, kwnames);
 
-        if fargs.num_args() != 1 {
-            bail!("resolve() requires 1 positional argument");
+        if args.num_args() != 1 {
+            bail_type_err!(
+                "resolve() requires 1 positional argument but got {}",
+                args.num_args()
+            );
         }
 
-        let typeobj = fargs.arg(0)?;
+        let typeobj = args.arg(0)?;
 
-        let attr = if let Some(iter) = fargs.iter_kwargs()? {
+        let attr = if let Some(iter) = args.iter_kwargs()? {
             let mut attr = HashMap::new();
             for res in iter {
                 let (key, value) = res?;

@@ -84,6 +84,52 @@ struct Opt {
 
 fn main() {
     #[derive(Serialize, Debug, new)]
+    struct TypeMismatch {
+        a: String,
+        b: Vec<u32>,
+    }
+
+    add!(TypeMismatch { "hage".into(), vec![1,2,3] });
+
+    #[derive(Serialize, Debug, new)]
+    struct MissingMember {
+        a: String,
+    }
+
+    add!(MissingMember { "hage".into() });
+
+    #[derive(Serialize, Debug, new)]
+    struct TooManyMember {
+        a: String,
+        b: String,
+        c: i64,
+    }
+
+    add!(TooManyMember { "hage".into(), "faa".into(), 33 });
+
+    #[derive(Serialize, Debug, new)]
+    struct SkipEnumError {
+        x: i64,
+        e: String,
+    }
+
+    add!(SkipEnumError { 3, "A".into() });
+
+    #[derive(Serialize, Debug, new)]
+    struct DictFlattenMsgpack {
+        x: String,
+        y: i64,
+        pp: String,
+        ppp: String,
+        pppp: String,
+    }
+
+    add!(DictFlattenMsgpack {
+     "hey".into(), -103223,
+     "q1".into(), "q2".into(), "q3".into()
+    });
+
+    #[derive(Serialize, Debug, new)]
     struct Plain {
         a: String,
         b: String,
@@ -243,6 +289,29 @@ fn main() {
      m
     }}
      except "msgpack");
+
+    #[derive(Serialize, Debug, new)]
+    struct Flatten2 {
+        x: String,
+        a: i64,
+        b: i64,
+    }
+
+    add!(Flatten2 { "haa".into(), 11, 33 });
+
+    #[derive(Serialize, Debug, new)]
+    struct DictFlatten2 {
+        x: String,
+        y: i64,
+        pp: String,
+        ppp: String,
+        pppp: String,
+    }
+
+    add!(DictFlatten2 {
+     "hey".into(), -103223,
+     "q1".into(), "q2".into(), "q3".into()
+    });
 
     #[derive(Serialize, Debug, new)]
     struct DefaultConstruct {

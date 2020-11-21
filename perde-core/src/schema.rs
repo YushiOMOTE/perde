@@ -1,7 +1,7 @@
 use crate::{
     attr::AttrStr,
     error::{Convert, Error, Result},
-    object::{Object, ObjectRef},
+    object::{Object, ObjectRef, SyncObject},
 };
 use derive_new::new;
 use indexmap::IndexMap;
@@ -32,7 +32,7 @@ impl FromStr for StrCase {
             "SCREAMING_SNAKE_CASE" => Ok(StrCase::ScreamingSnake),
             "kebab-case" => Ok(StrCase::Kebab),
             "SCREAMING-KEBAB-CASE" => Ok(StrCase::ScreamingKebab),
-            c => bail!("Unsupported string case: {}", c),
+            c => bail_value_err!("invalid string case: `{}`", c),
         }
     }
 }
@@ -43,7 +43,7 @@ macro_rules! field_extract_bool {
             .as_ref()
             .and_then(|map| map.get($field).ok().map(|v| v.as_bool()))
             .transpose()
-            .context(format!("expected `bool` in attribute `{}`", $field))?
+            .context(format!("invalid attribute `{}`", $field))?
             .unwrap_or(false)
     };
 }
@@ -58,7 +58,7 @@ macro_rules! field_extract_str {
                     .map(|v| v.as_str().map(|v| v.to_string()))
             })
             .transpose()
-            .context(format!("expected `str` in attribute `{}`", $field))?
+            .context(format!("invalid attribute `{}`", $field))?
     };
 }
 
@@ -69,13 +69,11 @@ macro_rules! extract_stringcase {
             .and_then(|map| {
                 map.get($field).map(|v| {
                     let s = v.as_str()?;
-                    s.parse().context(format!(
-                        "invalid string case `{}` in attribute `{}`",
-                        s, $field
-                    ))
+                    s.parse()
                 })
             })
-            .transpose()?
+            .transpose()
+            .context(format!("invalid attribute `{}`", $field))?
     };
 }
 
@@ -85,7 +83,7 @@ macro_rules! extract_bool {
             .as_ref()
             .and_then(|map| map.get($field).map(|v| v.as_bool()))
             .transpose()
-            .context(format!("expected `bool` in attribute `{}`", $field))?
+            .context(format!("invalid attribute `{}`", $field))?
             .unwrap_or(false)
     };
 }
@@ -96,7 +94,7 @@ macro_rules! extract_str {
             .as_ref()
             .and_then(|map| map.get($field).map(|v| v.as_str().map(|v| v.to_string())))
             .transpose()
-            .context(format!("expected `str` in attribute `{}`", $field))?
+            .context(format!("invalid attribute `{}`", $field))?
     };
 }
 
@@ -104,8 +102,8 @@ macro_rules! extract_str {
 pub struct FieldAttr {
     pub flatten: bool,
     pub rename: Option<String>,
-    pub default: Option<Object>,
-    pub default_factory: Option<Object>,
+    pub default: Option<SyncObject>,
+    pub default_factory: Option<SyncObject>,
     pub skip: bool,
     pub skip_serializing: bool,
     pub skip_deserializing: bool,
@@ -121,8 +119,8 @@ impl FieldAttr {
         Ok(Self::new(
             field_extract_bool!(attr, "perde_flatten"),
             field_extract_str!(attr, "perde_rename"),
-            default,
-            default_factory,
+            default.map(|o| o.into()),
+            default_factory.map(|o| o.into()),
             field_extract_bool!(attr, "perde_skip"),
             field_extract_bool!(attr, "perde_skip_serializing"),
             field_extract_bool!(attr, "perde_skip_deserializing"),
@@ -264,7 +262,7 @@ impl Tuple {
 #[derive(Debug, Clone, new, PartialEq, Eq)]
 pub struct Enum {
     pub name: String,
-    pub object: Object,
+    pub object: SyncObject,
     pub attr: EnumAttr,
     pub variants: Vec<VariantSchema>,
 }
@@ -281,12 +279,12 @@ pub struct VariantSchema {
     pub sername: String,
     pub dename: String,
     pub attr: VariantAttr,
-    pub value: Object,
+    pub value: SyncObject,
 }
 
 #[derive(Debug, Clone, new, PartialEq, Eq)]
 pub struct Class {
-    pub ty: Object,
+    pub ty: SyncObject,
     pub name: String,
     pub attr: ClassAttr,
     pub fields: IndexMap<String, FieldSchema>,
@@ -436,5 +434,3 @@ lazy_static::lazy_static! {
         }
     };
 }
-
-unsafe impl Sync for StaticSchema {}

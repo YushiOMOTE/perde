@@ -2,7 +2,9 @@
 
 ## How this works?
 
-
+* `gen/datagen` parses Rust code (serde derived structs) in the comments in Python unit tests. It generates the Rust program `gen/datagen`, which dumps serialized data in each format.
+* `gen/datagen` generates serialized data in each format. The output is stored in `data`.
+* The Python unit tests uses the serialized data for testing.
 
 ## Types
 
@@ -77,6 +79,14 @@
 * [x] `perde_skip_deserialzing`
 * [x] `perde_other`
 
+## Error testing
+
+* [x] Arguments error
+* [x] Serialization error
+* [x] Deserialization error
+
 ## Known issues / Constraints
 
 * Flatten for msgpack doesn't work due to [the issue](https://github.com/3Hren/msgpack-rust/issues/196) in `rmp-serde`.
+    * Flatten for nested classes works in perde. The Rust issue has been bypassed.
+    * Flatten for dict isn't yet supported in perde.

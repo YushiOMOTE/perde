@@ -16,6 +16,10 @@ impl<'a> Args<'a> {
         })
     }
 
+    pub fn len(&self) -> usize {
+        self.tuple.len()
+    }
+
     pub fn arg(&self, index: usize) -> Result<&ObjectRef> {
         self.tuple.get(index)
     }

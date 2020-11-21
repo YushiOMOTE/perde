@@ -18,15 +18,16 @@ class Format:
     fmtname: str
     package: Any
     argtype: Any
+    errtype: Any = None
 
-    def dumps(self, v):
-        return self.package.dumps(v)
+    def dumps(self, *args, **kwargs):
+        return self.package.dumps(*args, **kwargs)
 
-    def loads(self, v):
-        return self.package.loads(v)
+    def loads(self, *args, **kwargs):
+        return self.package.loads(*args, **kwargs)
 
-    def loads_as(self, t, v):
-        return self.package.loads_as(t, v)
+    def loads_as(self, *args, **kwargs):
+        return self.package.loads_as(*args, **kwargs)
 
     def repack(self, v):
         print(f'repacking {v}...')
@@ -222,10 +223,11 @@ def mark(params):
 
 
 _FORMATS = [
-    Format("json", "json", perde_json, str),
-    Format("yaml", "yaml", perde_yaml, str),
-    Format("msgpack", "msgpack", perde_msgpack, bytes),
-    Format("toml", "toml", perde_toml, str)
+    Format("json", "json", perde_json, str, perde_json.JsonError),
+    Format("yaml", "yaml", perde_yaml, str, perde_yaml.YamlError),
+    Format("msgpack", "msgpack", perde_msgpack, bytes,
+           perde_msgpack.MsgpackError),
+    Format("toml", "toml", perde_toml, str, perde_toml.TomlError)
 ]
 
 FORMATS = mark(_FORMATS)

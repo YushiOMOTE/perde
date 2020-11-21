@@ -1,9 +1,14 @@
-use crate::{attr::AttrStr, error::Result, import::import, object::ObjectRef, schema::*};
+use crate::{
+    attr::AttrStr, error::Convert, error::Result, import::import, object::ObjectRef, schema::*,
+};
 use indexmap::IndexMap;
 use std::collections::HashMap;
 
-fn collect_members(mems: &IndexMap<String, FieldSchema>) -> (IndexMap<String, FieldSchema>, bool) {
+fn collect_members(
+    mems: &IndexMap<String, FieldSchema>,
+) -> (IndexMap<String, FieldSchema>, bool, usize) {
     let mut has_flatten = false;
+    let mut skip_field_len = 0;
 
     let mems = mems
         .iter()
@@ -16,6 +21,10 @@ fn collect_members(mems: &IndexMap<String, FieldSchema>) -> (IndexMap<String, Fi
                     }
                     _ => {}
                 }
+            } else {
+                if field.attr.skip || field.attr.skip_serializing {
+                    skip_field_len += 1;
+                }
             }
             let mut map = IndexMap::new();
             map.insert(key.to_string(), field.clone());
@@ -23,15 +32,17 @@ fn collect_members(mems: &IndexMap<String, FieldSchema>) -> (IndexMap<String, Fi
         })
         .collect();
 
-    (mems, has_flatten)
+    (mems, has_flatten, skip_field_len)
 }
 
-fn collect_flatten_members(mems: &IndexMap<String, FieldSchema>) -> IndexMap<String, FieldSchema> {
-    let (mems, has_flatten) = collect_members(mems);
+fn collect_flatten_members(
+    mems: &IndexMap<String, FieldSchema>,
+) -> (IndexMap<String, FieldSchema>, usize) {
+    let (mems, has_flatten, skip_len) = collect_members(mems);
     if has_flatten {
-        mems
+        (mems, skip_len)
     } else {
-        IndexMap::new()
+        (IndexMap::new(), 0)
     }
 }
 
@@ -117,19 +128,18 @@ pub fn resolve_schema<'a>(
         } else if p.is_enum() {
             to_enum(p, &attr)?
         } else {
-            bail!(
-                "unsupported type `{}`",
-                p.get_attr(&ATTR_TYPENAME)
-                    .and_then(|o| { Ok(o.as_str()?.to_string()) })
-                    .unwrap_or("<unknown>".into())
-            );
+            if !p.is_type() {
+                bail_type_err!("`{:?}` is not a type", p)
+            } else {
+                bail_type_err!("unsupported type `{:?}`", p)
+            }
         };
 
         p.set_capsule(&SCHEMA_CACHE, s)
     }
 }
 
-pub fn to_schema(p: &ObjectRef) -> Result<Schema> {
+fn to_schema(p: &ObjectRef) -> Result<Schema> {
     resolve_schema(p, None).map(|s| s.clone())
 }
 
@@ -140,32 +150,23 @@ fn to_dataclass(p: &ObjectRef, attr: &Option<HashMap<&str, &ObjectRef>>) -> Resu
     let fields = fields.get_tuple_iter()?;
 
     let mut members = IndexMap::new();
-    let mut ser_field_len = 0;
+    let mut skip_field_len = 0;
     let mut flatten_dict = None;
+
+    let missing = &import()?.missing;
 
     for (i, field) in fields.enumerate() {
         let name = field.get_attr(&ATTR_NAME)?;
-
         let ty = field.get_attr(&ATTR_TYPE)?;
         let default = field
             .get_attr(&ATTR_DEFAULT)?
-            .none_as_optional()
-            .filter(|o| {
-                import()
-                    .ok()
-                    .filter(|so| !o.is(so.missing.as_ptr()))
-                    .is_some()
-            });
+            .into_opt()
+            .filter(|o| !o.is(missing.as_ptr()));
         let default_factory = field
             .get_attr(&ATTR_DEFAULT_FACTORY)?
-            .none_as_optional()
-            .filter(|o| {
-                import()
-                    .ok()
-                    .filter(|so| !o.is(so.missing.as_ptr()))
-                    .is_some()
-            });
-        let metadata = field.get_attr(&ATTR_METADATA)?.none_as_optional();
+            .into_opt()
+            .filter(|o| !o.is(missing.as_ptr()));
+        let metadata = field.get_attr(&ATTR_METADATA)?.into_opt();
 
         let fattr = FieldAttr::parse(metadata, default, default_factory)?;
 
@@ -182,8 +183,8 @@ fn to_dataclass(p: &ObjectRef, attr: &Option<HashMap<&str, &ObjectRef>>) -> Resu
             )
         };
 
-        if !fattr.skip && !fattr.skip_serializing {
-            ser_field_len += 1;
+        if (fattr.skip || fattr.skip_serializing) && !fattr.flatten {
+            skip_field_len += 1;
         }
 
         let schema = to_schema(ty.as_ref())?;
@@ -209,10 +210,16 @@ fn to_dataclass(p: &ObjectRef, attr: &Option<HashMap<&str, &ObjectRef>>) -> Resu
 
     let name = p.name();
     let class = p.owned();
-    let flatten_members = collect_flatten_members(&members);
+    let (flatten_members, flatten_skip_len) = collect_flatten_members(&members);
+
+    let ser_field_len = if flatten_members.is_empty() {
+        members.len() - skip_field_len
+    } else {
+        flatten_members.len() - flatten_skip_len
+    };
 
     Ok(Schema::Class(Class::new(
-        class,
+        class.into(),
         name.into(),
         cattr,
         members,
@@ -259,14 +266,14 @@ fn to_enum(p: &ObjectRef, attr: &Option<HashMap<&str, &ObjectRef>>) -> Result<Sc
                 sername,
                 dename,
                 attr,
-                value,
+                value.into(),
             ))
         })
         .collect();
 
     Ok(Schema::Enum(Enum::new(
         p.name().into(),
-        p.owned(),
+        p.owned().into(),
         eattr,
         variants?,
     )))
@@ -294,7 +301,7 @@ fn to_tuple(args: &ObjectRef) -> Result<Schema> {
     let mut args = args.get_tuple_iter()?;
 
     if args.len() == 1 {
-        let p = args.next().ok_or(err!("missing tuple element"))?;
+        let p = args.next().ok_or(type_err!("cannot get element type"))?;
         if p.is(import()?.empty_tuple.as_ptr()) {
             return Ok(Schema::Tuple(Tuple::new(vec![])));
         }
@@ -314,26 +321,26 @@ fn to_tuple(args: &ObjectRef) -> Result<Schema> {
 
 fn to_dict(args: &ObjectRef) -> Result<Schema> {
     let mut args = args.get_tuple_iter()?;
-    let key = to_schema(args.next().ok_or(err!("missing key type in dict"))?)?;
-    let value = to_schema(args.next().ok_or(err!("missing value type in dict"))?)?;
+    let key = to_schema(args.next().ok_or(type_err!("cannot get key type"))?)?;
+    let value = to_schema(args.next().ok_or(type_err!("cannot get value type"))?)?;
     Ok(Schema::Dict(Dict::new(Box::new(key), Box::new(value))))
 }
 
 fn to_list(args: &ObjectRef) -> Result<Schema> {
     let mut args = args.get_tuple_iter()?;
-    let value = to_schema(args.next().ok_or(err!("missing value type in list"))?)?;
+    let value = to_schema(args.next().ok_or(type_err!("cannot get element type"))?)?;
     Ok(Schema::List(List::new(Box::new(value))))
 }
 
 fn to_set(args: &ObjectRef) -> Result<Schema> {
     let mut args = args.get_tuple_iter()?;
-    let value = to_schema(args.next().ok_or(err!("missing value type in set"))?)?;
+    let value = to_schema(args.next().ok_or(type_err!("cannot get element type"))?)?;
     Ok(Schema::Set(Set::new(Box::new(value))))
 }
 
 fn to_frozen_set(args: &ObjectRef) -> Result<Schema> {
     let mut args = args.get_tuple_iter()?;
-    let value = to_schema(args.next().ok_or(err!("missing value type in frozenset"))?)?;
+    let value = to_schema(args.next().ok_or(type_err!("cannot get element type"))?)?;
     Ok(Schema::FrozenSet(FrozenSet::new(Box::new(value))))
 }
 
@@ -342,20 +349,20 @@ fn to_generic(p: &ObjectRef) -> Result<Schema> {
     let args = p.get_attr(&ATTR_ARGS)?;
 
     let s = if origin.is(import()?.union.as_ptr()) {
-        to_union(&args)?
+        to_union(&args)
     } else if origin.is_tuple() {
-        to_tuple(&args)?
+        to_tuple(&args)
     } else if origin.is_dict() {
-        to_dict(&args)?
+        to_dict(&args)
     } else if origin.is_set() {
-        to_set(&args)?
+        to_set(&args)
     } else if origin.is_list() {
-        to_list(&args)?
+        to_list(&args)
     } else if origin.is_frozen_set() {
-        to_frozen_set(&args)?
+        to_frozen_set(&args)
     } else {
-        bail!("unsupported generic type");
+        bail_type_err!("unsupported generic type: {:?}", p);
     };
 
-    Ok(s)
+    s.context(format!("cannot get generic type information: `{:?}`", p))
 }

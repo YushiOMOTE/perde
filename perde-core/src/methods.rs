@@ -105,7 +105,18 @@ macro_rules! impl_default_methods {
 
             let inner = || {
                 let args = Args::new(args)?;
-                $loads_as(args.arg(0)?.resolve(None)?, args.arg(1)?)
+
+                if args.len() != 2 {
+                    return Err($crate::type_err!(
+                        "loads_as() requires 2 positional arguments but got {}",
+                        args.len()
+                    ));
+                }
+
+                $loads_as(
+                    args.arg(0)?.resolve(None).context("invalid argument")?,
+                    args.arg(1)?,
+                )
             };
 
             match inner() {
@@ -119,19 +130,20 @@ macro_rules! impl_default_methods {
 
         pub extern "C" fn dumps(
             _self: *mut pyo3::ffi::PyObject,
-            args: *const *mut pyo3::ffi::PyObject,
-            nargs: pyo3::ffi::Py_ssize_t,
-            kwnames: *mut pyo3::ffi::PyObject,
+            args: *mut pyo3::ffi::PyObject,
         ) -> *mut pyo3::ffi::PyObject {
             let inner = || {
-                let args = FastArgs::new(args, nargs, kwnames);
+                let args = Args::new(args)?;
 
-                if args.num_args() != 1 {
-                    bail!("dumps() requires 1 positional argument");
+                if args.len() != 1 {
+                    return Err($crate::type_err!(
+                        "dumps() requires 1 positional argument but got {}",
+                        args.len()
+                    ));
                 }
 
                 let obj = args.arg(0)?;
-                let resolved = obj.resolved_object()?;
+                let resolved = obj.resolved_object().context("invalid argument")?;
 
                 $dumps(resolved)
             };
@@ -147,12 +159,18 @@ macro_rules! impl_default_methods {
 
         pub extern "C" fn loads(
             _self: *mut pyo3::ffi::PyObject,
-            args: *const *mut pyo3::ffi::PyObject,
-            nargs: pyo3::ffi::Py_ssize_t,
-            kwnames: *mut pyo3::ffi::PyObject,
+            args: *mut pyo3::ffi::PyObject,
         ) -> *mut pyo3::ffi::PyObject {
             let inner = || {
-                let args = FastArgs::new(args, nargs, kwnames);
+                let args = Args::new(args)?;
+
+                if args.len() != 1 {
+                    return Err($crate::type_err!(
+                        "loads() requires 1 positional argument but got {}",
+                        args.len()
+                    ));
+                }
+
                 let obj = args.arg(0)?;
                 $loads(obj)
             };
@@ -169,8 +187,8 @@ macro_rules! impl_default_methods {
         module!(
             $module_name,
             exception!($exception_type),
-            method_fastcall!(loads, ""),
-            method_fastcall!(dumps, ""),
+            method_varargs!(loads, ""),
+            method_varargs!(dumps, ""),
             method_varargs!(loads_as, "")
         );
     };

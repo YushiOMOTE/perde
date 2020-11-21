@@ -93,7 +93,12 @@ impl<'a> Serialize for WithSchema<'a> {
                 map.end()
             }
             Schema::Class(c) => {
-                let mut map = s.serialize_map(Some(c.ser_field_len))?;
+                let len = if c.flatten_dict.is_some() {
+                    None
+                } else {
+                    Some(c.ser_field_len)
+                };
+                let mut map = s.serialize_map(len)?;
                 serialize_fields(&self.object, &c.fields, &mut map)?;
                 map.end()
             }
