@@ -834,12 +834,15 @@ impl TupleBuilder {
     }
 }
 
-#[derive(Debug)]
 pub struct SyncObject(AtomicPtr<PyObject>);
 
 impl SyncObject {
     pub fn new(obj: Object) -> Self {
         Self(AtomicPtr::new(obj.into_ptr()))
+    }
+
+    pub fn into_ptr(self) -> *mut PyObject {
+        self.as_ptr()
     }
 }
 
@@ -868,5 +871,66 @@ impl Eq for SyncObject {}
 impl Clone for SyncObject {
     fn clone(&self) -> Self {
         Self::new(self.owned())
+    }
+}
+
+impl Drop for SyncObject {
+    fn drop(&mut self) {
+        let _ = Object::new(self.as_ptr());
+    }
+}
+
+impl Debug for SyncObject {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        self.deref().fmt(f)
+    }
+}
+
+#[derive(Debug)]
+pub struct ErrorObject {
+    ptype: SyncObject,
+    pvalue: SyncObject,
+    ptraceback: SyncObject,
+}
+
+impl ErrorObject {
+    pub fn new() -> Option<Self> {
+        if unsafe { PyErr_Occurred().is_null() } {
+            return None;
+        }
+
+        unsafe {
+            let mut ptype = std::ptr::null_mut();
+            let mut pvalue = std::ptr::null_mut();
+            let mut ptraceback = std::ptr::null_mut();
+
+            pyo3::ffi::PyErr_Fetch(&mut ptype, &mut pvalue, &mut ptraceback);
+
+            let ptype = Object::new(ptype);
+            let pvalue = Object::new(pvalue);
+            let ptraceback = Object::new(ptraceback);
+
+            Some(ErrorObject {
+                ptype: ptype.ok()?.into(),
+                pvalue: pvalue.ok()?.into(),
+                ptraceback: ptraceback.ok()?.into(),
+            })
+        }
+    }
+
+    pub fn restore(self) {
+        unsafe {
+            pyo3::ffi::PyErr_Restore(
+                self.ptype.into_ptr(),
+                self.pvalue.into_ptr(),
+                self.ptraceback.into_ptr(),
+            )
+        }
+    }
+
+    pub fn clear() {
+        if unsafe { !pyo3::ffi::PyErr_Occurred().is_null() } {
+            unsafe { pyo3::ffi::PyErr_Clear() };
+        }
     }
 }

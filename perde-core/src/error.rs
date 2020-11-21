@@ -1,3 +1,4 @@
+use crate::object::ErrorObject;
 use pyo3::{type_object::PyTypeObject, PyErr, Python};
 use serde::{de, ser};
 use std::fmt::{self, Display};
@@ -8,7 +9,7 @@ pub type Result<T> = std::result::Result<T, Error>;
 pub enum Error {
     TypeError(String),
     ValueError(String),
-    Else(String),
+    Native(String, Option<ErrorObject>),
 }
 
 #[macro_export]
@@ -60,26 +61,19 @@ pub fn raise<T: PyTypeObject, U: ToString>(msg: U) {
     pyerr.restore(py);
 }
 
-fn clear() {
-    if unsafe { !pyo3::ffi::PyErr_Occurred().is_null() } {
-        unsafe { pyo3::ffi::PyErr_Clear() };
-    }
-}
-
 impl Error {
     pub fn new<T>(t: T) -> Self
     where
         T: ToString,
     {
-        clear();
-        Self::Else(t.to_string())
+        Self::Native(t.to_string(), ErrorObject::new())
     }
 
     pub fn type_error<T>(t: T) -> Self
     where
         T: ToString,
     {
-        clear();
+        ErrorObject::clear();
         Self::TypeError(t.to_string())
     }
 
@@ -87,7 +81,7 @@ impl Error {
     where
         T: ToString,
     {
-        clear();
+        ErrorObject::clear();
         Self::ValueError(t.to_string())
     }
 
@@ -95,13 +89,18 @@ impl Error {
         match self {
             Error::TypeError(t) => raise::<pyo3::exceptions::PyTypeError, _>(t),
             Error::ValueError(t) => raise::<pyo3::exceptions::PyValueError, _>(t),
-            Error::Else(t) => raise::<T, _>(t),
+            Error::Native(_, Some(t)) => {
+                t.restore();
+            }
+            Error::Native(s, None) => {
+                raise::<pyo3::exceptions::PyRuntimeError, _>(format!("{}", s))
+            }
         }
     }
 
     pub fn set_message(&mut self, message: String) {
         match self {
-            Error::TypeError(m) | Error::ValueError(m) | Error::Else(m) => {
+            Error::TypeError(m) | Error::ValueError(m) | Error::Native(m, _) => {
                 *m = message;
             }
         }
@@ -109,7 +108,7 @@ impl Error {
 
     pub fn message(&self) -> &str {
         match self {
-            Self::TypeError(m) | Self::ValueError(m) | Self::Else(m) => &m,
+            Self::TypeError(m) | Self::ValueError(m) | Self::Native(m, _) => &m,
         }
     }
 }
@@ -129,7 +128,7 @@ impl Display for Error {
             f,
             "{}",
             match self {
-                Error::TypeError(m) | Error::ValueError(m) | Error::Else(m) => m,
+                Error::TypeError(m) | Error::ValueError(m) | Error::Native(m, _) => m,
             }
         )
     }

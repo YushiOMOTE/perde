@@ -30,7 +30,7 @@ pub struct Import {
 }
 
 pub fn import() -> Result<&'static Import> {
-    STATIC_OBJECTS.as_ref().map_err(|e| err!("{}", e))
+    IMPORT.as_ref().map_err(|e| err!("{}", e))
 }
 
 macro_rules! getattr {
@@ -47,7 +47,7 @@ macro_rules! getattr {
 }
 
 lazy_static::lazy_static! {
-    static ref STATIC_OBJECTS: Result<Import> = {
+    static ref IMPORT: Result<Import> = {
         use pyo3::{Python, types::PyModule};
 
         let gil = Python::acquire_gil();
