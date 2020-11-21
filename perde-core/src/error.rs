@@ -92,9 +92,7 @@ impl Error {
             Error::Native(_, Some(t)) => {
                 t.restore();
             }
-            Error::Native(s, None) => {
-                raise::<pyo3::exceptions::PyRuntimeError, _>(format!("{}", s))
-            }
+            Error::Native(s, None) => raise::<T, _>(format!("{}", s)),
         }
     }
 

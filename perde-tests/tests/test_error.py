@@ -216,3 +216,76 @@ def test_error_unsupported_type(m):
     assert e.value.args[0] == (
         "invalid argument: unsupported type "
         "`<class 'test_error.test_error_unsupported_type.<locals>.Abc'>`")
+
+
+"""rust
+#[derive(Serialize, Debug, new)]
+struct TypeMismatch {
+    a: String,
+    b: Vec<u32>,
+}
+
+add!(TypeMismatch { "hage".into(), vec![1,2,3] });
+"""
+
+
+@pytest.mark.parametrize("m", FORMATS)
+def test_error_decode_type_mismatch(m):
+    @dataclass
+    class TypeMismatch:
+        a: str
+        b: str
+
+    with pytest.raises(m.errtype) as e:
+        m.loads_as(TypeMismatch, m.data("DecodeError"))
+
+    print(f"{m.name}: {e}")
+
+
+"""rust
+#[derive(Serialize, Debug, new)]
+struct MissingMember {
+    a: String,
+}
+
+add!(MissingMember { "hage".into() });
+"""
+
+
+@pytest.mark.parametrize("m", FORMATS)
+def test_error_decode_missing_member(m):
+    @dataclass
+    class MissingMember:
+        a: str
+        b: str
+
+    with pytest.raises(m.errtype) as e:
+        m.loads_as(MissingMember, m.data("MissingMember"))
+
+    print(f"{m.name}: {e}")
+
+
+"""rust
+#[derive(Serialize, Debug, new)]
+struct TooManyMember {
+    a: String,
+    b: String,
+    c: i64,
+}
+
+add!(TooManyMember { "hage".into(), "faa".into(), 33 });
+"""
+
+
+@pytest.mark.parametrize("m", FORMATS)
+def test_error_decode_missing_member(m):
+    @perde.attr(deny_unknown_fields=True)
+    @dataclass
+    class TooManyMember:
+        a: str
+        b: str
+
+    with pytest.raises(m.errtype) as e:
+        m.loads_as(TooManyMember, m.data("TooManyMember"))
+
+    print(f"{m.name}: {e}")

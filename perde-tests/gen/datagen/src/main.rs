@@ -84,6 +84,30 @@ struct Opt {
 
 fn main() {
     #[derive(Serialize, Debug, new)]
+    struct TypeMismatch {
+        a: String,
+        b: Vec<u32>,
+    }
+
+    add!(TypeMismatch { "hage".into(), vec![1,2,3] });
+
+    #[derive(Serialize, Debug, new)]
+    struct MissingMember {
+        a: String,
+    }
+
+    add!(MissingMember { "hage".into() });
+
+    #[derive(Serialize, Debug, new)]
+    struct TooManyMember {
+        a: String,
+        b: String,
+        c: i64,
+    }
+
+    add!(TooManyMember { "hage".into(), "faa".into(), 33 });
+
+    #[derive(Serialize, Debug, new)]
     struct Plain {
         a: String,
         b: String,
