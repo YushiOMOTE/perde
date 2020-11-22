@@ -2,14 +2,11 @@ from dataclasses import dataclass
 from typing import Any
 import pytest
 import os
-import perde_json
-import perde_yaml
-import perde_msgpack
-import perde_toml
 import json
 import yaml
 import msgpack
 import toml
+import perde
 
 
 @dataclass
@@ -149,66 +146,66 @@ class Toml:
 
 class PerdeJson:
     def pack_bench(b, v):
-        b(perde_json.dumps, v)
+        b(perde.json.dumps, v)
 
     def unpack_bench(b, v, t):
-        b(perde_json.loads, v)
+        b(perde.json.loads, v)
 
 
 class PerdeYaml:
     def pack_bench(b, v):
-        b(perde_yaml.dumps, v)
+        b(perde.yaml.dumps, v)
 
     def unpack_bench(b, v, t):
-        b(perde_yaml.loads, v)
+        b(perde.yaml.loads, v)
 
 
 class PerdeMsgPack:
     def pack_bench(b, v):
-        b(perde_msgpack.dumps, v)
+        b(perde.msgpack.dumps, v)
 
     def unpack_bench(b, v, t):
-        b(perde_msgpack.loads, v)
+        b(perde.msgpack.loads, v)
 
 
 class PerdeToml:
     def pack_bench(b, v):
-        b(perde_toml.dumps, v)
+        b(perde.toml.dumps, v)
 
     def unpack_bench(b, v, t):
-        b(perde_toml.loads, v)
+        b(perde.toml.loads, v)
 
 
 class PerdeJsonAs:
     def pack_bench(b, v):
-        b(perde_json.dumps, v)
+        b(perde.json.dumps, v)
 
     def unpack_bench(b, v, t):
-        b(perde_json.loads_as, t, v)
+        b(perde.json.loads_as, t, v)
 
 
 class PerdeYamlAs:
     def pack_bench(b, v):
-        b(perde_yaml.dumps, v)
+        b(perde.yaml.dumps, v)
 
     def unpack_bench(b, v, t):
-        b(perde_yaml.loads_as, t, v)
+        b(perde.yaml.loads_as, t, v)
 
 
 class PerdeMsgPackAs:
     def pack_bench(b, v):
-        b(perde_msgpack.dumps, v)
+        b(perde.msgpack.dumps, v)
 
     def unpack_bench(b, v, t):
-        b(perde_msgpack.loads_as, t, v)
+        b(perde.msgpack.loads_as, t, v)
 
 
 class PerdeTomlAs:
     def pack_bench(b, v):
-        b(perde_toml.dumps, v)
+        b(perde.toml.dumps, v)
 
     def unpack_bench(b, v, t):
-        b(perde_toml.loads_as, t, v)
+        b(perde.toml.loads_as, t, v)
 
 
 def idfn(m):
@@ -223,11 +220,11 @@ def mark(params):
 
 
 _FORMATS = [
-    Format("json", "json", perde_json, str, perde_json.JsonError),
-    Format("yaml", "yaml", perde_yaml, str, perde_yaml.YamlError),
-    Format("msgpack", "msgpack", perde_msgpack, bytes,
-           perde_msgpack.MsgpackError),
-    Format("toml", "toml", perde_toml, str, perde_toml.TomlError)
+    Format("json", "json", perde.json, str, perde.json.JsonError),
+    Format("yaml", "yaml", perde.yaml, str, perde.yaml.YamlError),
+    Format("msgpack", "msgpack", perde.msgpack, bytes,
+           perde.msgpack.MsgpackError),
+    Format("toml", "toml", perde.toml, str, perde.toml.TomlError)
 ]
 
 FORMATS = mark(_FORMATS)

@@ -1,9 +1,0 @@
-# {{ generator_note }}
-
-[project]
-name = "{{ format.crate_name }}"
-repository = "https://github.com/yushiomote/perde"
-
-[build-system]
-requires = ["maturin"]
-build-backend = "maturin"

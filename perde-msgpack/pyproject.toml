@@ -1,9 +1,0 @@
-# The file is generated. Don't modify manually. Run `make manifests` to regenerate.
-
-[project]
-name = "perde-msgpack"
-repository = "https://github.com/yushiomote/perde"
-
-[build-system]
-requires = ["maturin"]
-build-backend = "maturin"
