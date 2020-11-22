@@ -78,6 +78,7 @@ mypy:
 
 
 doctest:
+	find docs/src -name "*.md" | xargs $(doctest)
 	$(doctest) README.md
 
 
