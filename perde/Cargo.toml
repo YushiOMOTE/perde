@@ -17,6 +17,10 @@ readme = "README.md"
 pyo3 = { version = "0.12", features = ["extension-module"] }
 perde-core = { version = "0.0.1", path = "../perde-core" }
 serde = "1.0"
+serde_json = "1.0"
+serde_yaml = "0.8"
+toml = "0.5"
+rmp-serde = "0.14"
 
 [lib]
 name = "perde"

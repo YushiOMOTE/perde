@@ -1,6 +1,9 @@
+use crate::formats::{json::*, msgpack::*, toml::*, yaml::*};
 use perde_core::prelude::*;
 use pyo3::ffi::*;
 use std::collections::HashMap;
+
+mod formats;
 
 pyo3::create_exception!(perde, Error, pyo3::exceptions::PyException);
 
@@ -47,4 +50,12 @@ pub extern "C" fn resolve(
     }
 }
 
-module!(perde, exception!(Error), method_fastcall!(resolve, ""));
+module!(
+    perde,
+    submodule!(json),
+    submodule!(toml),
+    submodule!(yaml),
+    submodule!(msgpack),
+    exception!(Error),
+    method_fastcall!(resolve, "")
+);
