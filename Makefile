@@ -5,6 +5,7 @@ test-pypi ?= https://test.pypi.org/legacy/
 pipenv ?= pipenv run
 maturin ?= $(pipenv) maturin
 pytest ?= $(pipenv) pytest
+doctest ?= $(pipenv) python -m doctest
 
 bench-result-dir ?= assets
 
@@ -38,7 +39,7 @@ prepare-test:
 lint: pep8 mypy
 
 
-test: prepare-test
+test: doctest prepare-test
 	$(pytest) --benchmark-skip $(test-opt)
 
 
@@ -74,6 +75,10 @@ pep8:
 
 mypy:
 	$(pipenv) mypy perde
+
+
+doctest:
+	$(doctest) README.md
 
 
 coverage:

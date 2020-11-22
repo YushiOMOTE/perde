@@ -21,100 +21,97 @@ Python wrapper around [the powerful Rust serialization framework](https://github
 * Strict type checking.
 * Very fast.
 
+<!--
+>>> from dataclasses import dataclass, field
+>>> import enum
+
+-->
+
+1. [Install](#install)
+2. [Usage](#usage)
+3. [Supported formats](#formats)
+4. [Supported types](#types)
+    1. [Enum](#enum)
+5. [Attributes](#attrs)
+    1. [Dataclass attributes](#dataclass_attrs)
+    2. [Dataclass field attributes](#dataclass_field_attrs)
+    3. [Enum attributes](#enum_attrs)
+    4. [Enum member attributes](#enum_mem_attrs)
+6. [Benchmark](#benchmark)
+
+
 ### Install
 
 ```sh
-pip install perde-json
-pip install perde-yaml
-pip install perde-msgpack
+pip install perde
 ```
 
 ### Usage
 
 ```python
-import perde_json
-import perde_yaml
-import perde_msgpack
+>>> import perde
 
-@dataclass
-class A:
-    key: int
-    value: str
-
-# Serialize objects into json, yaml, msgpack
-perde_json.dumps(A(300, "json"))
-perde_yaml.dumps(A(300, "yaml"))
-perde_msgpack.dumps(A(300, "msgpack"))
-
-# Deserialize as dataclasses
-perde_json.loads_as(A, '{"key": 300, "value": "hoge"}')
-perde_yaml.loads_as(A, '''key: 300
-value: hoge
-''')
-perde_msgpack.loads_as(A, b'\x82\xA3\x6B\x65\x79\xCD\x01\x2C\xA5\x76\x61\x6C\x75\x65\xCD\x01\x90')
-
-# Deserialize as objects
-perde_json.loads_as(A, '{"key": 300, "value": "hoge"}')
-perde_yaml.loads_as(A, '''key: 300
-value: hoge
-''')
-perde_msgpack.loads_as(A, b'\x82\xA3\x6B\x65\x79\xCD\x01\x2C\xA5\x76\x61\x6C\x75\x65\xCD\x01\x90')
 ```
 
-### Supported Python
+Assume you have a dataclass,
 
-* Interpreters (CPython)
-    * [x] 3.7
-    * [x] 3.8
-    * [x] 3.9
-* Platforms
-    * [x] Linux
-    * [x] MacOS
-    * [x] Windows
+```python
+>>> @dataclass
+... class A:
+...     a: int
+...     b: str
 
-### Supported types
+```
 
-* `dataclass`
-* Generic types (`typing`)
-    * [x] `Dict`
-    * [x] `List`
-    * [x] `Set`
-    * [x] `FrozenSet`
-    * [x] `Tuple` / `Tuple[()]`
-    * [x] `Optional`
-    * [x] `Union`
-    * [x] `Any`
-* Enum types
-    * [x] `Enum`
-    * [x] `IntEnum`
-    * [x] `Flag`
-    * [x] `IntFlag`
-* Built-in types
-    * [x] `int`
-    * [x] `str`
-    * [x] `float`
-    * [x] `bool`
-    * [x] `bytes`
-    * [x] `bytearray`
-    * [x] `dict`
-    * [x] `list`
-    * [x] `set`
-    * [x] `frozenset`
-    * [x] `tuple`
-* More built-in types
-    * [x] `datetime.datetime`
-    * [x] `datetime.date`
-    * [x] `datetime.time`
-    * [x] `decimal.Decimal`
-    * [x] `uuid.UUID`
+To serialize class `A` to JSON,
 
-### Supported formats
+```python
+>>> perde.json.dumps(A(a=10, b='x'))
+'{"a":10,"b":"x"}'
+
+```
+
+To deserialize JSON to class `A`,
+
+```python
+>>> perde.json.loads_as(A, '{"a":10,"b":"x"}')
+A(a=10, b='x')
+
+```
+
+To deserialize JSON to a dictionary,
+
+```python
+>>> perde.json.loads('{"a":10,"b":"x"}')
+{'a': 10, 'b': 'x'}
+
+```
+
+More formats are supported.
+
+```python
+>>> perde.yaml.dumps(A(10, "x"))
+'---\na: 10\nb: x'
+>>> perde.yaml.loads_as(A, '---\na: 10\nb: x')
+A(a=10, b='x')
+
+```
+
+```python
+>>> perde.msgpack.dumps(A(10, "x"))
+b'\x82\xa1a\n\xa1b\xa1x'
+>>> perde.msgpack.loads_as(A, b'\x82\xa1a\n\xa1b\xa1x')
+A(a=10, b='x')
+
+```
+
+### <a name="formats" /> Supported formats
 
 * [x] JSON
 * [x] YAML
 * [x] MessagePack
-* [ ] CBOR
 * [x] TOML
+* [ ] CBOR
 * [ ] Pickle
 * [ ] RON
 * [ ] BSON
@@ -129,59 +126,147 @@ perde_msgpack.loads_as(A, b'\x82\xA3\x6B\x65\x79\xCD\x01\x2C\xA5\x76\x61\x6C\x75
 * [ ] FlexBuffer
 * [ ] XML
 
-### Enums
+### <a name="types" /> Supported types
 
-Provides two ways of serialization.
+* `dataclass`
+* Generic types (`typing`)
+    * `Dict`
+    * `List`
+    * `Set`
+    * `FrozenSet`
+    * `Tuple` / `Tuple[()]`
+    * `Optional`
+    * `Union`
+    * `Any`
+* Enum types
+    * `Enum`
+    * `IntEnum`
+    * `Flag`
+    * `IntFlag`
+* Built-in types
+    * `int`
+    * `str`
+    * `float`
+    * `bool`
+    * `bytes`
+    * `bytearray`
+    * `dict`
+    * `list`
+    * `set`
+    * `frozenset`
+    * `tuple`
+* More built-in types
+    * `datetime.datetime`
+    * `datetime.date`
+    * `datetime.time`
+    * `decimal.Decimal`
+    * `uuid.UUID`
 
-1. Serialize and deserialize as `name`. This is the default.
-2. Serialize and deserialize as `value`. Enabled by `as_value` attribute.
+### Enum
+
+Enums are serialized as the member names.
 
 ```python
-@perde.attr(as_value = True)
-class E(enum.Enum):
-   A = 1
-   B = 2
+>>> class E(enum.Enum):
+...     X = 10
+...     Y = 'a'
 
-# This emits `1` instead of `"A"`.
-perde_json.dumps(E.A)
+>>> perde.json.dumps(E.X)
+'"X"'
+>>> perde.json.loads_as(E, '"Y"')
+<E.Y: 'a'>
+
+```
+
+By using `as_value` attribute, they are serialized as the member values.
+
+```python
+>>> @perde.attr(as_value=True)
+... class F(enum.Enum):
+...     X = 10
+...     Y = 'a'
+
+>>> perde.json.dumps(F.X)
+'10'
+>>> perde.json.loads_as(F, '"a"')
+<F.Y: 'a'>
+
 ```
 
 ### Attributes
 
-Attributes can configure the behavior of serialization/deserialization.
+Attributes allow to modify the way of serialization/deserialization.
+
+For example, to serialize/deserialize the field names as `camelCase`,
 
 ```python
-@perde.attr(rename_all = "camelCase")
-class A:
-  foo_bar: int
-  bar_bar: int = field(metadata = {"perde_skip": True})
+>>> @perde.attr(rename_all="camelCase")
+... @dataclass
+... class A:
+...     foo_bar: int
+...     bar_bar: int
 
-perde_json.dumps(A(1, 2))
-# -> {"FooBar": 1}
+>>> perde.json.dumps(A(foo_bar=1, bar_bar=2))
+'{"fooBar":1,"barBar":2}'
+>>> perde.json.loads_as(A, '{"fooBar":1,"barBar":2}')
+A(foo_bar=1, bar_bar=2)
+
 ```
+
+For another example, to skip serializing the field,
 
 ```python
-@perde.attr(rename_all = "snake_case")
-class A(enum.Enum):
-   FooBar: 1
-   BarBar: 2
+>>> @dataclass
+... class A:
+...     foo_bar: int
+...     bar_bar: int = field(metadata = {"perde_skip": True})
 
-perde_json.dumps(A.BarBar)
-# -> "bar_bar"
+>>> perde.json.dumps(A(foo_bar=1, bar_bar=2))
+'{"foo_bar":1}'
+
 ```
 
-To set attributes for the members of `Enum` or `IntEnum`. Use `perde.Enum` or `perde.IntEnum` and add dictionaries after enum members.
+Attributes can be used with enum as well.
+ 
+```python
+>>> @perde.attr(rename_all = "snake_case")
+... class A(enum.Enum):
+...     FooBar = 1
+...     BarBar = 2
+
+>>> perde.json.dumps(A.BarBar)
+'"bar_bar"'
+>>> perde.json.loads_as(A, '"foo_bar"')
+<A.FooBar: 1>
+
+```
+
+To use attributes for enum members, inherit `perde.Enum`/`perde.IntEnum` instead of `enum.Enum`/`enum.IntEnum`.
 
 ```python
-class A(perde.Enum):
-   FooBar: 1, {"perde_rename": "BooBoo"}
-   BarBar: 2
+>>> class A(perde.Enum):
+...     FooBar = 1, {"perde_rename": "BooBoo"}
+...     BarBar = 2
 
-perde_json.dumps(A.FooBar)
-# -> "BooBoo"
+>>> perde.json.dumps(A.FooBar)
+'"BooBoo"'
+>>> perde.json.loads_as(A, '"BooBoo"')
+<A.FooBar: 1>
+
 ```
 
-#### Class attributes
+#### Dataclass attributes
+
+The following attributes can be set with `dataclass`. For example,
+
+```python
+>>> @perde.attr(rename="B")
+... @dataclass
+... class A:
+...     a: int
+...     b: str
+
+```
 
 * `rename = "name"`
     * Serialize and deserialize classes with the given name instead of the name in Python.
@@ -205,7 +290,17 @@ perde_json.dumps(A.FooBar)
 * `default = True`
     * When deserialzing, any missing fields in the class are created by their default constructors.
 
-#### Class fields attributes
+#### Dataclass field attributes
+
+The following attributes can be set with fields in `dataclass`. For example,
+
+```python
+>>> @dataclass
+... class A:
+...     a: int
+...     b: str = field(metadata = {"perde_skip": True})
+
+```
 
 * `perde_rename: "name"`
     * Serialize and deserialize the field with the given name instead of the name in Python.
@@ -226,6 +321,16 @@ perde_json.dumps(A.FooBar)
 
 #### Enum attributes
 
+The following attributes can be set with enum. For example,
+
+```python
+>>> @perde.attr(rename="B")
+... class A(enum.Enum):
+...     X = 1
+...     Y = 2
+
+```
+
 * `rename = "name"`
     * Serialize and deserialize enums with the given name instead of the name in Python.
 * `rename_all = "string_case"`
@@ -241,6 +346,17 @@ perde_json.dumps(A.FooBar)
 
 #### Enum member attributes
 
+The following attributes can be set with enum members. For example,
+
+```python
+>>> class A(perde.Enum):
+...     X = 1, {"rename": "Z"}
+...     Y = 2
+
+```
+
+Note that `perde.Enum`/`perde.IntEnum` needs to be used instead of `enum.Enum`/`enum.IntEnum`.
+
 * `perde_rename: "name"`
     * Serialize and deserialize the member with the given name instead of the name in Python.
     * This option is ignored when `as_value` is set.
@@ -253,6 +369,17 @@ perde_json.dumps(A.FooBar)
 * `perde_other: True`
     * When deserializing, any unknown members result in this member.
     * This option is ignored when `as_value` is set.
+
+### Supported Python
+
+* Interpreters (CPython)
+    * 3.7
+    * 3.8
+    * 3.9
+* Platforms
+    * Linux
+    * MacOS
+    * Windows
 
 ### Benchmark
 
