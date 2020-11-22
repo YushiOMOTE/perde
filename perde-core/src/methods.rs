@@ -97,10 +97,6 @@ macro_rules! module {
 
             Ok(())
         }
-
-        pub fn import(m: &pyo3::types::PyModule) -> pyo3::PyResult<()> {
-            m.add_wrapped(pyo3::wrap_pymodule!($name))
-        }
     };
 }
 
