@@ -14,7 +14,7 @@ build-version-opt ?= $(if $(python-version),-i python$(python-version),)
 
 
 .PHONY: setup install-deps install-perde prepare-test
-.PHONY: lint pep8 mypy test bench develop build coverage publish test-publish manifest test-manifest
+.PHONY: lint pep8 mypy test doctest bench develop build coverage publish test-publish manifest test-manifest
 .PHONY: bench-histogram
 
 
