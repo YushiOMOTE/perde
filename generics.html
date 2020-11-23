@@ -1,0 +1,490 @@
+<!DOCTYPE HTML>
+<html lang="en" class="sidebar-visible no-js light">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Generics - perde</title>
+        
+        
+
+
+        <!-- Custom HTML head -->
+        
+
+
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+        
+        <link rel="icon" href="favicon.svg">
+        
+        
+        <link rel="shortcut icon" href="favicon.png">
+        
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        
+        <link rel="stylesheet" href="css/print.css" media="print">
+        
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        
+        <link rel="stylesheet" href="fonts/fonts.css">
+        
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+        
+
+        
+    </head>
+    <body>
+        <!-- Provide site root to javascript -->
+        <script type="text/javascript">
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script type="text/javascript">
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script type="text/javascript">
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('no-js')
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add('js');
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script type="text/javascript">
+            var html = document.querySelector('html');
+            var sidebar = 'hidden';
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded "><a href="usage.html"><strong aria-hidden="true">1.</strong> Usage</a></li><li class="chapter-item expanded "><a href="types.html"><strong aria-hidden="true">2.</strong> Types</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="types.html"><strong aria-hidden="true">2.1.</strong> Supported types</a></li><li class="chapter-item expanded "><a href="dataclass.html"><strong aria-hidden="true">2.2.</strong> Dataclass</a></li><li class="chapter-item expanded "><a href="generics.html" class="active"><strong aria-hidden="true">2.3.</strong> Generics</a></li><li class="chapter-item expanded "><a href="enum.html"><strong aria-hidden="true">2.4.</strong> Enum</a></li><li class="chapter-item expanded "><a href="datetime.html"><strong aria-hidden="true">2.5.</strong> Date/Time</a></li><li class="chapter-item expanded "><a href="decimal.html"><strong aria-hidden="true">2.6.</strong> Decimal</a></li><li class="chapter-item expanded "><a href="uuid.html"><strong aria-hidden="true">2.7.</strong> UUID</a></li></ol></li><li class="chapter-item expanded "><a href="attributes.html"><strong aria-hidden="true">3.</strong> Attributes</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="dataclass_attrs.html"><strong aria-hidden="true">3.1.</strong> Dataclass attributes</a></li><li class="chapter-item expanded "><a href="dataclass_field_attrs.html"><strong aria-hidden="true">3.2.</strong> Dataclass field attributes</a></li><li class="chapter-item expanded "><a href="enum_attrs.html"><strong aria-hidden="true">3.3.</strong> Enum attributes</a></li><li class="chapter-item expanded "><a href="enum_mem_attrs.html"><strong aria-hidden="true">3.4.</strong> Enum member attributes</a></li></ol></li><li class="chapter-item expanded "><a href="benchmark.html"><strong aria-hidden="true">4.</strong> Benchmark</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky bordered">
+                    <div class="left-buttons">
+                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </button>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light (default)</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                        
+                    </div>
+
+                    <h1 class="menu-title">perde</h1>
+
+                    <div class="right-buttons">
+                        
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        
+                        
+                    </div>
+                </div>
+
+                
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" name="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+                
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script type="text/javascript">
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1><a class="header" href="#generic-types" id="generic-types">Generic types</a></h1>
+<!--
+>>> from dataclasses import dataclass, field
+>>> import perde
+>>> import typing
+
+-->
+<h2><a class="header" href="#dictionary" id="dictionary">Dictionary</a></h2>
+<p>The dictonary type like <code>dict</code>, <code>typing.Dict</code> corresponds to a map pattern in the serialized format (e.g. JSON map). <code>perde</code> supports the following form of dictionary types:</p>
+<ul>
+<li>Built-in <code>dict</code></li>
+<li><code>typing.Dict</code> without subscription</li>
+<li><code>typing.Dict</code> with subscription</li>
+</ul>
+<p>Using built-in <code>dict</code>,</p>
+<pre><code class="language-python">&gt;&gt;&gt; @dataclass
+... class A:
+...     a: str
+...     b: dict
+
+&gt;&gt;&gt; perde.json.loads_as(A, '{&quot;a&quot;: &quot;x&quot;, &quot;b&quot;: {&quot;x&quot;: 3, &quot;y&quot;: &quot;hey&quot;, &quot;z&quot;: true}}')
+A(a='x', b={'x': 3, 'y': 'hey', 'z': True})
+
+</code></pre>
+<p>Using <code>typing.Dict</code> without subscription,</p>
+<pre><code class="language-python">&gt;&gt;&gt; @dataclass
+... class A:
+...     a: str
+...     b: typing.Dict
+
+&gt;&gt;&gt; perde.json.loads_as(A, '{&quot;a&quot;: &quot;x&quot;, &quot;b&quot;: {&quot;x&quot;: 3, &quot;y&quot;: &quot;hey&quot;, &quot;z&quot;: true}}')
+A(a='x', b={'x': 3, 'y': 'hey', 'z': True})
+
+</code></pre>
+<p>Using <code>typing.Dict</code> with subscription,</p>
+<pre><code class="language-python">&gt;&gt;&gt; @dataclass
+... class A:
+...     a: str
+...     b: typing.Dict[str, float]
+
+&gt;&gt;&gt; perde.json.loads_as(A, '{&quot;a&quot;: &quot;x&quot;, &quot;b&quot;: {&quot;x&quot;: 3.0, &quot;y&quot;: 1.4, &quot;z&quot;: 1.5}}')
+A(a='x', b={'x': 3.0, 'y': 1.4, 'z': 1.5})
+
+</code></pre>
+<h2><a class="header" href="#list" id="list">List</a></h2>
+<p>The list type like <code>list</code>, <code>typing.List</code> corresponds to a list or array pattern in the serialized format (e.g. JSON array). <code>perde</code> supports the following form of list types:</p>
+<ul>
+<li>Built-in <code>list</code></li>
+<li><code>typing.List</code> without subscription</li>
+<li><code>typing.List</code> with subscription</li>
+</ul>
+<p>Using built-in <code>list</code>,</p>
+<pre><code class="language-python">&gt;&gt;&gt; @dataclass
+... class A:
+...     a: str
+...     b: list
+
+&gt;&gt;&gt; perde.json.loads_as(A, '{&quot;a&quot;: &quot;x&quot;, &quot;b&quot;: [1, 2, 3]}')
+A(a='x', b=[1, 2, 3])
+
+</code></pre>
+<p>Using <code>typing.List</code> without subscription,</p>
+<pre><code class="language-python">&gt;&gt;&gt; @dataclass
+... class A:
+...     a: str
+...     b: typing.List
+
+&gt;&gt;&gt; perde.json.loads_as(A, '{&quot;a&quot;: &quot;x&quot;, &quot;b&quot;: [1, 2, 3]}')
+A(a='x', b=[1, 2, 3])
+
+</code></pre>
+<p>Using <code>typing.List</code> with subscription,</p>
+<pre><code class="language-python">&gt;&gt;&gt; @dataclass
+... class A:
+...     a: str
+...     b: typing.List[int]
+
+&gt;&gt;&gt; perde.json.loads_as(A, '{&quot;a&quot;: &quot;x&quot;, &quot;b&quot;: [1, 2, 3]}')
+A(a='x', b=[1, 2, 3])
+
+</code></pre>
+<h2><a class="header" href="#set" id="set">Set</a></h2>
+<p>The set type like <code>set</code>, <code>typing.Set</code> corresponds to a list or array pattern in the serialized format (e.g. JSON array). <code>perde</code> supports the following form of set types:</p>
+<ul>
+<li>Built-in <code>set</code></li>
+<li>Built-in <code>frozenset</code></li>
+<li><code>typing.Set</code> with/without subscription</li>
+<li><code>typing.FrozenSet</code> with/without subscription</li>
+</ul>
+<p>Using built-in <code>set</code>,</p>
+<pre><code class="language-python">&gt;&gt;&gt; @dataclass
+... class A:
+...     a: str
+...     b: set
+
+&gt;&gt;&gt; perde.json.loads_as(A, '{&quot;a&quot;: &quot;x&quot;, &quot;b&quot;: [1, 2, 3]}')
+A(a='x', b={1, 2, 3})
+
+</code></pre>
+<p>Using <code>typing.Set</code> without subscription,</p>
+<pre><code class="language-python">&gt;&gt;&gt; @dataclass
+... class A:
+...     a: str
+...     b: typing.Set
+
+&gt;&gt;&gt; perde.json.loads_as(A, '{&quot;a&quot;: &quot;x&quot;, &quot;b&quot;: [1, 2, 3]}')
+A(a='x', b={1, 2, 3})
+
+</code></pre>
+<p>Using <code>typing.Set</code> with subscription,</p>
+<pre><code class="language-python">&gt;&gt;&gt; @dataclass
+... class A:
+...     a: str
+...     b: typing.Set[int]
+
+&gt;&gt;&gt; perde.json.loads_as(A, '{&quot;a&quot;: &quot;x&quot;, &quot;b&quot;: [1, 2, 3]}')
+A(a='x', b={1, 2, 3})
+
+</code></pre>
+<p><code>frozenset</code> and <code>typing.FrozenSet</code> work the same as <code>set</code> and <code>typing.Set</code>.</p>
+<h2><a class="header" href="#tuple" id="tuple">Tuple</a></h2>
+<p>The tuple type like <code>tuple</code>, <code>typing.Tuple</code> corresponds to a list or array pattern in the serialized format (e.g. JSON array). <code>perde</code> supports the following form of set types:</p>
+<ul>
+<li>Built-in <code>tuple</code></li>
+<li><code>typing.Tuple</code> with/without subscription</li>
+</ul>
+<p>Using built-in <code>tuple</code>,</p>
+<pre><code class="language-python">&gt;&gt;&gt; @dataclass
+... class A:
+...     a: str
+...     b: tuple
+
+&gt;&gt;&gt; perde.json.loads_as(A, '{&quot;a&quot;: &quot;x&quot;, &quot;b&quot;: [1, true, &quot;hello&quot;]}')
+A(a='x', b=(1, True, 'hello'))
+
+</code></pre>
+<p>Using <code>typing.Tuple</code> without subscription,</p>
+<pre><code class="language-python">&gt;&gt;&gt; @dataclass
+... class A:
+...     a: str
+...     b: typing.Tuple
+
+&gt;&gt;&gt; perde.json.loads_as(A, '{&quot;a&quot;: &quot;x&quot;, &quot;b&quot;: [1, true, &quot;hello&quot;]}')
+A(a='x', b=(1, True, 'hello'))
+
+</code></pre>
+<p>Using <code>typing.Tuple</code> with subscription,</p>
+<pre><code class="language-python">&gt;&gt;&gt; @dataclass
+... class A:
+...     a: str
+...     b: typing.Tuple[int, bool, str]
+
+&gt;&gt;&gt; perde.json.loads_as(A, '{&quot;a&quot;: &quot;x&quot;, &quot;b&quot;: [1, true, &quot;hello&quot;]}')
+A(a='x', b=(1, True, 'hello'))
+
+</code></pre>
+<h3><a class="header" href="#empty-tuple" id="empty-tuple">Empty tuple</a></h3>
+<p>Use <code>typing.Tuple[()]</code> to explicitly specify the empty tuple.</p>
+<pre><code class="language-python">&gt;&gt;&gt; @dataclass
+... class A:
+...     a: str
+...     b: typing.Tuple[()]
+
+&gt;&gt;&gt; perde.json.loads_as(A, '{&quot;a&quot;: &quot;x&quot;, &quot;b&quot;: []}')
+A(a='x', b=())
+
+</code></pre>
+<h2><a class="header" href="#optional" id="optional">Optional</a></h2>
+<p><code>typing.Optional</code> allows to parse the field optionally.</p>
+<pre><code class="language-python">&gt;&gt;&gt; @dataclass
+... class A:
+...     a: str
+...     b: typing.Optional[str]
+
+&gt;&gt;&gt; perde.json.loads_as(A, '{&quot;a&quot;: &quot;x&quot;}')
+A(a='x', b=None)
+
+</code></pre>
+<p>If the format supports <code>None</code> value (e.g. <code>null</code> in JSON), the <code>None</code> value is accepted.</p>
+<pre><code class="language-python">&gt;&gt;&gt; perde.json.loads_as(A, '{&quot;a&quot;: &quot;x&quot;, &quot;b&quot;: null}')
+A(a='x', b=None)
+
+</code></pre>
+<p>Note that serialization results include <code>null</code> explicitly.</p>
+<pre><code class="language-python">&gt;&gt;&gt; perde.json.dumps(A(a='x', b=None))
+'{&quot;a&quot;:&quot;x&quot;,&quot;b&quot;:null}'
+
+</code></pre>
+<p>As the other generic types, <code>typing.Optional</code> without subscription is supported,</p>
+<pre><code class="language-python">&gt;&gt;&gt; @dataclass
+... class A:
+...     a: str
+...     b: typing.Optional
+
+&gt;&gt;&gt; perde.json.loads_as(A, '{&quot;a&quot;: &quot;x&quot;}')
+A(a='x', b=None)
+
+</code></pre>
+<h2><a class="header" href="#union" id="union">Union</a></h2>
+<p><code>typing.Union</code> is used when there're multiple possible types for one field.</p>
+<pre><code class="language-python">&gt;&gt;&gt; @dataclass
+... class A:
+...     a: str
+...     b: typing.Union[str, int]
+
+&gt;&gt;&gt; perde.json.loads_as(A, '{&quot;a&quot;: &quot;x&quot;, &quot;b&quot;: 3}')
+A(a='x', b=3)
+
+&gt;&gt;&gt; perde.json.loads_as(A, '{&quot;a&quot;: &quot;x&quot;, &quot;b&quot;: &quot;three&quot;}')
+A(a='x', b='three')
+
+</code></pre>
+<p>As the other generic types, <code>typing.Union</code> without subscription is allowed but it accepts anything including <code>None</code> value, also making the field optional.</p>
+<pre><code class="language-python">&gt;&gt;&gt; @dataclass
+... class A:
+...     a: str
+...     b: typing.Union
+
+&gt;&gt;&gt; perde.json.loads_as(A, '{&quot;a&quot;: &quot;x&quot;, &quot;b&quot;: &quot;anything&quot;}')
+A(a='x', b='anything')
+
+</code></pre>
+<p>The field is optional.</p>
+<pre><code class="language-python">&gt;&gt;&gt; perde.json.loads_as(A, '{&quot;a&quot;: &quot;x&quot;}')
+A(a='x', b=None)
+
+</code></pre>
+<p>The field accepts <code>None</code> value.</p>
+<pre><code class="language-python">&gt;&gt;&gt; perde.json.loads_as(A, '{&quot;a&quot;: &quot;x&quot;, &quot;b&quot;: null}')
+A(a='x', b=None)
+
+</code></pre>
+<p><code>typing.Union</code> cannot be used in schema-less formats which itself don't have type information.</p>
+<h2><a class="header" href="#any" id="any">Any</a></h2>
+<p><code>typing.Any</code> accepts any types including <code>None</code>, also making the field optional.</p>
+<pre><code class="language-python">&gt;&gt;&gt; @dataclass
+... class A:
+...     a: str
+...     b: typing.Any
+
+&gt;&gt;&gt; perde.json.loads_as(A, '{&quot;a&quot;: &quot;x&quot;, &quot;b&quot;: &quot;anything&quot;}')
+A(a='x', b='anything')
+
+</code></pre>
+<p>The field is optional.</p>
+<pre><code class="language-python">&gt;&gt;&gt; perde.json.loads_as(A, '{&quot;a&quot;: &quot;x&quot;}')
+A(a='x', b=None)
+
+</code></pre>
+<p>The field accepts <code>None</code> value.</p>
+<pre><code class="language-python">&gt;&gt;&gt; perde.json.loads_as(A, '{&quot;a&quot;: &quot;x&quot;, &quot;b&quot;: null}')
+A(a='x', b=None)
+
+</code></pre>
+<p><code>typing.Optional</code> and <code>typing.Any</code> without subscription behave exactly same as <code>typing.Any</code>.
+<code>typing.Any</code> cannot be used in schema-less formats which itself don't have type information.</p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                        
+                            <a rel="prev" href="dataclass.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+                        
+
+                        
+                            <a rel="next" href="enum.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+                        
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                
+                    <a rel="prev" href="dataclass.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+                
+
+                
+                    <a rel="next" href="enum.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+                
+            </nav>
+
+        </div>
+
+        
+
+        
+
+        
+
+        
+        <script type="text/javascript">
+            window.playground_copyable = true;
+        </script>
+        
+
+        
+
+        
+        <script src="elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="mark.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="searcher.js" type="text/javascript" charset="utf-8"></script>
+        
+
+        <script src="clipboard.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="highlight.js" type="text/javascript" charset="utf-8"></script>
+        <script src="book.js" type="text/javascript" charset="utf-8"></script>
+
+        <!-- Custom JS scripts -->
+        
+
+        
+
+    </body>
+</html>

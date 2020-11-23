@@ -1,0 +1,1199 @@
+<!DOCTYPE HTML>
+<html lang="en" class="sidebar-visible no-js light">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>perde</title>
+        
+        <meta name="robots" content="noindex" />
+        
+        
+
+
+        <!-- Custom HTML head -->
+        
+
+
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+        
+        <link rel="icon" href="favicon.svg">
+        
+        
+        <link rel="shortcut icon" href="favicon.png">
+        
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        
+        <link rel="stylesheet" href="css/print.css" media="print">
+        
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        
+        <link rel="stylesheet" href="fonts/fonts.css">
+        
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+        
+
+        
+    </head>
+    <body>
+        <!-- Provide site root to javascript -->
+        <script type="text/javascript">
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script type="text/javascript">
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script type="text/javascript">
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('no-js')
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add('js');
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script type="text/javascript">
+            var html = document.querySelector('html');
+            var sidebar = 'hidden';
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded "><a href="usage.html"><strong aria-hidden="true">1.</strong> Usage</a></li><li class="chapter-item expanded "><a href="types.html"><strong aria-hidden="true">2.</strong> Types</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="types.html"><strong aria-hidden="true">2.1.</strong> Supported types</a></li><li class="chapter-item expanded "><a href="dataclass.html"><strong aria-hidden="true">2.2.</strong> Dataclass</a></li><li class="chapter-item expanded "><a href="generics.html"><strong aria-hidden="true">2.3.</strong> Generics</a></li><li class="chapter-item expanded "><a href="enum.html"><strong aria-hidden="true">2.4.</strong> Enum</a></li><li class="chapter-item expanded "><a href="datetime.html"><strong aria-hidden="true">2.5.</strong> Date/Time</a></li><li class="chapter-item expanded "><a href="decimal.html"><strong aria-hidden="true">2.6.</strong> Decimal</a></li><li class="chapter-item expanded "><a href="uuid.html"><strong aria-hidden="true">2.7.</strong> UUID</a></li></ol></li><li class="chapter-item expanded "><a href="attributes.html"><strong aria-hidden="true">3.</strong> Attributes</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="dataclass_attrs.html"><strong aria-hidden="true">3.1.</strong> Dataclass attributes</a></li><li class="chapter-item expanded "><a href="dataclass_field_attrs.html"><strong aria-hidden="true">3.2.</strong> Dataclass field attributes</a></li><li class="chapter-item expanded "><a href="enum_attrs.html"><strong aria-hidden="true">3.3.</strong> Enum attributes</a></li><li class="chapter-item expanded "><a href="enum_mem_attrs.html"><strong aria-hidden="true">3.4.</strong> Enum member attributes</a></li></ol></li><li class="chapter-item expanded "><a href="benchmark.html"><strong aria-hidden="true">4.</strong> Benchmark</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky bordered">
+                    <div class="left-buttons">
+                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </button>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light (default)</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                        
+                    </div>
+
+                    <h1 class="menu-title">perde</h1>
+
+                    <div class="right-buttons">
+                        
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        
+                        
+                    </div>
+                </div>
+
+                
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" name="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+                
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script type="text/javascript">
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1><a class="header" href="#usage" id="usage">Usage</a></h1>
+<!--
+>>> from dataclasses import dataclass, field
+>>> import enum
+
+-->
+<p>Install and import <code>perde</code>.</p>
+<pre><code class="language-sh">pip install perde
+</code></pre>
+<pre><code class="language-python">&gt;&gt;&gt; import perde
+
+</code></pre>
+<p>Assume you have a dataclass,</p>
+<pre><code class="language-python">&gt;&gt;&gt; @dataclass
+... class A:
+...     a: int
+...     b: str
+
+</code></pre>
+<p>To serialize class <code>A</code> to JSON,</p>
+<pre><code class="language-python">&gt;&gt;&gt; perde.json.dumps(A(a=10, b='x'))
+'{&quot;a&quot;:10,&quot;b&quot;:&quot;x&quot;}'
+
+</code></pre>
+<p>To deserialize JSON to class <code>A</code>,</p>
+<pre><code class="language-python">&gt;&gt;&gt; perde.json.loads_as(A, '{&quot;a&quot;:10,&quot;b&quot;:&quot;x&quot;}')
+A(a=10, b='x')
+
+</code></pre>
+<p>To deserialize JSON to a dictionary,</p>
+<pre><code class="language-python">&gt;&gt;&gt; perde.json.loads('{&quot;a&quot;:10,&quot;b&quot;:&quot;x&quot;}')
+{'a': 10, 'b': 'x'}
+
+</code></pre>
+<p>More formats are supported.</p>
+<pre><code class="language-python">&gt;&gt;&gt; perde.yaml.dumps(A(10, &quot;x&quot;))
+'---\na: 10\nb: x'
+&gt;&gt;&gt; perde.yaml.loads_as(A, '---\na: 10\nb: x')
+A(a=10, b='x')
+
+</code></pre>
+<pre><code class="language-python">&gt;&gt;&gt; perde.msgpack.dumps(A(10, &quot;x&quot;))
+b'\x82\xa1a\n\xa1b\xa1x'
+&gt;&gt;&gt; perde.msgpack.loads_as(A, b'\x82\xa1a\n\xa1b\xa1x')
+A(a=10, b='x')
+
+</code></pre>
+<h3><a class="header" href="#supported-formats" id="supported-formats">Supported formats</a></h3>
+<ul>
+<li><input disabled="" type="checkbox" checked=""/>
+JSON (<code>perde.json</code>)</li>
+<li><input disabled="" type="checkbox" checked=""/>
+YAML (<code>perde.yaml</code>)</li>
+<li><input disabled="" type="checkbox" checked=""/>
+MessagePack (<code>perde.msgpack</code>)</li>
+<li><input disabled="" type="checkbox" checked=""/>
+TOML (<code>perde.toml</code>)</li>
+<li><input disabled="" type="checkbox"/>
+CBOR</li>
+<li><input disabled="" type="checkbox"/>
+Pickle</li>
+<li><input disabled="" type="checkbox"/>
+RON</li>
+<li><input disabled="" type="checkbox"/>
+BSON</li>
+<li><input disabled="" type="checkbox"/>
+Avro</li>
+<li><input disabled="" type="checkbox"/>
+JSON5</li>
+<li><input disabled="" type="checkbox"/>
+Postcard</li>
+<li><input disabled="" type="checkbox"/>
+URL</li>
+<li><input disabled="" type="checkbox"/>
+Environment variables</li>
+<li><input disabled="" type="checkbox"/>
+AWS Parameter Store</li>
+<li><input disabled="" type="checkbox"/>
+S-expressions</li>
+<li><input disabled="" type="checkbox"/>
+D-Bus</li>
+<li><input disabled="" type="checkbox"/>
+FlexBuffer</li>
+<li><input disabled="" type="checkbox"/>
+XML</li>
+</ul>
+<p>All the formats provide the three methods:</p>
+<ul>
+<li><code>dumps(objects)</code>: Serialize <code>objects</code> in the format.</li>
+<li><code>loads(data)</code>: Deserialize <code>data</code> to python objects.</li>
+<li><code>loads_as(type, input)</code>: Deserialize <code>data</code> to python objects as specified <code>type</code>.</li>
+</ul>
+<h1><a class="header" href="#supported-types" id="supported-types">Supported types</a></h1>
+<!--
+>>> from dataclasses import dataclass, field
+>>> import perde
+>>> import typing
+
+-->
+<p><code>perde</code> supports the following types.</p>
+<ul>
+<li>Built-in types
+<ul>
+<li><code>int</code></li>
+<li><code>str</code></li>
+<li><code>float</code></li>
+<li><code>bool</code></li>
+<li><code>bytes</code></li>
+<li><code>bytearray</code></li>
+<li><code>dict</code></li>
+<li><code>list</code></li>
+<li><code>set</code></li>
+<li><code>frozenset</code></li>
+<li><code>tuple</code></li>
+</ul>
+</li>
+<li>Generic types
+<ul>
+<li><code>typing.Dict</code></li>
+<li><code>typing.List</code></li>
+<li><code>typing.Set</code></li>
+<li><code>typing.FrozenSet</code></li>
+<li><code>typing.Tuple</code></li>
+<li><code>typing.Optional</code></li>
+<li><code>typing.Union</code></li>
+<li><code>typing.Any</code></li>
+</ul>
+</li>
+<li>Enum types
+<ul>
+<li><code>Enum</code></li>
+<li><code>IntEnum</code></li>
+<li><code>Flag</code></li>
+<li><code>IntFlag</code></li>
+</ul>
+</li>
+<li>More built-in types
+<ul>
+<li><code>datetime.datetime</code></li>
+<li><code>datetime.date</code></li>
+<li><code>datetime.time</code></li>
+<li><code>decimal.Decimal</code></li>
+<li><code>uuid.UUID</code></li>
+</ul>
+</li>
+<li><code>dataclass</code></li>
+</ul>
+<h2><a class="header" href="#deserialization" id="deserialization">Deserialization</a></h2>
+<p>The supported types can be used to specify as which type the input is parsed.
+They can be directly set to the first argument of <code>loads_as</code> methods, or can be the member type of <code>dataclass</code>.</p>
+<h3><a class="header" href="#directly-set-to-loads_as" id="directly-set-to-loads_as">Directly set to <code>loads_as</code></a></h3>
+<p>To parse a JSON array as <code>list</code>,</p>
+<pre><code class="language-python">&gt;&gt;&gt; perde.json.loads_as(list, '[97, 98, 99]')
+[97, 98, 99]
+
+</code></pre>
+<p>To parse a JSON array as <code>bytes</code>,</p>
+<pre><code class="language-python">&gt;&gt;&gt; perde.json.loads_as(bytes, '[97, 98, 99]')
+b'abc'
+
+</code></pre>
+<p>To parse a JSON array as a <code>set</code>,</p>
+<pre><code class="language-python">&gt;&gt;&gt; perde.json.loads_as(typing.Set[int], '[97, 98, 99]')
+{97, 98, 99}
+
+</code></pre>
+<h3><a class="header" href="#as-a-member-of-dataclass" id="as-a-member-of-dataclass">As a member of <code>dataclass</code></a></h3>
+<pre><code class="language-python">&gt;&gt;&gt; @dataclass
+... class A:
+...     a: str
+...     b: bytes
+...     c: typing.Dict[str, int]
+
+&gt;&gt;&gt; perde.json.loads_as(A, '{&quot;a&quot;: &quot;x&quot;, &quot;b&quot;: [97, 98, 99], &quot;c&quot;: {&quot;p&quot;: 4, &quot;q&quot;: 5}}')
+A(a='x', b=b'abc', c={'p': 4, 'q': 5})
+
+</code></pre>
+<p>Deserializing incompatible types raises an exception from the format module.</p>
+<pre><code class="language-python">&gt;&gt;&gt; @dataclass
+... class A:
+...     a: int
+...     b: str
+
+&gt;&gt;&gt; perde.json.loads_as(A, '{&quot;a&quot;: 3, &quot;b&quot;: 4}')
+Traceback (most recent call last):
+  File &quot;&lt;stdin&gt;&quot;, line 1, in &lt;module&gt;
+json.JsonError: invalid type: integer `4`, expected a string at line 1 column 15
+
+</code></pre>
+<h2><a class="header" href="#serialization" id="serialization">Serialization</a></h2>
+<p>The instances of the supported types can be serialized by <code>dumps</code> methods.</p>
+<p>To serialize <code>list</code> to a JSON array,</p>
+<pre><code class="language-python">&gt;&gt;&gt; perde.json.dumps([97, 98, 99])
+'[97,98,99]'
+
+</code></pre>
+<p>To serialize <code>bytes</code> to a JSON array,</p>
+<pre><code class="language-python">&gt;&gt;&gt; perde.json.dumps(b'abc')
+'[97,98,99]'
+
+</code></pre>
+<p>To serialize <code>set</code> to a JSON array,</p>
+<pre><code class="language-python">&gt;&gt; perde.json.dumps({97, 98, 99})
+'[97,98,99]'
+
+</code></pre>
+<h1><a class="header" href="#supported-types-1" id="supported-types-1">Supported types</a></h1>
+<!--
+>>> from dataclasses import dataclass, field
+>>> import perde
+>>> import typing
+
+-->
+<p><code>perde</code> supports the following types.</p>
+<ul>
+<li>Built-in types
+<ul>
+<li><code>int</code></li>
+<li><code>str</code></li>
+<li><code>float</code></li>
+<li><code>bool</code></li>
+<li><code>bytes</code></li>
+<li><code>bytearray</code></li>
+<li><code>dict</code></li>
+<li><code>list</code></li>
+<li><code>set</code></li>
+<li><code>frozenset</code></li>
+<li><code>tuple</code></li>
+</ul>
+</li>
+<li>Generic types
+<ul>
+<li><code>typing.Dict</code></li>
+<li><code>typing.List</code></li>
+<li><code>typing.Set</code></li>
+<li><code>typing.FrozenSet</code></li>
+<li><code>typing.Tuple</code></li>
+<li><code>typing.Optional</code></li>
+<li><code>typing.Union</code></li>
+<li><code>typing.Any</code></li>
+</ul>
+</li>
+<li>Enum types
+<ul>
+<li><code>Enum</code></li>
+<li><code>IntEnum</code></li>
+<li><code>Flag</code></li>
+<li><code>IntFlag</code></li>
+</ul>
+</li>
+<li>More built-in types
+<ul>
+<li><code>datetime.datetime</code></li>
+<li><code>datetime.date</code></li>
+<li><code>datetime.time</code></li>
+<li><code>decimal.Decimal</code></li>
+<li><code>uuid.UUID</code></li>
+</ul>
+</li>
+<li><code>dataclass</code></li>
+</ul>
+<h2><a class="header" href="#deserialization-1" id="deserialization-1">Deserialization</a></h2>
+<p>The supported types can be used to specify as which type the input is parsed.
+They can be directly set to the first argument of <code>loads_as</code> methods, or can be the member type of <code>dataclass</code>.</p>
+<h3><a class="header" href="#directly-set-to-loads_as-1" id="directly-set-to-loads_as-1">Directly set to <code>loads_as</code></a></h3>
+<p>To parse a JSON array as <code>list</code>,</p>
+<pre><code class="language-python">&gt;&gt;&gt; perde.json.loads_as(list, '[97, 98, 99]')
+[97, 98, 99]
+
+</code></pre>
+<p>To parse a JSON array as <code>bytes</code>,</p>
+<pre><code class="language-python">&gt;&gt;&gt; perde.json.loads_as(bytes, '[97, 98, 99]')
+b'abc'
+
+</code></pre>
+<p>To parse a JSON array as a <code>set</code>,</p>
+<pre><code class="language-python">&gt;&gt;&gt; perde.json.loads_as(typing.Set[int], '[97, 98, 99]')
+{97, 98, 99}
+
+</code></pre>
+<h3><a class="header" href="#as-a-member-of-dataclass-1" id="as-a-member-of-dataclass-1">As a member of <code>dataclass</code></a></h3>
+<pre><code class="language-python">&gt;&gt;&gt; @dataclass
+... class A:
+...     a: str
+...     b: bytes
+...     c: typing.Dict[str, int]
+
+&gt;&gt;&gt; perde.json.loads_as(A, '{&quot;a&quot;: &quot;x&quot;, &quot;b&quot;: [97, 98, 99], &quot;c&quot;: {&quot;p&quot;: 4, &quot;q&quot;: 5}}')
+A(a='x', b=b'abc', c={'p': 4, 'q': 5})
+
+</code></pre>
+<p>Deserializing incompatible types raises an exception from the format module.</p>
+<pre><code class="language-python">&gt;&gt;&gt; @dataclass
+... class A:
+...     a: int
+...     b: str
+
+&gt;&gt;&gt; perde.json.loads_as(A, '{&quot;a&quot;: 3, &quot;b&quot;: 4}')
+Traceback (most recent call last):
+  File &quot;&lt;stdin&gt;&quot;, line 1, in &lt;module&gt;
+json.JsonError: invalid type: integer `4`, expected a string at line 1 column 15
+
+</code></pre>
+<h2><a class="header" href="#serialization-1" id="serialization-1">Serialization</a></h2>
+<p>The instances of the supported types can be serialized by <code>dumps</code> methods.</p>
+<p>To serialize <code>list</code> to a JSON array,</p>
+<pre><code class="language-python">&gt;&gt;&gt; perde.json.dumps([97, 98, 99])
+'[97,98,99]'
+
+</code></pre>
+<p>To serialize <code>bytes</code> to a JSON array,</p>
+<pre><code class="language-python">&gt;&gt;&gt; perde.json.dumps(b'abc')
+'[97,98,99]'
+
+</code></pre>
+<p>To serialize <code>set</code> to a JSON array,</p>
+<pre><code class="language-python">&gt;&gt; perde.json.dumps({97, 98, 99})
+'[97,98,99]'
+
+</code></pre>
+<h1><a class="header" href="#dataclass" id="dataclass">Dataclass</a></h1>
+<!--
+>>> from dataclasses import dataclass, field
+>>> import perde
+
+-->
+<p><code>perde</code> supports serializing/deserializing <code>dataclass</code>. It's serialized to a map in the serialized format (e.g. JSON map).</p>
+<p>To serialize the dataclass <code>A</code> to JSON,</p>
+<pre><code class="language-python">&gt;&gt;&gt; @dataclass
+... class A:
+...     a: str
+...     b: int
+
+&gt;&gt;&gt; perde.json.dumps(A(&quot;x&quot;, 10))
+'{&quot;a&quot;:&quot;x&quot;,&quot;b&quot;:10}'
+
+</code></pre>
+<p>To deserialize JSON back to <code>A</code>,</p>
+<pre><code class="language-python">&gt;&gt;&gt; perde.json.loads_as(A, '{&quot;a&quot;:&quot;x&quot;,&quot;b&quot;:10}')
+A(a='x', b=10)
+
+</code></pre>
+<p>Nesting is allowed. To serialize the dataclass <code>B</code> which contains <code>A</code>,</p>
+<pre><code class="language-python">&gt;&gt;&gt; @dataclass
+... class B:
+...     a: float
+...     b: A
+
+&gt;&gt;&gt; perde.json.dumps(B(3.33, A(&quot;x&quot;, 10)))
+'{&quot;a&quot;:3.33,&quot;b&quot;:{&quot;a&quot;:&quot;x&quot;,&quot;b&quot;:10}}'
+
+</code></pre>
+<p>To deserialize <code>B</code>,</p>
+<pre><code class="language-python">&gt;&gt;&gt; perde.json.loads_as(B, '{&quot;a&quot;:3.33,&quot;b&quot;:{&quot;a&quot;:&quot;x&quot;,&quot;b&quot;:10}}')
+B(a=3.33, b=A(a='x', b=10))
+
+</code></pre>
+<h1><a class="header" href="#generic-types" id="generic-types">Generic types</a></h1>
+<!--
+>>> from dataclasses import dataclass, field
+>>> import perde
+>>> import typing
+
+-->
+<h2><a class="header" href="#dictionary" id="dictionary">Dictionary</a></h2>
+<p>The dictonary type like <code>dict</code>, <code>typing.Dict</code> corresponds to a map pattern in the serialized format (e.g. JSON map). <code>perde</code> supports the following form of dictionary types:</p>
+<ul>
+<li>Built-in <code>dict</code></li>
+<li><code>typing.Dict</code> without subscription</li>
+<li><code>typing.Dict</code> with subscription</li>
+</ul>
+<p>Using built-in <code>dict</code>,</p>
+<pre><code class="language-python">&gt;&gt;&gt; @dataclass
+... class A:
+...     a: str
+...     b: dict
+
+&gt;&gt;&gt; perde.json.loads_as(A, '{&quot;a&quot;: &quot;x&quot;, &quot;b&quot;: {&quot;x&quot;: 3, &quot;y&quot;: &quot;hey&quot;, &quot;z&quot;: true}}')
+A(a='x', b={'x': 3, 'y': 'hey', 'z': True})
+
+</code></pre>
+<p>Using <code>typing.Dict</code> without subscription,</p>
+<pre><code class="language-python">&gt;&gt;&gt; @dataclass
+... class A:
+...     a: str
+...     b: typing.Dict
+
+&gt;&gt;&gt; perde.json.loads_as(A, '{&quot;a&quot;: &quot;x&quot;, &quot;b&quot;: {&quot;x&quot;: 3, &quot;y&quot;: &quot;hey&quot;, &quot;z&quot;: true}}')
+A(a='x', b={'x': 3, 'y': 'hey', 'z': True})
+
+</code></pre>
+<p>Using <code>typing.Dict</code> with subscription,</p>
+<pre><code class="language-python">&gt;&gt;&gt; @dataclass
+... class A:
+...     a: str
+...     b: typing.Dict[str, float]
+
+&gt;&gt;&gt; perde.json.loads_as(A, '{&quot;a&quot;: &quot;x&quot;, &quot;b&quot;: {&quot;x&quot;: 3.0, &quot;y&quot;: 1.4, &quot;z&quot;: 1.5}}')
+A(a='x', b={'x': 3.0, 'y': 1.4, 'z': 1.5})
+
+</code></pre>
+<h2><a class="header" href="#list" id="list">List</a></h2>
+<p>The list type like <code>list</code>, <code>typing.List</code> corresponds to a list or array pattern in the serialized format (e.g. JSON array). <code>perde</code> supports the following form of list types:</p>
+<ul>
+<li>Built-in <code>list</code></li>
+<li><code>typing.List</code> without subscription</li>
+<li><code>typing.List</code> with subscription</li>
+</ul>
+<p>Using built-in <code>list</code>,</p>
+<pre><code class="language-python">&gt;&gt;&gt; @dataclass
+... class A:
+...     a: str
+...     b: list
+
+&gt;&gt;&gt; perde.json.loads_as(A, '{&quot;a&quot;: &quot;x&quot;, &quot;b&quot;: [1, 2, 3]}')
+A(a='x', b=[1, 2, 3])
+
+</code></pre>
+<p>Using <code>typing.List</code> without subscription,</p>
+<pre><code class="language-python">&gt;&gt;&gt; @dataclass
+... class A:
+...     a: str
+...     b: typing.List
+
+&gt;&gt;&gt; perde.json.loads_as(A, '{&quot;a&quot;: &quot;x&quot;, &quot;b&quot;: [1, 2, 3]}')
+A(a='x', b=[1, 2, 3])
+
+</code></pre>
+<p>Using <code>typing.List</code> with subscription,</p>
+<pre><code class="language-python">&gt;&gt;&gt; @dataclass
+... class A:
+...     a: str
+...     b: typing.List[int]
+
+&gt;&gt;&gt; perde.json.loads_as(A, '{&quot;a&quot;: &quot;x&quot;, &quot;b&quot;: [1, 2, 3]}')
+A(a='x', b=[1, 2, 3])
+
+</code></pre>
+<h2><a class="header" href="#set" id="set">Set</a></h2>
+<p>The set type like <code>set</code>, <code>typing.Set</code> corresponds to a list or array pattern in the serialized format (e.g. JSON array). <code>perde</code> supports the following form of set types:</p>
+<ul>
+<li>Built-in <code>set</code></li>
+<li>Built-in <code>frozenset</code></li>
+<li><code>typing.Set</code> with/without subscription</li>
+<li><code>typing.FrozenSet</code> with/without subscription</li>
+</ul>
+<p>Using built-in <code>set</code>,</p>
+<pre><code class="language-python">&gt;&gt;&gt; @dataclass
+... class A:
+...     a: str
+...     b: set
+
+&gt;&gt;&gt; perde.json.loads_as(A, '{&quot;a&quot;: &quot;x&quot;, &quot;b&quot;: [1, 2, 3]}')
+A(a='x', b={1, 2, 3})
+
+</code></pre>
+<p>Using <code>typing.Set</code> without subscription,</p>
+<pre><code class="language-python">&gt;&gt;&gt; @dataclass
+... class A:
+...     a: str
+...     b: typing.Set
+
+&gt;&gt;&gt; perde.json.loads_as(A, '{&quot;a&quot;: &quot;x&quot;, &quot;b&quot;: [1, 2, 3]}')
+A(a='x', b={1, 2, 3})
+
+</code></pre>
+<p>Using <code>typing.Set</code> with subscription,</p>
+<pre><code class="language-python">&gt;&gt;&gt; @dataclass
+... class A:
+...     a: str
+...     b: typing.Set[int]
+
+&gt;&gt;&gt; perde.json.loads_as(A, '{&quot;a&quot;: &quot;x&quot;, &quot;b&quot;: [1, 2, 3]}')
+A(a='x', b={1, 2, 3})
+
+</code></pre>
+<p><code>frozenset</code> and <code>typing.FrozenSet</code> work the same as <code>set</code> and <code>typing.Set</code>.</p>
+<h2><a class="header" href="#tuple" id="tuple">Tuple</a></h2>
+<p>The tuple type like <code>tuple</code>, <code>typing.Tuple</code> corresponds to a list or array pattern in the serialized format (e.g. JSON array). <code>perde</code> supports the following form of set types:</p>
+<ul>
+<li>Built-in <code>tuple</code></li>
+<li><code>typing.Tuple</code> with/without subscription</li>
+</ul>
+<p>Using built-in <code>tuple</code>,</p>
+<pre><code class="language-python">&gt;&gt;&gt; @dataclass
+... class A:
+...     a: str
+...     b: tuple
+
+&gt;&gt;&gt; perde.json.loads_as(A, '{&quot;a&quot;: &quot;x&quot;, &quot;b&quot;: [1, true, &quot;hello&quot;]}')
+A(a='x', b=(1, True, 'hello'))
+
+</code></pre>
+<p>Using <code>typing.Tuple</code> without subscription,</p>
+<pre><code class="language-python">&gt;&gt;&gt; @dataclass
+... class A:
+...     a: str
+...     b: typing.Tuple
+
+&gt;&gt;&gt; perde.json.loads_as(A, '{&quot;a&quot;: &quot;x&quot;, &quot;b&quot;: [1, true, &quot;hello&quot;]}')
+A(a='x', b=(1, True, 'hello'))
+
+</code></pre>
+<p>Using <code>typing.Tuple</code> with subscription,</p>
+<pre><code class="language-python">&gt;&gt;&gt; @dataclass
+... class A:
+...     a: str
+...     b: typing.Tuple[int, bool, str]
+
+&gt;&gt;&gt; perde.json.loads_as(A, '{&quot;a&quot;: &quot;x&quot;, &quot;b&quot;: [1, true, &quot;hello&quot;]}')
+A(a='x', b=(1, True, 'hello'))
+
+</code></pre>
+<h3><a class="header" href="#empty-tuple" id="empty-tuple">Empty tuple</a></h3>
+<p>Use <code>typing.Tuple[()]</code> to explicitly specify the empty tuple.</p>
+<pre><code class="language-python">&gt;&gt;&gt; @dataclass
+... class A:
+...     a: str
+...     b: typing.Tuple[()]
+
+&gt;&gt;&gt; perde.json.loads_as(A, '{&quot;a&quot;: &quot;x&quot;, &quot;b&quot;: []}')
+A(a='x', b=())
+
+</code></pre>
+<h2><a class="header" href="#optional" id="optional">Optional</a></h2>
+<p><code>typing.Optional</code> allows to parse the field optionally.</p>
+<pre><code class="language-python">&gt;&gt;&gt; @dataclass
+... class A:
+...     a: str
+...     b: typing.Optional[str]
+
+&gt;&gt;&gt; perde.json.loads_as(A, '{&quot;a&quot;: &quot;x&quot;}')
+A(a='x', b=None)
+
+</code></pre>
+<p>If the format supports <code>None</code> value (e.g. <code>null</code> in JSON), the <code>None</code> value is accepted.</p>
+<pre><code class="language-python">&gt;&gt;&gt; perde.json.loads_as(A, '{&quot;a&quot;: &quot;x&quot;, &quot;b&quot;: null}')
+A(a='x', b=None)
+
+</code></pre>
+<p>Note that serialization results include <code>null</code> explicitly.</p>
+<pre><code class="language-python">&gt;&gt;&gt; perde.json.dumps(A(a='x', b=None))
+'{&quot;a&quot;:&quot;x&quot;,&quot;b&quot;:null}'
+
+</code></pre>
+<p>As the other generic types, <code>typing.Optional</code> without subscription is supported,</p>
+<pre><code class="language-python">&gt;&gt;&gt; @dataclass
+... class A:
+...     a: str
+...     b: typing.Optional
+
+&gt;&gt;&gt; perde.json.loads_as(A, '{&quot;a&quot;: &quot;x&quot;}')
+A(a='x', b=None)
+
+</code></pre>
+<h2><a class="header" href="#union" id="union">Union</a></h2>
+<p><code>typing.Union</code> is used when there're multiple possible types for one field.</p>
+<pre><code class="language-python">&gt;&gt;&gt; @dataclass
+... class A:
+...     a: str
+...     b: typing.Union[str, int]
+
+&gt;&gt;&gt; perde.json.loads_as(A, '{&quot;a&quot;: &quot;x&quot;, &quot;b&quot;: 3}')
+A(a='x', b=3)
+
+&gt;&gt;&gt; perde.json.loads_as(A, '{&quot;a&quot;: &quot;x&quot;, &quot;b&quot;: &quot;three&quot;}')
+A(a='x', b='three')
+
+</code></pre>
+<p>As the other generic types, <code>typing.Union</code> without subscription is allowed but it accepts anything including <code>None</code> value, also making the field optional.</p>
+<pre><code class="language-python">&gt;&gt;&gt; @dataclass
+... class A:
+...     a: str
+...     b: typing.Union
+
+&gt;&gt;&gt; perde.json.loads_as(A, '{&quot;a&quot;: &quot;x&quot;, &quot;b&quot;: &quot;anything&quot;}')
+A(a='x', b='anything')
+
+</code></pre>
+<p>The field is optional.</p>
+<pre><code class="language-python">&gt;&gt;&gt; perde.json.loads_as(A, '{&quot;a&quot;: &quot;x&quot;}')
+A(a='x', b=None)
+
+</code></pre>
+<p>The field accepts <code>None</code> value.</p>
+<pre><code class="language-python">&gt;&gt;&gt; perde.json.loads_as(A, '{&quot;a&quot;: &quot;x&quot;, &quot;b&quot;: null}')
+A(a='x', b=None)
+
+</code></pre>
+<p><code>typing.Union</code> cannot be used in schema-less formats which itself don't have type information.</p>
+<h2><a class="header" href="#any" id="any">Any</a></h2>
+<p><code>typing.Any</code> accepts any types including <code>None</code>, also making the field optional.</p>
+<pre><code class="language-python">&gt;&gt;&gt; @dataclass
+... class A:
+...     a: str
+...     b: typing.Any
+
+&gt;&gt;&gt; perde.json.loads_as(A, '{&quot;a&quot;: &quot;x&quot;, &quot;b&quot;: &quot;anything&quot;}')
+A(a='x', b='anything')
+
+</code></pre>
+<p>The field is optional.</p>
+<pre><code class="language-python">&gt;&gt;&gt; perde.json.loads_as(A, '{&quot;a&quot;: &quot;x&quot;}')
+A(a='x', b=None)
+
+</code></pre>
+<p>The field accepts <code>None</code> value.</p>
+<pre><code class="language-python">&gt;&gt;&gt; perde.json.loads_as(A, '{&quot;a&quot;: &quot;x&quot;, &quot;b&quot;: null}')
+A(a='x', b=None)
+
+</code></pre>
+<p><code>typing.Optional</code> and <code>typing.Any</code> without subscription behave exactly same as <code>typing.Any</code>.
+<code>typing.Any</code> cannot be used in schema-less formats which itself don't have type information.</p>
+<h1><a class="header" href="#enum" id="enum">Enum</a></h1>
+<!--
+>>> from dataclasses import dataclass, field
+>>> import perde, enum
+
+-->
+<p>Enum types are serialized as the member names by default.</p>
+<pre><code class="language-python">&gt;&gt;&gt; class E(enum.Enum):
+...     X = 10
+...     Y = 'a'
+
+&gt;&gt;&gt; perde.json.dumps(E.X)
+'&quot;X&quot;'
+&gt;&gt;&gt; perde.json.loads_as(E, '&quot;Y&quot;')
+&lt;E.Y: 'a'&gt;
+
+</code></pre>
+<p>By using <code>as_value</code> attribute, they are serialized as the member values.</p>
+<pre><code class="language-python">&gt;&gt;&gt; @perde.attr(as_value=True)
+... class F(enum.Enum):
+...     X = 10
+...     Y = 'a'
+
+&gt;&gt;&gt; perde.json.dumps(F.X)
+'10'
+&gt;&gt;&gt; perde.json.loads_as(F, '&quot;a&quot;')
+&lt;F.Y: 'a'&gt;
+
+</code></pre>
+<h1><a class="header" href="#datetime" id="datetime">Date/Time</a></h1>
+<!--
+>>> from dataclasses import dataclass, field
+>>> import perde
+>>> import datetime
+
+-->
+<p>All <code>datetime.datetime</code>, <code>datetime.date</code> and <code>datetime.time</code> are serialized as string types formatted in ISO 8601.</p>
+<p>To serialize <code>datetime</code>,</p>
+<pre><code class="language-python">&gt;&gt;&gt; perde.json.dumps(datetime.datetime(2020, 10, 31, 10, 30, 40, 1234))
+'&quot;2020-10-31T10:30:40.001234&quot;'
+
+</code></pre>
+<p>To deserialize <code>datetime</code>,</p>
+<pre><code class="language-python">&gt;&gt;&gt; perde.json.loads_as(datetime.datetime, '&quot;2020-10-31T10:30:40.001234&quot;')
+datetime.datetime(2020, 10, 31, 10, 30, 40, 1234)
+
+</code></pre>
+<p>To serialize <code>date</code>,</p>
+<pre><code class="language-python">&gt;&gt;&gt; perde.json.dumps(datetime.date(2020, 10, 31))
+'&quot;2020-10-31&quot;'
+
+</code></pre>
+<p>To deserialize <code>date</code>,</p>
+<pre><code class="language-python">&gt;&gt;&gt; perde.json.loads_as(datetime.date, '&quot;2020-10-31&quot;')
+datetime.date(2020, 10, 31)
+
+</code></pre>
+<p>To serialize <code>time</code>,</p>
+<pre><code class="language-python">&gt;&gt;&gt; perde.json.dumps(datetime.time(10, 30, 40, 1234))
+'&quot;10:30:40.001234&quot;'
+
+</code></pre>
+<p>To deserialize <code>time</code>,</p>
+<pre><code class="language-python">&gt;&gt;&gt; perde.json.loads_as(datetime.time, '&quot;10:30:40.001234&quot;')
+datetime.time(10, 30, 40, 1234)
+
+</code></pre>
+<h1><a class="header" href="#decimal" id="decimal">Decimal</a></h1>
+<!--
+>>> from dataclasses import dataclass, field
+>>> import perde
+>>> import decimal
+
+-->
+<p><code>decimal.Decimal</code> is serialized as string types.</p>
+<p>To serialize <code>Decimal</code>,</p>
+<pre><code class="language-python">&gt;&gt;&gt; perde.json.dumps(decimal.Decimal('3.14159265'))
+'&quot;3.14159265&quot;'
+
+</code></pre>
+<p>To deserialize <code>Decimal</code>,</p>
+<pre><code class="language-python">&gt;&gt;&gt; perde.json.loads_as(decimal.Decimal, '&quot;3.14159265&quot;')
+Decimal('3.14159265')
+
+</code></pre>
+<h1><a class="header" href="#uuid" id="uuid">UUID</a></h1>
+<!--
+>>> from dataclasses import dataclass, field
+>>> import perde
+>>> import uuid
+
+-->
+<p><code>uuid.UUID</code> is serialized as string of hex digits in standard form.</p>
+<p>To serialize <code>UUID</code>,</p>
+<pre><code class="language-python">&gt;&gt;&gt; perde.json.dumps(uuid.UUID('a8098c1a-f86e-11da-bd1a-00112444be1e'))
+'&quot;a8098c1a-f86e-11da-bd1a-00112444be1e&quot;'
+
+</code></pre>
+<p>To deserialize <code>UUID</code>,</p>
+<pre><code class="language-python">&gt;&gt;&gt; perde.json.loads_as(uuid.UUID, '&quot;a8098c1a-f86e-11da-bd1a-00112444be1e&quot;')
+UUID('a8098c1a-f86e-11da-bd1a-00112444be1e')
+
+</code></pre>
+<h1><a class="header" href="#attributes" id="attributes">Attributes</a></h1>
+<!--
+>>> from dataclasses import dataclass, field
+>>> import perde
+>>> import enum
+
+-->
+<p>Attributes allow to modify the way of serialization/deserialization.</p>
+<p>For example, to serialize/deserialize the field names as <code>camelCase</code>,</p>
+<pre><code class="language-python">&gt;&gt;&gt; @perde.attr(rename_all=&quot;camelCase&quot;)
+... @dataclass
+... class A:
+...     foo_bar: int
+...     bar_bar: int
+
+&gt;&gt;&gt; perde.json.dumps(A(foo_bar=1, bar_bar=2))
+'{&quot;fooBar&quot;:1,&quot;barBar&quot;:2}'
+&gt;&gt;&gt; perde.json.loads_as(A, '{&quot;fooBar&quot;:1,&quot;barBar&quot;:2}')
+A(foo_bar=1, bar_bar=2)
+
+</code></pre>
+<p>For another example, to skip serializing the field,</p>
+<pre><code class="language-python">&gt;&gt;&gt; @dataclass
+... class A:
+...     foo_bar: int
+...     bar_bar: int = field(metadata = {&quot;perde_skip&quot;: True})
+
+&gt;&gt;&gt; perde.json.dumps(A(foo_bar=1, bar_bar=2))
+'{&quot;foo_bar&quot;:1}'
+
+</code></pre>
+<p>Attributes can be used with enum as well.</p>
+<pre><code class="language-python">&gt;&gt;&gt; @perde.attr(rename_all = &quot;snake_case&quot;)
+... class A(enum.Enum):
+...     FooBar = 1
+...     BarBar = 2
+
+&gt;&gt;&gt; perde.json.dumps(A.BarBar)
+'&quot;bar_bar&quot;'
+&gt;&gt;&gt; perde.json.loads_as(A, '&quot;foo_bar&quot;')
+&lt;A.FooBar: 1&gt;
+
+</code></pre>
+<p>To use attributes for enum members, inherit <code>perde.Enum</code>/<code>perde.IntEnum</code> instead of <code>enum.Enum</code>/<code>enum.IntEnum</code>.</p>
+<pre><code class="language-python">&gt;&gt;&gt; class A(perde.Enum):
+...     FooBar = 1, {&quot;perde_rename&quot;: &quot;BooBoo&quot;}
+...     BarBar = 2
+
+&gt;&gt;&gt; perde.json.dumps(A.FooBar)
+'&quot;BooBoo&quot;'
+&gt;&gt;&gt; perde.json.loads_as(A, '&quot;BooBoo&quot;')
+&lt;A.FooBar: 1&gt;
+
+</code></pre>
+<h1><a class="header" href="#dataclass-attributes" id="dataclass-attributes">Dataclass attributes</a></h1>
+<!--
+>>> from dataclasses import dataclass, field
+>>> import perde
+
+-->
+<p>The following attributes can be set with <code>dataclass</code>. For example,</p>
+<pre><code class="language-python">&gt;&gt;&gt; @perde.attr(rename=&quot;B&quot;)
+... @dataclass
+... class A:
+...     a: int
+...     b: str
+
+</code></pre>
+<ul>
+<li><code>rename = &quot;name&quot;</code>
+<ul>
+<li>Serialize and deserialize classes with the given name instead of the name in Python.</li>
+</ul>
+</li>
+<li><code>rename_all = &quot;string_case&quot;</code>
+<ul>
+<li>Convert the case of all the field names in the class.</li>
+<li>The possible values for <code>&quot;string_case&quot;</code> are:
+<ul>
+<li><code>lowercase</code></li>
+<li><code>UPPERCASE</code></li>
+<li><code>PascalCase</code></li>
+<li><code>camelCase</code></li>
+<li><code>snake_case</code></li>
+<li><code>SCREAMING_SNAKE_CASE</code></li>
+<li><code>kebab-case</code></li>
+<li><code>SCREAMING-KEBAB-CASE</code></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><code>rename_all_serialize = &quot;string_case&quot;</code>
+<ul>
+<li>Convert the string case only when serialization.</li>
+</ul>
+</li>
+<li><code>rename_all_deserialize = &quot;string_case&quot;</code>
+<ul>
+<li>Convert the string case only when deserialization.</li>
+</ul>
+</li>
+<li><code>deny_unknown_fields = True</code>
+<ul>
+<li>Raises an error on deserialization if the input contains unknown fields.</li>
+</ul>
+</li>
+<li><code>default = True</code>
+<ul>
+<li>When deserialzing, any missing fields in the class are created by their default constructors.</li>
+</ul>
+</li>
+</ul>
+<h1><a class="header" href="#dataclass-field-attributes" id="dataclass-field-attributes">Dataclass field attributes</a></h1>
+<!--
+>>> from dataclasses import dataclass, field
+>>> import perde
+
+-->
+<p>The following attributes can be set with fields in <code>dataclass</code>. For example,</p>
+<pre><code class="language-python">&gt;&gt;&gt; @dataclass
+... class A:
+...     a: int
+...     b: str = field(metadata = {&quot;perde_skip&quot;: True})
+
+</code></pre>
+<ul>
+<li><code>perde_rename: &quot;name&quot;</code>
+<ul>
+<li>Serialize and deserialize the field with the given name instead of the name in Python.</li>
+</ul>
+</li>
+<li><code>perde_default: True</code>
+<ul>
+<li>When deserialzing, if the field is missing, the field is created by its default constructor.</li>
+</ul>
+</li>
+<li><code>perde_flatten: True</code>
+<ul>
+<li>Flatten the content of this field.</li>
+<li>The type of the field can be either <code>dataclass</code> or dictionary.</li>
+<li>If the type is dictionary, all the remaining fields at that point of deserialization are consumed.</li>
+</ul>
+</li>
+<li><code>perde_skip: True</code>
+<ul>
+<li>Skip serializing or deserializing this field.</li>
+<li>The field must have <code>default</code>/<code>default_factory</code>, or the <code>perde</code> attribute <code>default</code>/<code>perde_default</code> set.</li>
+</ul>
+</li>
+<li><code>perde_skip_serializing: True</code>
+<ul>
+<li>Skip serialzing this field.</li>
+</ul>
+</li>
+<li><code>perde_skip_deserialzing: True</code>
+<ul>
+<li>Skip deserializing this field.</li>
+<li>The field must have <code>default</code>/<code>default_factory</code>, or the <code>perde</code> attribute <code>default</code>/<code>perde_default</code> set.</li>
+</ul>
+</li>
+</ul>
+<h1><a class="header" href="#enum-attributes" id="enum-attributes">Enum attributes</a></h1>
+<!--
+>>> from dataclasses import dataclass, field
+>>> import perde
+>>> import enum
+
+-->
+<p>The following attributes can be set with enum. For example,</p>
+<pre><code class="language-python">&gt;&gt;&gt; @perde.attr(rename=&quot;B&quot;)
+... class A(enum.Enum):
+...     X = 1
+...     Y = 2
+
+</code></pre>
+<ul>
+<li><code>rename = &quot;name&quot;</code>
+<ul>
+<li>Serialize and deserialize enums with the given name instead of the name in Python.</li>
+</ul>
+</li>
+<li><code>rename_all = &quot;string_case&quot;</code>
+<ul>
+<li>Convert the case of all the members in the enum.</li>
+<li>The possible values are the same as ones for <code>class</code>.</li>
+<li>This option is ignored when <code>as_value</code> is set.</li>
+</ul>
+</li>
+<li><code>rename_all_serialize = &quot;string_case&quot;</code>
+<ul>
+<li>Convert the string case only when serialization.</li>
+</ul>
+</li>
+<li><code>rename_all_deserialize = &quot;string_case&quot;</code>
+<ul>
+<li>Convert the string case only when deserialization.</li>
+</ul>
+</li>
+<li><code>as_value = True</code>
+<ul>
+<li>Serialize and deserialize enum using the enum value instead of the name.</li>
+</ul>
+</li>
+</ul>
+<h1><a class="header" href="#enum-member-attributes" id="enum-member-attributes">Enum member attributes</a></h1>
+<!--
+>>> from dataclasses import dataclass, field
+>>> import perde
+
+-->
+<p>The following attributes can be set with enum members. For example,</p>
+<pre><code class="language-python">&gt;&gt;&gt; class A(perde.Enum):
+...     X = 1, {&quot;rename&quot;: &quot;Z&quot;}
+...     Y = 2
+
+</code></pre>
+<p>Note that <code>perde.Enum</code>/<code>perde.IntEnum</code> needs to be used instead of <code>enum.Enum</code>/<code>enum.IntEnum</code>.</p>
+<ul>
+<li><code>perde_rename: &quot;name&quot;</code>
+<ul>
+<li>Serialize and deserialize the member with the given name instead of the name in Python.</li>
+<li>This option is ignored when <code>as_value</code> is set.</li>
+</ul>
+</li>
+<li><code>perde_skip: True</code>
+<ul>
+<li>Never serialize or deserialize this member.</li>
+</ul>
+</li>
+<li><code>perde_skip_serializing: True</code>
+<ul>
+<li>Never serialize this member. Serializing this member raises an error.</li>
+</ul>
+</li>
+<li><code>perde_skip_deserialzing: True</code>
+<ul>
+<li>Never deserialize this member.</li>
+</ul>
+</li>
+<li><code>perde_other: True</code>
+<ul>
+<li>When deserializing, any unknown members result in this member.</li>
+<li>This option is ignored when <code>as_value</code> is set.</li>
+</ul>
+</li>
+</ul>
+<h1><a class="header" href="#benchmark" id="benchmark">Benchmark</a></h1>
+<h2><a class="header" href="#json" id="json">JSON</a></h2>
+<p><img src="https://github.com/YushiOMOTE/perde/blob/master/assets/json-pack-dict.svg?raw=true" width="480" /> <img src="https://github.com/YushiOMOTE/perde/blob/master/assets/json-unpack-dict.svg?raw=true" width="480" /></p>
+<h2><a class="header" href="#yaml" id="yaml">YAML</a></h2>
+<p><img src="https://github.com/YushiOMOTE/perde/blob/master/assets/yaml-pack-dict.svg?raw=true" width="480" /> <img src="https://github.com/YushiOMOTE/perde/blob/master/assets/yaml-unpack-dict.svg?raw=true" width="480" /></p>
+<h2><a class="header" href="#toml" id="toml">TOML</a></h2>
+<p><img src="https://github.com/YushiOMOTE/perde/blob/master/assets/toml-pack-dict.svg?raw=true" width="480" /> <img src="https://github.com/YushiOMOTE/perde/blob/master/assets/toml-unpack-dict.svg?raw=true" width="480" /></p>
+<h2><a class="header" href="#messagepack" id="messagepack">MessagePack</a></h2>
+<p><img src="https://github.com/YushiOMOTE/perde/blob/master/assets/msgpack-pack-dict.svg?raw=true" width="480" /> <img src="https://github.com/YushiOMOTE/perde/blob/master/assets/msgpack-unpack-dict.svg?raw=true" width="480" /></p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                        
+
+                        
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                
+
+                
+            </nav>
+
+        </div>
+
+        
+
+        
+
+        
+
+        
+        <script type="text/javascript">
+            window.playground_copyable = true;
+        </script>
+        
+
+        
+
+        
+        <script src="elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="mark.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="searcher.js" type="text/javascript" charset="utf-8"></script>
+        
+
+        <script src="clipboard.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="highlight.js" type="text/javascript" charset="utf-8"></script>
+        <script src="book.js" type="text/javascript" charset="utf-8"></script>
+
+        <!-- Custom JS scripts -->
+        
+
+        
+        
+        <script type="text/javascript">
+        window.addEventListener('load', function() {
+            window.setTimeout(window.print, 100);
+        });
+        </script>
+        
+        
+
+    </body>
+</html>
