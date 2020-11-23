@@ -6,7 +6,7 @@
 
 -->
 
-Enum types are serialized as the member names.
+Enum types are serialized as the member names by default.
 
 ```python
 >>> class E(enum.Enum):
