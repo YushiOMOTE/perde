@@ -15,10 +15,10 @@
 Python wrapper around [the powerful Rust serialization framework](https://github.com/serde-rs/serde).
 
 * Serialization & deserialization of python data structures.
-* Supports dataclasses and most generic types.
-* Supports various format. By design, `perde` can support as many format as `serde` can.
-* Provide case conversion of field names, skipping serialization/deserialization, structure flattening.
-* Strict type checking.
+* Supports various types including dataclasses, generic types, enum and common built-in types.
+* Supports various serialization formats. By design, `perde` can support as many format as `serde` can.
+* Provides string case conversion of field names, skipping serialization/deserialization options, structure flattening.
+* Precise type checking based on type hints.
 * Very fast.
 
 <!--
@@ -82,10 +82,6 @@ More formats are supported.
 '---\na: 10\nb: x'
 >>> perde.yaml.loads_as(A, '---\na: 10\nb: x')
 A(a=10, b='x')
-
-```
-
-```python
 >>> perde.msgpack.dumps(A(10, "x"))
 b'\x82\xa1a\n\xa1b\xa1x'
 >>> perde.msgpack.loads_as(A, b'\x82\xa1a\n\xa1b\xa1x')
@@ -95,10 +91,10 @@ A(a=10, b='x')
 
 ### Supported formats
 
-* [x] JSON
-* [x] YAML
-* [x] MessagePack
-* [x] TOML
+* [x] JSON (`perde.json`)
+* [x] YAML (`perde.yaml`)
+* [x] MessagePack (`perde.msgpack`)
+* [x] TOML (`perde.toml`)
 * [ ] CBOR
 * [ ] Pickle
 * [ ] RON
@@ -117,38 +113,55 @@ A(a=10, b='x')
 ### Supported types
 
 * `dataclass`
-* Generic types (`typing`)
-    * `Dict`
-    * `List`
-    * `Set`
-    * `FrozenSet`
-    * `Tuple` / `Tuple[()]`
-    * `Optional`
-    * `Union`
-    * `Any`
-* Enum types
-    * `Enum`
-    * `IntEnum`
-    * `Flag`
-    * `IntFlag`
-* Built-in types
+* Primitive types
     * `int`
     * `str`
     * `float`
     * `bool`
     * `bytes`
     * `bytearray`
-    * `dict`
-    * `list`
-    * `set`
-    * `frozenset`
-    * `tuple`
+* Generic types
+    * `dict` /`typing.Dict`
+    * `list` / `typing.List`
+    * `set` / `typing.Set`
+    * `frozenset` / `typing.FrozenSet`
+    * `tuple` / `typing.Tuple`
+    * `typing.Optional`
+    * `typing.Union`
+    * `typing.Any`
+* Enum types
+    * `Enum`
+    * `IntEnum`
+    * `Flag`
+    * `IntFlag`
 * More built-in types
     * `datetime.datetime`
     * `datetime.date`
     * `datetime.time`
     * `decimal.Decimal`
     * `uuid.UUID`
+
+### Attributes
+
+Attributes allow to modify the way of serialization/deserialization.
+
+For example, to serialize/deserialize the field names as `camelCase`,
+
+```python
+>>> @perde.attr(rename_all="camelCase")
+... @dataclass
+... class A:
+...     foo_bar: int
+...     bar_bar: int
+
+>>> perde.json.dumps(A(foo_bar=1, bar_bar=2))
+'{"fooBar":1,"barBar":2}'
+>>> perde.json.loads_as(A, '{"fooBar":1,"barBar":2}')
+A(foo_bar=1, bar_bar=2)
+
+```
+
+See [the book](https://yushiomote.github.io/perde/attributes.html) for more details.
 
 ### Benchmark
 
