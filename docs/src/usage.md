@@ -71,10 +71,10 @@ A(a=10, b='x')
 
 ### Supported formats
 
-* [x] JSON
-* [x] YAML
-* [x] MessagePack
-* [x] TOML
+* [x] JSON (`perde.json`)
+* [x] YAML (`perde.yaml`)
+* [x] MessagePack (`perde.msgpack`)
+* [x] TOML (`perde.toml`)
 * [ ] CBOR
 * [ ] Pickle
 * [ ] RON
@@ -89,3 +89,9 @@ A(a=10, b='x')
 * [ ] D-Bus
 * [ ] FlexBuffer
 * [ ] XML
+
+All the formats provide the three methods:
+
+* `dumps(objects)`: Serialize `objects` in the format.
+* `loads(data)`: Deserialize `data` to python objects.
+* `loads_as(type, input)`: Deserialize `data` to python objects as specified `type`.
