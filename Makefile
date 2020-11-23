@@ -48,7 +48,9 @@ bench: prepare-test
 
 
 histogram:
-	$(pytest) --benchmark-only --benchmark-histogram $(bench-result-dir)/perde -m perde
+	$(foreach fmt,\
+		json yaml msgpack toml,\
+		$(pytest) --benchmark-only --benchmark-histogram $(bench-result-dir)/$(fmt) --benchmark-json=$(bench-result-dir)/json -m $(fmt);)
 
 
 develop:
