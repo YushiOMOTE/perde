@@ -88,9 +88,20 @@ A(a='x', b=b'abc', c={'p': 4, 'q': 5})
 
 ```
 
-### Error cases
+Deserializing incompatible types raises an exception from the format module.
 
-(tbd)
+```python
+>>> @dataclass
+... class A:
+...     a: int
+...     b: str
+
+>>> perde.json.loads_as(A, '{"a": 3, "b": 4}')
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+json.JsonError: invalid type: integer `4`, expected a string at line 1 column 15
+
+```
 
 ## Serialization
 
