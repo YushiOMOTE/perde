@@ -1,11 +1,10 @@
 pipenv-opt ?= $(if $(python-version),--python $(python-version),)
 
-test-pypi ?= https://test.pypi.org/legacy/
-
 pipenv ?= pipenv run
 maturin ?= $(pipenv) maturin
 pytest ?= $(pipenv) pytest
 doctest ?= $(pipenv) python -m doctest
+twine ?= $(pipenv) twine
 
 bench-result-dir ?= assets
 
@@ -14,8 +13,7 @@ build-version-opt ?= $(if $(python-version),-i python$(python-version),)
 
 
 .PHONY: setup install-deps install-perde prepare-test
-.PHONY: lint pep8 mypy test doctest bench develop build coverage publish test-publish manifest test-manifest
-.PHONY: bench-histogram
+.PHONY: lint pep8 mypy test doctest bench develop build coverage publish test-publish clean
 
 
 default: setup lint test
@@ -61,14 +59,16 @@ build:
 	cd perde; $(maturin) build $(build-opt) $(build-version-opt)
 
 
-publish:
-	cd perde; $(maturin) publish \
-		-u $(PYPI_USER) -p $(PYPI_PASSWORD) $(build-opt) $(build-version-opt)
+publish: clean build
+	cd perde; $(twine) upload -u $(PYPI_USER) -p $(PYPI_PASSWORD) target/wheels/*
 
 
-test-publish:
-	cd perde; $(maturin) publish \
-		-u $(TEST_PYPI_USER) -p $(TEST_PYPI_PASSWORD) -r $(test-pypi) $(build-opt) $(build-version-opt)
+test-publish: clean build
+	cd perde; $(twine) upload -u $(TEST_PYPI_USER) -p $(TEST_PYPI_PASSWORD) -r testpypi target/wheels/*
+
+
+clean:
+	cd perde; cargo clean
 
 
 pep8:
