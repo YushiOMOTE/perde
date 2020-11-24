@@ -375,7 +375,8 @@ impl Schema {
 
     pub fn is_optional(&self) -> bool {
         match self {
-            Self::Union(u) if u.variants.len() == 2 && u.optional => true,
+            Self::Union(u) if u.optional => true,
+            Self::Any(_) => true,
             _ => false,
         }
     }

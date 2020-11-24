@@ -8,8 +8,9 @@ pub type _PyCFunctionFastWithKeywords = unsafe extern "C" fn(
 #[macro_export]
 macro_rules! exception {
     ($exc:ident) => {
-        |py: pyo3::Python<'_>, _: &str, m: &pyo3::types::PyModule| {
+        |py: pyo3::Python<'_>, _: &str, m: &pyo3::types::PyModule| -> pyo3::PyResult<()> {
             m.add(stringify!($exc), py.get_type::<$exc>()).unwrap();
+            Ok(())
         }
     };
 }
@@ -17,7 +18,7 @@ macro_rules! exception {
 #[macro_export]
 macro_rules! method_fastcall {
     ($method:ident, $doc:expr) => {
-        |_: pyo3::Python<'_>, name: &str, m: &pyo3::types::PyModule| {
+        |_: pyo3::Python<'_>, name: &str, m: &pyo3::types::PyModule| -> pyo3::PyResult<()> {
             let def = pyo3::ffi::PyMethodDef {
                 ml_name: concat!(stringify!($method), "\0").as_ptr() as *const std::os::raw::c_char,
                 ml_meth: Some(unsafe {
@@ -42,6 +43,7 @@ macro_rules! method_fastcall {
                     ),
                 )
             };
+            Ok(())
         }
     };
 }
@@ -49,7 +51,7 @@ macro_rules! method_fastcall {
 #[macro_export]
 macro_rules! method_varargs {
     ($method:ident, $doc:expr) => {
-        |_: pyo3::Python<'_>, name: &str, m: &pyo3::types::PyModule| {
+        |_: pyo3::Python<'_>, name: &str, m: &pyo3::types::PyModule| -> pyo3::PyResult<()> {
             let def = pyo3::ffi::PyMethodDef {
                 ml_name: concat!(stringify!($method), "\0").as_ptr() as *const std::os::raw::c_char,
                 ml_meth: Some($method),
@@ -69,6 +71,16 @@ macro_rules! method_varargs {
                     ),
                 )
             };
+            Ok(())
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! submodule {
+    ($module:tt) => {
+        |_: pyo3::Python<'_>, _: &str, m: &pyo3::types::PyModule| -> pyo3::PyResult<()> {
+            m.add_wrapped(pyo3::wrap_pymodule!($module))
         }
     };
 }
@@ -80,14 +92,10 @@ macro_rules! module {
         pub fn $name(py: pyo3::Python<'_>, m: &pyo3::types::PyModule) -> pyo3::PyResult<()> {
             $({
                 let method = $cls;
-                method(py, concat!(stringify!($name), "\0"), m);
+                method(py, concat!(stringify!($name), "\0"), m)?;
             })*
 
             Ok(())
-        }
-
-        pub fn import(m: &pyo3::types::PyModule) -> pyo3::PyResult<()> {
-            m.add_wrapped(pyo3::wrap_pymodule!($name))
         }
     };
 }

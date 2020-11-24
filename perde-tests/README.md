@@ -35,11 +35,11 @@
     * [x] `frozenset`
     * [x] `tuple`
 * More built-in types
-    * [ ] `datetime.datetime`
-    * [ ] `datetime.date`
-    * [ ] `datetime.time`
-    * [ ] `decimal.Decimal`
-    * [ ] `uuid.UUID`
+    * [x] `datetime.datetime`
+    * [x] `datetime.date`
+    * [x] `datetime.time`
+    * [x] `decimal.Decimal`
+    * [x] `uuid.UUID`
 
 ## Attribute testing
 

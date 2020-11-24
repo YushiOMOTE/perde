@@ -1,4 +1,5 @@
 from .perde import resolve  # type: ignore
+from .perde import json, toml, yaml, msgpack  # noqa: F401
 import enum
 
 

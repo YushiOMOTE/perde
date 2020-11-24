@@ -1,0 +1,17 @@
+# Summary
+
+- [Usage](./usage.md)
+- [Types](./types.md)
+    - [Supported types](./types.md)
+    - [Dataclass](./dataclass.md)
+    - [Generics](./generics.md)
+    - [Enum](./enum.md)
+    - [Date/Time](./datetime.md)
+    - [Decimal](./decimal.md)
+    - [UUID](./uuid.md)
+- [Attributes](./attributes.md)
+    - [Dataclass attributes](./dataclass_attrs.md)
+    - [Dataclass field attributes](./dataclass_field_attrs.md)
+    - [Enum attributes](./enum_attrs.md)
+    - [Enum member attributes](./enum_mem_attrs.md)
+- [Benchmark](./benchmark.md)

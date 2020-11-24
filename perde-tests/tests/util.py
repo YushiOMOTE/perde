@@ -2,14 +2,14 @@ from dataclasses import dataclass
 from typing import Any
 import pytest
 import os
-import perde_json
-import perde_yaml
-import perde_msgpack
-import perde_toml
 import json
 import yaml
 import msgpack
 import toml
+from perde import json as perde_json
+from perde import yaml as perde_yaml
+from perde import toml as perde_toml
+from perde import msgpack as perde_msgpack
 
 
 @dataclass
