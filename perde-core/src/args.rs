@@ -20,6 +20,10 @@ impl<'a> Args<'a> {
         self.tuple.len()
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
     pub fn arg(&self, index: usize) -> Result<&ObjectRef> {
         self.tuple.get(index)
     }
@@ -50,10 +54,10 @@ impl FastArgs {
                 self.num_args()
             )
         }
-        ObjectRef::new(unsafe { *self.args.offset(index as isize) })
+        ObjectRef::new(unsafe { *self.args.add(index) })
     }
 
-    pub fn iter_kwargs<'a>(&'a self) -> Result<Option<KwArgsIter<'a>>> {
+    pub fn iter_kwargs(&self) -> Result<Option<KwArgsIter<'_>>> {
         if self.kwnames.is_null() {
             return Ok(None);
         }
@@ -87,11 +91,10 @@ impl<'a> Iterator for KwArgsIter<'a> {
             Ok(key) => key,
             Err(e) => return Some(Err(e)),
         };
-        let value =
-            match ObjectRef::new(unsafe { *self.args.offset((self.nargs + index) as isize) }) {
-                Ok(value) => value,
-                Err(e) => return Some(Err(e)),
-            };
+        let value = match ObjectRef::new(unsafe { *self.args.add(self.nargs + index) }) {
+            Ok(value) => value,
+            Err(e) => return Some(Err(e)),
+        };
         Some(Ok((key, value)))
     }
 }

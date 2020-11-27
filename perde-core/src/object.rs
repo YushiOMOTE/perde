@@ -66,7 +66,7 @@ impl ObjectRef {
         resolve_schema(self, attr)
     }
 
-    pub fn resolved_object<'a>(&'a self) -> Result<WithSchema<'a>> {
+    pub fn resolved_object(&self) -> Result<WithSchema<'_>> {
         let schema = self.get_type()?.resolve(None)?;
         Ok(WithSchema::new(schema, self))
     }
@@ -159,7 +159,7 @@ impl ObjectRef {
         }
     }
 
-    pub fn as_str<'a>(&'a self) -> Result<&'a str> {
+    pub fn as_str(&self) -> Result<&str> {
         let mut len: Py_ssize_t = 0;
         let p = unsafe { PyUnicode_AsUTF8AndSize(self.as_ptr(), &mut len) };
 
@@ -173,7 +173,7 @@ impl ObjectRef {
         }
     }
 
-    pub fn as_bytes<'a>(&'a self) -> Result<&'a [u8]> {
+    pub fn as_bytes(&self) -> Result<&[u8]> {
         let mut len: Py_ssize_t = 0;
         let mut buf: *mut c_char = std::ptr::null_mut();
         let p = unsafe { PyBytes_AsStringAndSize(self.as_ptr(), &mut buf, &mut len) };
@@ -188,7 +188,7 @@ impl ObjectRef {
         }
     }
 
-    pub fn as_bytearray<'a>(&'a self) -> Result<&'a [u8]> {
+    pub fn as_bytearray(&self) -> Result<&[u8]> {
         let p = unsafe { PyByteArray_AsString(self.as_ptr()) };
         let len = unsafe { PyByteArray_Size(self.as_ptr()) };
 
@@ -202,15 +202,15 @@ impl ObjectRef {
         }
     }
 
-    pub fn as_list<'a>(&'a self) -> ListRef<'a> {
+    pub fn as_list(&self) -> ListRef<'_> {
         ListRef::new(self)
     }
 
-    pub fn as_set<'a>(&'a self) -> SetRef<'a> {
+    pub fn as_set(&self) -> SetRef<'_> {
         SetRef::new(self)
     }
 
-    pub fn as_tuple<'a>(&'a self) -> TupleRef<'a> {
+    pub fn as_tuple(&self) -> TupleRef<'_> {
         TupleRef::new(self)
     }
 
@@ -355,11 +355,11 @@ impl ObjectRef {
         Ok(ObjectIter(objnew!(PyObject_GetIter(self.as_ptr()))?))
     }
 
-    pub fn get_tuple_iter<'a>(&'a self) -> Result<TupleIter<'a>> {
+    pub fn get_tuple_iter(&self) -> Result<TupleIter<'_>> {
         TupleIter::new(self)
     }
 
-    pub fn get_dict_iter<'a>(&'a self) -> Result<DictIter<'a>> {
+    pub fn get_dict_iter(&self) -> Result<DictIter<'_>> {
         DictIter::new(self)
     }
 
@@ -438,6 +438,10 @@ impl<'a> TupleIter<'a> {
         })
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.len == 0
+    }
+
     pub fn len(&self) -> usize {
         self.len
     }
@@ -471,6 +475,10 @@ impl<'a> DictIter<'a> {
             bail!("cannot get the size of dict")
         }
         Ok(Self { p, len, index: 0 })
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.len == 0
     }
 
     pub fn len(&self) -> usize {
@@ -695,6 +703,10 @@ impl<'a> SetRef<'a> {
         Self(obj)
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
     pub fn len(&self) -> usize {
         unsafe { PySet_Size(self.0.as_ptr()) as usize }
     }
@@ -706,6 +718,10 @@ pub struct ListRef<'a>(&'a ObjectRef);
 impl<'a> ListRef<'a> {
     fn new(obj: &'a ObjectRef) -> Self {
         Self(obj)
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
     }
 
     pub fn len(&self) -> usize {
@@ -728,6 +744,10 @@ pub struct TupleRef<'a>(&'a ObjectRef);
 impl<'a> TupleRef<'a> {
     fn new(args: &'a ObjectRef) -> Self {
         Self(args)
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
     }
 
     pub fn len(&self) -> usize {

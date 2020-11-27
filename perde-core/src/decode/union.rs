@@ -219,13 +219,7 @@ impl<'a, 'de> Visitor<'de> for UnionVisitor<'a> {
             .0
             .variants
             .iter()
-            .find(|s| match s {
-                Schema::Bytes | Schema::ByteArray => true,
-                Schema::List(_) => true,
-                Schema::Tuple(_) => true,
-                Schema::Set(_) => true,
-                _ => false,
-            })
+            .find(|s| matches!(s, Schema::Bytes | Schema::ByteArray | Schema::List(_) | Schema::Tuple(_) | Schema::Set(_)))
             .ok_or_else(|| de::Error::invalid_type(Unexpected::Seq, &self))?;
 
         match schema {

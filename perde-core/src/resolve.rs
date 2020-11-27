@@ -14,17 +14,12 @@ fn collect_members(
         .iter()
         .flat_map(|(key, field)| {
             if field.attr.flatten {
-                match &field.schema {
-                    Schema::Class(cls) => {
-                        has_flatten = true;
-                        return collect_members(&cls.fields).0;
-                    }
-                    _ => {}
+                if let Schema::Class(cls) = &field.schema {
+                    has_flatten = true;
+                    return collect_members(&cls.fields).0;
                 }
-            } else {
-                if field.attr.skip || field.attr.skip_serializing {
-                    skip_field_len += 1;
-                }
+            } else if field.attr.skip || field.attr.skip_serializing {
+                skip_field_len += 1;
             }
             let mut map = IndexMap::new();
             map.insert(key.to_string(), field.clone());
@@ -116,9 +111,8 @@ pub fn resolve_schema<'a>(
     } else if p.is_uuid() {
         Ok(&static_schema().uuid)
     } else {
-        match p.get_capsule(&SCHEMA_CACHE) {
-            Some(p) => return Ok(p),
-            _ => {}
+        if let Some(p) = p.get_capsule(&SCHEMA_CACHE) {
+            return Ok(p);
         }
 
         let s = if p.has_attr(&DATACLASS_FIELDS) {
@@ -127,12 +121,10 @@ pub fn resolve_schema<'a>(
             to_generic(p)?
         } else if p.is_enum() {
             to_enum(p, &attr)?
+        } else if !p.is_type() {
+            bail_type_err!("`{:?}` is not a type", p)
         } else {
-            if !p.is_type() {
-                bail_type_err!("`{:?}` is not a type", p)
-            } else {
-                bail_type_err!("unsupported type `{:?}`", p)
-            }
+            bail_type_err!("unsupported type `{:?}`", p)
         };
 
         p.set_capsule(&SCHEMA_CACHE, s)
@@ -191,13 +183,10 @@ fn to_dataclass(p: &ObjectRef, attr: &Option<HashMap<&str, &ObjectRef>>) -> Resu
 
         // Setup flatten dict which absorbs all the remaining fields.
         if fattr.flatten {
-            match &schema {
-                Schema::Dict(d) => {
-                    if flatten_dict.is_none() {
-                        flatten_dict = Some(d.clone());
-                    }
+            if let Schema::Dict(d) = &schema {
+                if flatten_dict.is_none() {
+                    flatten_dict = Some(d.clone());
                 }
-                _ => {}
             }
         }
 
@@ -301,7 +290,9 @@ fn to_tuple(args: &ObjectRef) -> Result<Schema> {
     let mut args = args.get_tuple_iter()?;
 
     if args.len() == 1 {
-        let p = args.next().ok_or(type_err!("cannot get element type"))?;
+        let p = args
+            .next()
+            .ok_or_else(|| type_err!("cannot get element type"))?;
         if p.is(import()?.empty_tuple.as_ptr()) {
             return Ok(Schema::Tuple(Tuple::new(vec![])));
         }
@@ -321,26 +312,41 @@ fn to_tuple(args: &ObjectRef) -> Result<Schema> {
 
 fn to_dict(args: &ObjectRef) -> Result<Schema> {
     let mut args = args.get_tuple_iter()?;
-    let key = to_schema(args.next().ok_or(type_err!("cannot get key type"))?)?;
-    let value = to_schema(args.next().ok_or(type_err!("cannot get value type"))?)?;
+    let key = to_schema(
+        args.next()
+            .ok_or_else(|| type_err!("cannot get key type"))?,
+    )?;
+    let value = to_schema(
+        args.next()
+            .ok_or_else(|| type_err!("cannot get value type"))?,
+    )?;
     Ok(Schema::Dict(Dict::new(Box::new(key), Box::new(value))))
 }
 
 fn to_list(args: &ObjectRef) -> Result<Schema> {
     let mut args = args.get_tuple_iter()?;
-    let value = to_schema(args.next().ok_or(type_err!("cannot get element type"))?)?;
+    let value = to_schema(
+        args.next()
+            .ok_or_else(|| type_err!("cannot get element type"))?,
+    )?;
     Ok(Schema::List(List::new(Box::new(value))))
 }
 
 fn to_set(args: &ObjectRef) -> Result<Schema> {
     let mut args = args.get_tuple_iter()?;
-    let value = to_schema(args.next().ok_or(type_err!("cannot get element type"))?)?;
+    let value = to_schema(
+        args.next()
+            .ok_or_else(|| type_err!("cannot get element type"))?,
+    )?;
     Ok(Schema::Set(Set::new(Box::new(value))))
 }
 
 fn to_frozen_set(args: &ObjectRef) -> Result<Schema> {
     let mut args = args.get_tuple_iter()?;
-    let value = to_schema(args.next().ok_or(type_err!("cannot get element type"))?)?;
+    let value = to_schema(
+        args.next()
+            .ok_or_else(|| type_err!("cannot get element type"))?,
+    )?;
     Ok(Schema::FrozenSet(FrozenSet::new(Box::new(value))))
 }
 

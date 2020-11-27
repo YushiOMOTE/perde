@@ -30,7 +30,7 @@ impl<'a> EnumVisitor<'a> {
             .find(|v| v.dename == s && !v.attr.skip && !v.attr.skip_deserializing)
         {
             Some(e) => e,
-            None => match self.0.variants.iter().find(|v| v.attr.other == true) {
+            None => match self.0.variants.iter().find(|v| v.attr.other) {
                 Some(e) => e,
                 None => {
                     return Err(de::Error::custom(format!(

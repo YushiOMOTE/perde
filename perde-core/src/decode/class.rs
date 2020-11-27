@@ -29,13 +29,11 @@ impl<'a, 'de> Visitor<'de> for ClassVisitor<'a> {
                 let value: Object = access.next_value_seed(&s.schema)?;
 
                 map.insert(key, value);
+            } else if let Some(flatten_dict) = self.0.flatten_dict.as_ref() {
+                let value: Object = access.next_value_seed(&*flatten_dict.value)?;
+                map.insert(key, value);
             } else {
-                if let Some(flatten_dict) = self.0.flatten_dict.as_ref() {
-                    let value: Object = access.next_value_seed(&*flatten_dict.value)?;
-                    map.insert(key, value);
-                } else {
-                    let _: IgnoredAny = access.next_value()?;
-                }
+                let _: IgnoredAny = access.next_value()?;
             }
         }
 
