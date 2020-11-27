@@ -33,7 +33,7 @@ prepare-test:
 	make -C perde-tests/gen
 
 
-lint: pep8 mypy
+lint: pep8 mypy clippy
 
 
 test: doctest prepare-test
@@ -76,6 +76,10 @@ pep8:
 
 mypy:
 	$(pipenv) mypy perde
+
+
+clippy:
+	cargo clippy -- -D warnings
 
 
 doctest:
