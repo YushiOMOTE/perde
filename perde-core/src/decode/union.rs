@@ -9,20 +9,14 @@ struct UnionVisitor<'a>(&'a Union);
 
 macro_rules! find {
     ($s:expr, $unx:expr, $($kind:tt),*) => {
-        $s.0.variants.iter().find(|s| match s {
-            $(Schema::$kind(_) => true,)*
-                _ => false,
-        })
+        $s.0.variants.iter().find(|s| matches!(s, $(Schema::$kind(_))|*))
         .ok_or_else(|| de::Error::invalid_type($unx, &$s))
     }
 }
 
 macro_rules! find_p {
     ($s:expr, $unx:expr, $($kind:tt),*) => {
-        $s.0.variants.iter().find(|s| match s {
-            $(Schema::$kind => true,)*
-                _ => false,
-        })
+        $s.0.variants.iter().find(|s| matches!(s, $(Schema::$kind)|*))
             .ok_or_else(|| de::Error::invalid_type($unx, &$s))
     }
 }
