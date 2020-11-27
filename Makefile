@@ -24,7 +24,6 @@ setup: install-deps install-perde
 
 install-deps:
 	pipenv install --dev --skip-lock $(pipenv-opt)
-	cargo install grcov
 
 
 install-perde: develop
@@ -52,23 +51,23 @@ histogram:
 
 
 develop:
-	cd perde; $(maturin) develop $(build-opt)
+	$(maturin) develop -m perde/Cargo.toml $(build-opt)
 
 
 build:
-	cd perde; $(maturin) build $(build-opt) $(build-version-opt)
+	$(maturin) build -m perde/Cargo.toml $(build-opt) $(build-version-opt)
 
 
 publish: clean build
-	cd perde; $(twine) upload -u $(PYPI_USER) -p $(PYPI_PASSWORD) target/wheels/*
+	$(twine) upload -u $(PYPI_USER) -p $(PYPI_PASSWORD) target/wheels/*
 
 
 test-publish: clean build
-	cd perde; $(twine) upload -u $(TEST_PYPI_USER) -p $(TEST_PYPI_PASSWORD) -r testpypi target/wheels/*
+	$(twine) upload -u $(TEST_PYPI_USER) -p $(TEST_PYPI_PASSWORD) -r testpypi target/wheels/*
 
 
 clean:
-	cd perde; cargo clean
+	cargo clean
 
 
 pep8:
@@ -85,4 +84,4 @@ doctest:
 
 
 coverage:
-	grcov -s perde-core -t lcov --llvm --branch -o lcov.info ./perde/target/debug/
+	grcov -s . -t html --llvm --branch -o coverage ./target/debug
