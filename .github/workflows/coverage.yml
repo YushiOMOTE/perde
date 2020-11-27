@@ -19,7 +19,7 @@ jobs:
         with:
           toolchain: nightly
           override: true
-          components: rustfmt
+          components: rustfmt,clippy
       - name: Install dependencies
         run: |
           pip install pipenv
