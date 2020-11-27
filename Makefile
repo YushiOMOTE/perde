@@ -12,8 +12,8 @@ build-opt ?= --release
 build-version-opt ?= $(if $(python-version),-i python$(python-version),)
 
 
-.PHONY: setup install-deps install-perde prepare-test
-.PHONY: lint pep8 mypy clippy test test-codegen test-datagen doctest bench develop build coverage publish test-publish clean
+.PHONY: setup install-deps install-perde
+.PHONY: lint pep8 mypy clippy test test-codegen test-datagen fmt doctest bench develop build coverage publish test-publish clean
 
 
 default: setup lint test
@@ -29,14 +29,14 @@ install-deps:
 install-perde: develop
 
 
-lint: pep8 mypy clippy
+lint: pep8 mypy clippy fmt
 
 
 test: doctest test-datagen
 	$(pytest) --benchmark-skip $(test-opt)
 
 
-bench: prepare-test
+bench: test-datagen
 	$(pytest) --benchmark-only $(test-opt)
 
 
@@ -76,6 +76,10 @@ mypy:
 
 clippy:
 	cargo clippy -- -D warnings
+
+
+fmt:
+	cargo fmt --all -- --check
 
 
 doctest:
