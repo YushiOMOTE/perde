@@ -7,6 +7,7 @@ use crate::{
 };
 use pyo3::ffi::*;
 use std::{
+    borrow::Cow,
     collections::HashMap,
     fmt::{self, Debug},
     ops::{Deref, DerefMut},
@@ -62,7 +63,10 @@ impl ObjectRef {
         }
     }
 
-    pub fn resolve<'a>(&'a self, attr: Option<HashMap<&str, &ObjectRef>>) -> Result<&'a Schema> {
+    pub fn resolve<'a>(
+        &'a self,
+        attr: Option<HashMap<&str, &ObjectRef>>,
+    ) -> Result<Cow<'a, Schema>> {
         resolve_schema(self, attr)
     }
 
@@ -72,7 +76,7 @@ impl ObjectRef {
     }
 
     pub fn with_schema<'a>(&'a self, schema: &'a Schema) -> WithSchema<'a> {
-        WithSchema::new(schema, self)
+        WithSchema::new(schema.borrowed(), self)
     }
 
     pub fn owned(&self) -> Object {
@@ -292,6 +296,13 @@ impl ObjectRef {
                     || is_type_opt!(o, union_generic_alias)
                     || is_type_opt!(o, special_generic_alias)
             })
+            .is_some()
+    }
+
+    pub fn is_builtin_generic(&self) -> bool {
+        self.get_type()
+            .ok()
+            .filter(|o| is_type_opt!(o, types_generic_alias))
             .is_some()
     }
 

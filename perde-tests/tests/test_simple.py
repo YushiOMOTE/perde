@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+import sys
 import enum
 import typing
 import pytest
@@ -72,6 +73,16 @@ def test_dict(m):
     repack_as(m, typing.Dict[str, int], {})
     repack_as(m, typing.Dict[str, typing.Dict[str, int]], {"a": {"b": 10}})
     repack_as(m, typing.Dict[str, typing.Any], {"xxx": 3.3})
+
+
+@pytest.mark.skipif(sys.version_info < (3, 9), reason="requires 3.9")
+@pytest.mark.parametrize("m", FORMATS)
+def test_dict39(m):
+    repack_as(m, dict, {"a": 10})
+    repack_as(m, dict[str, int], {"a": 10})
+    repack_as(m, dict[str, int], {})
+    repack_as(m, dict[str, dict[str, int]], {"a": {"b": 10}})
+    repack_as(m, dict[str, typing.Any], {"xxx": 3.3})
 
 
 @pytest.mark.parametrize("m", FORMATS_EXCEPT("toml"))

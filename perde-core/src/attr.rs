@@ -3,7 +3,7 @@ use std::{
     os::raw::c_char,
 };
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct AttrStr(String);
 
 impl AttrStr {

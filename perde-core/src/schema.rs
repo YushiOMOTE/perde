@@ -5,7 +5,7 @@ use crate::{
 };
 use derive_new::new;
 use indexmap::IndexMap;
-use std::{collections::HashMap, str::FromStr};
+use std::{borrow::Cow, collections::HashMap, str::FromStr};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum StrCase {
@@ -381,11 +381,19 @@ impl Schema {
             _ => false,
         }
     }
+
+    pub fn borrowed(&self) -> Cow<'_, Self> {
+        Cow::Borrowed(self)
+    }
+
+    pub fn owned(&self) -> Cow<'static, Self> {
+        Cow::Owned(self.clone())
+    }
 }
 
 #[derive(new, Clone, Debug)]
 pub struct WithSchema<'a> {
-    pub schema: &'a Schema,
+    pub schema: Cow<'a, Schema>,
     pub object: &'a ObjectRef,
 }
 

@@ -2,7 +2,7 @@ use crate::{
     attr::AttrStr, error::Convert, error::Result, import::import, object::ObjectRef, schema::*,
 };
 use indexmap::IndexMap;
-use std::collections::HashMap;
+use std::{borrow::Cow, collections::HashMap};
 
 fn collect_members(
     mems: &IndexMap<String, FieldSchema>,
@@ -70,49 +70,52 @@ lazy_static::lazy_static! {
     static ref ATTR_ORIGIN: AttrStr = AttrStr::new("__origin__");
     static ref ATTR_ENUM_METADATA: AttrStr = AttrStr::new("_perde_metadata");
     static ref ATTR_TYPENAME: AttrStr = AttrStr::new("__name__");
+    static ref ATTR_DICT: AttrStr = AttrStr::new("__dict__");
 }
 
 pub fn resolve_schema<'a>(
     p: &'a ObjectRef,
     attr: Option<HashMap<&str, &ObjectRef>>,
-) -> Result<&'a Schema> {
+) -> Result<Cow<'a, Schema>> {
     if p.is_bool() {
-        Ok(&static_schema().boolean)
+        Ok(static_schema().boolean.borrowed())
     } else if p.is_str() {
-        Ok(&static_schema().string)
+        Ok(static_schema().string.borrowed())
     } else if p.is_int() {
-        Ok(&static_schema().int)
+        Ok(static_schema().int.borrowed())
     } else if p.is_float() {
-        Ok(&static_schema().float)
+        Ok(static_schema().float.borrowed())
     } else if p.is_bytes() {
-        Ok(&static_schema().bytes)
+        Ok(static_schema().bytes.borrowed())
     } else if p.is_bytearray() {
-        Ok(&static_schema().bytearray)
+        Ok(static_schema().bytearray.borrowed())
     } else if p.is_dict() {
-        Ok(&static_schema().dict)
+        Ok(static_schema().dict.borrowed())
     } else if p.is_list() {
-        Ok(&static_schema().list)
+        Ok(static_schema().list.borrowed())
     } else if p.is_set() {
-        Ok(&static_schema().set)
+        Ok(static_schema().set.borrowed())
     } else if p.is_frozen_set() {
-        Ok(&static_schema().frozenset)
+        Ok(static_schema().frozenset.borrowed())
     } else if p.is_tuple() {
-        Ok(&static_schema().tuple)
+        Ok(static_schema().tuple.borrowed())
     } else if p.is_none_type() || p.is_any() {
-        Ok(&static_schema().any)
+        Ok(static_schema().any.borrowed())
     } else if p.is_datetime() {
-        Ok(&static_schema().datetime)
+        Ok(static_schema().datetime.borrowed())
     } else if p.is_time() {
-        Ok(&static_schema().time)
+        Ok(static_schema().time.borrowed())
     } else if p.is_date() {
-        Ok(&static_schema().date)
+        Ok(static_schema().date.borrowed())
     } else if p.is_decimal() {
-        Ok(&static_schema().decimal)
+        Ok(static_schema().decimal.borrowed())
     } else if p.is_uuid() {
-        Ok(&static_schema().uuid)
+        Ok(static_schema().uuid.borrowed())
+    } else if p.is_builtin_generic() {
+        to_generic(p).map(|s| s.owned())
     } else {
-        if let Some(p) = p.get_capsule(&SCHEMA_CACHE) {
-            return Ok(p);
+        if let Some(p) = p.get_capsule::<Schema>(&SCHEMA_CACHE) {
+            return Ok(p.borrowed());
         }
 
         let s = if p.has_attr(&DATACLASS_FIELDS) {
@@ -127,12 +130,13 @@ pub fn resolve_schema<'a>(
             bail_type_err!("unsupported type `{:?}`", p)
         };
 
-        p.set_capsule(&SCHEMA_CACHE, s)
+        p.set_capsule::<Schema>(&SCHEMA_CACHE, s)
+            .map(|s| s.borrowed())
     }
 }
 
 fn to_schema(p: &ObjectRef) -> Result<Schema> {
-    resolve_schema(p, None).map(|s| s.clone())
+    resolve_schema(p, None).map(|s| s.into_owned())
 }
 
 fn to_dataclass(p: &ObjectRef, attr: &Option<HashMap<&str, &ObjectRef>>) -> Result<Schema> {

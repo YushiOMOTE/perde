@@ -1,10 +1,11 @@
 use perde_core::prelude::*;
 use serde::de::DeserializeSeed;
+use std::borrow::Cow;
 
-fn loads_as_(schema: &Schema, object: &ObjectRef) -> Result<Object> {
+fn loads_as_<'a>(schema: Cow<'a, Schema>, object: &ObjectRef) -> Result<Object> {
     let b = object.as_bytes().context("invalid argument")?;
     let mut de = rmp_serde::Deserializer::from_read_ref(&b);
-    Ok(schema.deserialize(&mut de)?)
+    Ok(schema.as_ref().deserialize(&mut de)?)
 }
 
 fn loads_(object: &ObjectRef) -> Result<Object> {
