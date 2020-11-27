@@ -1,2 +1,2 @@
 [workspace]
-members = ["perde/", "perde-core/"]
+members = ["perde/", "perde-core/", "perde-tests/gen/codegen", "perde-tests/gen/datagen"]

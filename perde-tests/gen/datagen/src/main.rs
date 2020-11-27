@@ -29,7 +29,7 @@ fn add_value_except<T: Serialize + Debug>(name: &str, data: T, excepts: &[&str])
                         .or_default()
                         .insert(
                             name.into(),
-                            $encoder(&data).expect(&format!(
+                            $encoder(&data).unwrap_or_else(|_| panic!(
                                 "couldn't serialize data `{}` in `{}`: {:?}",
                                 name, $format, data
                             ))
@@ -67,9 +67,10 @@ fn save(path: &Path) {
         .flatten()
     {
         let d = path.to_path_buf().join(fmt);
-        std::fs::create_dir_all(&d).expect(&format!("cannot create directory: {}", d.display()));
+        std::fs::create_dir_all(&d)
+            .unwrap_or_else(|_| panic!("cannot create directory: {}", d.display()));
         let d = d.join(name);
-        std::fs::write(&d, data).expect(&format!("cannot write: {}", d.display()));
+        std::fs::write(&d, data).unwrap_or_else(|_| panic!("cannot write: {}", d.display()));
     }
 }
 
@@ -83,51 +84,18 @@ struct Opt {
 }
 
 fn main() {
-    #[derive(Serialize, Debug, new)]
-    struct TypeMismatch {
-        a: String,
-        b: Vec<u32>,
-    }
+    add_value("BenchNumber", 1311);
+    add_value("BenchString", "aiueo");
 
-    add!(TypeMismatch { "hage".into(), vec![1,2,3] });
-
-    #[derive(Serialize, Debug, new)]
-    struct MissingMember {
-        a: String,
-    }
-
-    add!(MissingMember { "hage".into() });
-
-    #[derive(Serialize, Debug, new)]
-    struct TooManyMember {
-        a: String,
-        b: String,
-        c: i64,
-    }
-
-    add!(TooManyMember { "hage".into(), "faa".into(), 33 });
-
-    #[derive(Serialize, Debug, new)]
-    struct SkipEnumError {
-        x: i64,
-        e: String,
-    }
-
-    add!(SkipEnumError { 3, "A".into() });
-
-    #[derive(Serialize, Debug, new)]
-    struct DictFlattenMsgpack {
-        x: String,
-        y: i64,
-        pp: String,
-        ppp: String,
-        pppp: String,
-    }
-
-    add!(DictFlattenMsgpack {
-     "hey".into(), -103223,
-     "q1".into(), "q2".into(), "q3".into()
+    add_value("BenchDict", {
+        let mut map = IndexMap::new();
+        map.insert("10".to_string(), 10000);
+        map.insert("101".into(), 100030);
+        map.insert("102".into(), 102000);
+        map
     });
+
+    add_value("BenchList", vec![1i64, 2, -3, 4, 5, -8]);
 
     #[derive(Serialize, Debug, new)]
     struct Plain {
@@ -314,6 +282,52 @@ fn main() {
     });
 
     #[derive(Serialize, Debug, new)]
+    struct TypeMismatch {
+        a: String,
+        b: Vec<u32>,
+    }
+
+    add!(TypeMismatch { "hage".into(), vec![1,2,3] });
+
+    #[derive(Serialize, Debug, new)]
+    struct MissingMember {
+        a: String,
+    }
+
+    add!(MissingMember { "hage".into() });
+
+    #[derive(Serialize, Debug, new)]
+    struct TooManyMember {
+        a: String,
+        b: String,
+        c: i64,
+    }
+
+    add!(TooManyMember { "hage".into(), "faa".into(), 33 });
+
+    #[derive(Serialize, Debug, new)]
+    struct SkipEnumError {
+        x: i64,
+        e: String,
+    }
+
+    add!(SkipEnumError { 3, "A".into() });
+
+    #[derive(Serialize, Debug, new)]
+    struct DictFlattenMsgpack {
+        x: String,
+        y: i64,
+        pp: String,
+        ppp: String,
+        pppp: String,
+    }
+
+    add!(DictFlattenMsgpack {
+     "hey".into(), -103223,
+     "q1".into(), "q2".into(), "q3".into()
+    });
+
+    #[derive(Serialize, Debug, new)]
     struct DefaultConstruct {
         a: String,
         c: u64,
@@ -352,19 +366,6 @@ fn main() {
     add!(Skip {"ssssss".into(), 3, 1.1, "a".into(), "b".into()});
     add!(Skipped {"ssssss".into(), 3, 1.1, "a".into(), "b".into()});
     add!(SkipDefault {"ssssss".into(), 0, 1.1, "a".into(), "b".into()});
-
-    add_value("BenchNumber", 1311);
-    add_value("BenchString", "aiueo");
-
-    add_value("BenchDict", {
-        let mut map = IndexMap::new();
-        map.insert("10".to_string(), 10000);
-        map.insert("101".into(), 100030);
-        map.insert("102".into(), 102000);
-        map
-    });
-
-    add_value("BenchList", vec![1i64, 2, -3, 4, 5, -8]);
 
     add_value("EnumX", "X");
     add_value("EnumY", "Y");

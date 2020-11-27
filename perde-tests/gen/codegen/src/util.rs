@@ -27,7 +27,7 @@ fn add_value_except<T: Serialize + Debug>(name: &str, data: T, excepts: &[&str])
                         .or_default()
                         .insert(
                             name.into(),
-                            $encoder(&data).expect(&format!(
+                            $encoder(&data).unwrap_or_else(|_| panic!(
                                 "couldn't serialize data `{}` in `{}`: {:?}",
                                 name, $format, data
                             ))
@@ -65,8 +65,9 @@ fn save(path: &Path) {
         .flatten()
     {
         let d = path.to_path_buf().join(fmt);
-        std::fs::create_dir_all(&d).expect(&format!("cannot create directory: {}", d.display()));
+        std::fs::create_dir_all(&d)
+            .unwrap_or_else(|_| panic!("cannot create directory: {}", d.display()));
         let d = d.join(name);
-        std::fs::write(&d, data).expect(&format!("cannot write: {}", d.display()));
+        std::fs::write(&d, data).unwrap_or_else(|_| panic!("cannot write: {}", d.display()));
     }
 }

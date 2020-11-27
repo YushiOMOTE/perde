@@ -13,7 +13,7 @@ build-version-opt ?= $(if $(python-version),-i python$(python-version),)
 
 
 .PHONY: setup install-deps install-perde prepare-test
-.PHONY: lint pep8 mypy test doctest bench develop build coverage publish test-publish clean
+.PHONY: lint pep8 mypy clippy test test-codegen test-datagen doctest bench develop build coverage publish test-publish clean
 
 
 default: setup lint test
@@ -29,14 +29,10 @@ install-deps:
 install-perde: develop
 
 
-prepare-test:
-	make -C perde-tests/gen
-
-
 lint: pep8 mypy clippy
 
 
-test: doctest prepare-test
+test: doctest test-datagen
 	$(pytest) --benchmark-skip $(test-opt)
 
 
@@ -89,3 +85,11 @@ doctest:
 
 coverage:
 	grcov -s . -t html --llvm --branch -o coverage ./target/debug
+
+
+test-codegen:
+	cargo run -p codegen -- perde-tests/tests perde-tests/gen/datagen/src/main.rs
+
+
+test-datagen: test-codegen
+	cargo run -p datagen -- perde-tests/data

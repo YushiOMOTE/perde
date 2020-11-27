@@ -168,7 +168,11 @@ where
                         map.serialize_entry(&k, &v)?;
                     }
                 }
-                _ => return Err(E::custom("found flatten flag for non-class type".to_string())),
+                _ => {
+                    return Err(E::custom(
+                        "found flatten flag for non-class type".to_string(),
+                    ))
+                }
             }
         } else {
             let f = obj.with_schema(&field.schema);

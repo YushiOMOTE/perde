@@ -66,7 +66,7 @@ fn main() {
             }
             if is_comment {
                 comment.push_str(&l);
-                comment.push_str("\n");
+                comment.push('\n');
             }
         }
     }
@@ -103,16 +103,16 @@ fn main() {{
         "".into()
     };
 
-    if std::panic::catch_unwind(|| {
+    let fmt = || {
         let code = rustfmt(&code);
         if code != original {
             std::fs::write(&opt.output, code.as_bytes()).unwrap()
         } else {
             eprintln!("No change");
         }
-    })
-    .is_err()
-    {
+    };
+
+    if std::panic::catch_unwind(fmt).is_err() {
         eprintln!("****** Code not written:\n\n {}", code);
         eprintln!("******");
     }
