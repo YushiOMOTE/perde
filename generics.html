@@ -171,11 +171,13 @@
 
 -->
 <h2><a class="header" href="#dictionary" id="dictionary">Dictionary</a></h2>
-<p>The dictonary type like <code>dict</code>, <code>typing.Dict</code> corresponds to a map pattern in the serialized format (e.g. JSON map). <code>perde</code> supports the following form of dictionary types:</p>
+<p>The dictionary types like <code>dict</code>, <code>typing.Dict</code> correspond to a map pattern in serialized format (e.g. JSON map). <code>perde</code> supports the following form of dictionary types:</p>
 <ul>
-<li>Built-in <code>dict</code></li>
-<li><code>typing.Dict</code> without subscription</li>
-<li><code>typing.Dict</code> with subscription</li>
+<li><code>dict</code></li>
+<li><code>typing.Dict</code></li>
+<li><code>typing.Dict[X, Y]</code></li>
+<li><code>dict[X]</code> (since Python 3.9)</li>
+<li><code>dict[X, Y]</code> (since Python 3.9)</li>
 </ul>
 <p>Using built-in <code>dict</code>,</p>
 <pre><code class="language-python">&gt;&gt;&gt; @dataclass
@@ -187,7 +189,7 @@
 A(a='x', b={'x': 3, 'y': 'hey', 'z': True})
 
 </code></pre>
-<p>Using <code>typing.Dict</code> without subscription,</p>
+<p>Using bare <code>typing.Dict</code>,</p>
 <pre><code class="language-python">&gt;&gt;&gt; @dataclass
 ... class A:
 ...     a: str
@@ -197,7 +199,7 @@ A(a='x', b={'x': 3, 'y': 'hey', 'z': True})
 A(a='x', b={'x': 3, 'y': 'hey', 'z': True})
 
 </code></pre>
-<p>Using <code>typing.Dict</code> with subscription,</p>
+<p>Using <code>typing.Dict[X, Y]</code>,</p>
 <pre><code class="language-python">&gt;&gt;&gt; @dataclass
 ... class A:
 ...     a: str
@@ -207,12 +209,23 @@ A(a='x', b={'x': 3, 'y': 'hey', 'z': True})
 A(a='x', b={'x': 3.0, 'y': 1.4, 'z': 1.5})
 
 </code></pre>
+<p>Using <code>dict[X, Y]</code>,</p>
+<pre><code class="language-python">&gt;&gt;&gt; @dataclass
+... class A:
+...     a: str
+...     b: dict[str, float]
+
+&gt;&gt;&gt; perde.json.loads_as(A, '{&quot;a&quot;: &quot;x&quot;, &quot;b&quot;: {&quot;x&quot;: 3.0, &quot;y&quot;: 1.4, &quot;z&quot;: 1.5}}')
+A(a='x', b={'x': 3.0, 'y': 1.4, 'z': 1.5})
+
+</code></pre>
 <h2><a class="header" href="#list" id="list">List</a></h2>
-<p>The list type like <code>list</code>, <code>typing.List</code> corresponds to a list or array pattern in the serialized format (e.g. JSON array). <code>perde</code> supports the following form of list types:</p>
+<p>The list types like <code>list</code>, <code>typing.List</code> correspond to a list or array pattern in serialized format (e.g. JSON array). <code>perde</code> supports the following form of list types:</p>
 <ul>
-<li>Built-in <code>list</code></li>
-<li><code>typing.List</code> without subscription</li>
-<li><code>typing.List</code> with subscription</li>
+<li><code>list</code></li>
+<li><code>typing.List</code></li>
+<li><code>typing.List[X]</code></li>
+<li><code>list[X]</code> (since Python 3.9)</li>
 </ul>
 <p>Using built-in <code>list</code>,</p>
 <pre><code class="language-python">&gt;&gt;&gt; @dataclass
@@ -220,11 +233,11 @@ A(a='x', b={'x': 3.0, 'y': 1.4, 'z': 1.5})
 ...     a: str
 ...     b: list
 
-&gt;&gt;&gt; perde.json.loads_as(A, '{&quot;a&quot;: &quot;x&quot;, &quot;b&quot;: [1, 2, 3]}')
-A(a='x', b=[1, 2, 3])
+&gt;&gt;&gt; perde.json.loads_as(A, '{&quot;a&quot;: &quot;x&quot;, &quot;b&quot;: [1, &quot;a&quot;, 3.3]}')
+A(a='x', b=[1, 'a', 3.3])
 
 </code></pre>
-<p>Using <code>typing.List</code> without subscription,</p>
+<p>Using bare <code>typing.List</code>,</p>
 <pre><code class="language-python">&gt;&gt;&gt; @dataclass
 ... class A:
 ...     a: str
@@ -234,7 +247,7 @@ A(a='x', b=[1, 2, 3])
 A(a='x', b=[1, 2, 3])
 
 </code></pre>
-<p>Using <code>typing.List</code> with subscription,</p>
+<p>Using <code>typing.List[X]</code>,</p>
 <pre><code class="language-python">&gt;&gt;&gt; @dataclass
 ... class A:
 ...     a: str
@@ -244,13 +257,23 @@ A(a='x', b=[1, 2, 3])
 A(a='x', b=[1, 2, 3])
 
 </code></pre>
+<p>Using <code>list[X]</code>,</p>
+<pre><code class="language-python">&gt;&gt;&gt; @dataclass
+... class A:
+...     a: str
+...     b: list[int]
+
+&gt;&gt;&gt; perde.json.loads_as(A, '{&quot;a&quot;: &quot;x&quot;, &quot;b&quot;: [1, 2, 3]}')
+A(a='x', b=[1, 2, 3])
+
+</code></pre>
 <h2><a class="header" href="#set" id="set">Set</a></h2>
-<p>The set type like <code>set</code>, <code>typing.Set</code> corresponds to a list or array pattern in the serialized format (e.g. JSON array). <code>perde</code> supports the following form of set types:</p>
+<p>The set types like <code>set</code>, <code>typing.Set</code> correspond to a list or array pattern in serialized format (e.g. JSON array). <code>perde</code> supports the following form of set types:</p>
 <ul>
-<li>Built-in <code>set</code></li>
-<li>Built-in <code>frozenset</code></li>
-<li><code>typing.Set</code> with/without subscription</li>
-<li><code>typing.FrozenSet</code> with/without subscription</li>
+<li><code>set</code> / <code>frozenset</code></li>
+<li><code>typing.Set</code> / <code>typing.FrozenSet</code></li>
+<li><code>typing.Set[X]</code> / <code>typing.FrozenSet[X]</code></li>
+<li><code>set[X]</code> / <code>frozenset[X]</code> (since Python 3.9)</li>
 </ul>
 <p>Using built-in <code>set</code>,</p>
 <pre><code class="language-python">&gt;&gt;&gt; @dataclass
@@ -258,21 +281,21 @@ A(a='x', b=[1, 2, 3])
 ...     a: str
 ...     b: set
 
-&gt;&gt;&gt; perde.json.loads_as(A, '{&quot;a&quot;: &quot;x&quot;, &quot;b&quot;: [1, 2, 3]}')
-A(a='x', b={1, 2, 3})
+&gt;&gt;&gt; perde.json.loads_as(A, '{&quot;a&quot;: &quot;x&quot;, &quot;b&quot;: [true, 2, 3]}')
+A(a='x', b={True, 2, 3})
 
 </code></pre>
-<p>Using <code>typing.Set</code> without subscription,</p>
+<p>Using bare <code>typing.Set</code>,</p>
 <pre><code class="language-python">&gt;&gt;&gt; @dataclass
 ... class A:
 ...     a: str
 ...     b: typing.Set
 
-&gt;&gt;&gt; perde.json.loads_as(A, '{&quot;a&quot;: &quot;x&quot;, &quot;b&quot;: [1, 2, 3]}')
-A(a='x', b={1, 2, 3})
+&gt;&gt;&gt; perde.json.loads_as(A, '{&quot;a&quot;: &quot;x&quot;, &quot;b&quot;: [true, 2, 3]}')
+A(a='x', b={True, 2, 3})
 
 </code></pre>
-<p>Using <code>typing.Set</code> with subscription,</p>
+<p>Using <code>typing.Set[X]</code>,</p>
 <pre><code class="language-python">&gt;&gt;&gt; @dataclass
 ... class A:
 ...     a: str
@@ -282,12 +305,24 @@ A(a='x', b={1, 2, 3})
 A(a='x', b={1, 2, 3})
 
 </code></pre>
+<p>Using <code>set[X]</code>,</p>
+<pre><code class="language-python">&gt;&gt;&gt; @dataclass
+... class A:
+...     a: str
+...     b: set[int]
+
+&gt;&gt;&gt; perde.json.loads_as(A, '{&quot;a&quot;: &quot;x&quot;, &quot;b&quot;: [1, 2, 3]}')
+A(a='x', b={1, 2, 3})
+
+</code></pre>
 <p><code>frozenset</code> and <code>typing.FrozenSet</code> work the same as <code>set</code> and <code>typing.Set</code>.</p>
 <h2><a class="header" href="#tuple" id="tuple">Tuple</a></h2>
-<p>The tuple type like <code>tuple</code>, <code>typing.Tuple</code> corresponds to a list or array pattern in the serialized format (e.g. JSON array). <code>perde</code> supports the following form of set types:</p>
+<p>The tuple types like <code>tuple</code>, <code>typing.Tuple</code> correspond to a list or array pattern in serialized format (e.g. JSON array). <code>perde</code> supports the following form of set types:</p>
 <ul>
-<li>Built-in <code>tuple</code></li>
-<li><code>typing.Tuple</code> with/without subscription</li>
+<li><code>tuple</code></li>
+<li><code>typing.Tuple</code></li>
+<li><code>typing.Tuple[X, Y, ...]</code></li>
+<li><code>tuple[X, Y, ...]</code> (since Python 3.9)</li>
 </ul>
 <p>Using built-in <code>tuple</code>,</p>
 <pre><code class="language-python">&gt;&gt;&gt; @dataclass
@@ -299,7 +334,7 @@ A(a='x', b={1, 2, 3})
 A(a='x', b=(1, True, 'hello'))
 
 </code></pre>
-<p>Using <code>typing.Tuple</code> without subscription,</p>
+<p>Using bare <code>typing.Tuple</code>,</p>
 <pre><code class="language-python">&gt;&gt;&gt; @dataclass
 ... class A:
 ...     a: str
@@ -309,11 +344,21 @@ A(a='x', b=(1, True, 'hello'))
 A(a='x', b=(1, True, 'hello'))
 
 </code></pre>
-<p>Using <code>typing.Tuple</code> with subscription,</p>
+<p>Using <code>typing.Tuple[X, Y, ...]</code>,</p>
 <pre><code class="language-python">&gt;&gt;&gt; @dataclass
 ... class A:
 ...     a: str
 ...     b: typing.Tuple[int, bool, str]
+
+&gt;&gt;&gt; perde.json.loads_as(A, '{&quot;a&quot;: &quot;x&quot;, &quot;b&quot;: [1, true, &quot;hello&quot;]}')
+A(a='x', b=(1, True, 'hello'))
+
+</code></pre>
+<p>Using <code>tuple[X, Y, ...]</code>,</p>
+<pre><code class="language-python">&gt;&gt;&gt; @dataclass
+... class A:
+...     a: str
+...     b: tuple[int, bool, str]
 
 &gt;&gt;&gt; perde.json.loads_as(A, '{&quot;a&quot;: &quot;x&quot;, &quot;b&quot;: [1, true, &quot;hello&quot;]}')
 A(a='x', b=(1, True, 'hello'))
@@ -330,6 +375,7 @@ A(a='x', b=(1, True, 'hello'))
 A(a='x', b=())
 
 </code></pre>
+<p><code>tuple[()]</code> is also available since Python 3.9.</p>
 <h2><a class="header" href="#optional" id="optional">Optional</a></h2>
 <p><code>typing.Optional</code> allows to parse the field optionally.</p>
 <pre><code class="language-python">&gt;&gt;&gt; @dataclass
@@ -375,7 +421,7 @@ A(a='x', b=3)
 A(a='x', b='three')
 
 </code></pre>
-<p>As the other generic types, <code>typing.Union</code> without subscription is allowed but it accepts anything including <code>None</code> value, also making the field optional.</p>
+<p>Bare <code>typing.Union</code> accepts anything including <code>None</code> value, also making the field optional.</p>
 <pre><code class="language-python">&gt;&gt;&gt; @dataclass
 ... class A:
 ...     a: str
@@ -395,7 +441,7 @@ A(a='x', b=None)
 A(a='x', b=None)
 
 </code></pre>
-<p><code>typing.Union</code> cannot be used in schema-less formats which itself don't have type information.</p>
+<p><code>typing.Union</code> cannot be used in schema-less formats which don't have type information themselves.</p>
 <h2><a class="header" href="#any" id="any">Any</a></h2>
 <p><code>typing.Any</code> accepts any types including <code>None</code>, also making the field optional.</p>
 <pre><code class="language-python">&gt;&gt;&gt; @dataclass
@@ -417,8 +463,8 @@ A(a='x', b=None)
 A(a='x', b=None)
 
 </code></pre>
-<p><code>typing.Optional</code> and <code>typing.Any</code> without subscription behave exactly same as <code>typing.Any</code>.
-<code>typing.Any</code> cannot be used in schema-less formats which itself don't have type information.</p>
+<p>Bare <code>typing.Optional</code> and <code>typing.Any</code> behave exactly same as <code>typing.Any</code>.
+<code>typing.Any</code> cannot be used in schema-less formats which don't have type information themselves.</p>
 
                     </main>
 
