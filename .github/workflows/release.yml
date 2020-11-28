@@ -1,6 +1,9 @@
 name: release
 
-on: [push]
+on:
+  push:
+    tags: ['v*']
+
 
 jobs:
   build-windows:
@@ -17,7 +20,7 @@ jobs:
       - name: Build
         run: |
           cargo install maturin
-          maturin build --release -m perde/Cargo.toml -i python
+          maturin build --release --no-sdist -m perde/Cargo.toml -i python
       - uses: actions/upload-artifact@v2
         with:
           name: windows-wheels-${{ matrix.python }}
@@ -25,7 +28,7 @@ jobs:
       - name: Upload to PyPI
         run: |
           pip install twine
-          twine upload -u ${{ secrets.PYPI_USER }} -p ${{ secrets.PYPI_PASSWORD }} --skip-existing target/wheels/*.whl
+          twine upload -u ${{ secrets.PYPI_USER }} -p ${{ secrets.PYPI_PASSWORD }} --skip-existing target/wheels/*
 
 
   build-macos:
@@ -45,7 +48,7 @@ jobs:
       - name: Build
         run: |
           cargo install maturin
-          maturin build --release -m perde/Cargo.toml -i python3.7 python3.8 python3.9
+          maturin build --release --no-sdist -m perde/Cargo.toml -i python3.7 python3.8 python3.9
       - uses: actions/upload-artifact@v2
         with:
           name: macos-wheels
@@ -53,7 +56,7 @@ jobs:
       - name: Upload to PyPI
         run: |
           pip install twine
-          twine upload -u ${{ secrets.PYPI_USER }} -p ${{ secrets.PYPI_PASSWORD }} --skip-existing target/wheels/*.whl
+          twine upload -u ${{ secrets.PYPI_USER }} -p ${{ secrets.PYPI_PASSWORD }} --skip-existing target/wheels/*
 
 
   build-linux:
