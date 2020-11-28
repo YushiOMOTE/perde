@@ -90,8 +90,7 @@ fmt-py:
 
 
 doctest:
-	find docs/src -name "*.md" | xargs $(doctest)
-	$(doctest) README.md
+	$(pipenv) python docs/test.py
 
 
 coverage:

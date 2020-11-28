@@ -62,9 +62,9 @@ Using `dict[X, Y]`,
 >>> @dataclass
 ... class A:
 ...     a: str
-...     b: dict[str, float]
+...     b: dict[str, float] # doctest: +PY39
 
->>> perde.json.loads_as(A, '{"a": "x", "b": {"x": 3.0, "y": 1.4, "z": 1.5}}')
+>>> perde.json.loads_as(A, '{"a": "x", "b": {"x": 3.0, "y": 1.4, "z": 1.5}}') # doctest: +PY39
 A(a='x', b={'x': 3.0, 'y': 1.4, 'z': 1.5})
 
 ```
@@ -123,9 +123,9 @@ Using `list[X]`,
 >>> @dataclass
 ... class A:
 ...     a: str
-...     b: list[int]
+...     b: list[int] # doctest: +PY39
 
->>> perde.json.loads_as(A, '{"a": "x", "b": [1, 2, 3]}')
+>>> perde.json.loads_as(A, '{"a": "x", "b": [1, 2, 3]}') # doctest: +PY39
 A(a='x', b=[1, 2, 3])
 
 ```
@@ -184,9 +184,9 @@ Using `set[X]`,
 >>> @dataclass
 ... class A:
 ...     a: str
-...     b: set[int]
+...     b: set[int] # doctest: +PY39
 
->>> perde.json.loads_as(A, '{"a": "x", "b": [1, 2, 3]}')
+>>> perde.json.loads_as(A, '{"a": "x", "b": [1, 2, 3]}') # doctest: +PY39
 A(a='x', b={1, 2, 3})
 
 ```
@@ -247,9 +247,9 @@ Using `tuple[X, Y, ...]`,
 >>> @dataclass
 ... class A:
 ...     a: str
-...     b: tuple[int, bool, str]
+...     b: tuple[int, bool, str] # doctest: +PY39
 
->>> perde.json.loads_as(A, '{"a": "x", "b": [1, true, "hello"]}')
+>>> perde.json.loads_as(A, '{"a": "x", "b": [1, true, "hello"]}') # doctest: +PY39
 A(a='x', b=(1, True, 'hello'))
 
 ```
