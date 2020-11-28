@@ -1,7 +1,7 @@
 [package]
 authors = ["Yushi Omote <yushiomote@gmail.com>"]
 name = "perde"
-version = "0.0.1"
+version = "0.0.2"
 edition = "2018"
 description = "Fast and flexible serialization library."
 homepage = "https://github.com/yushiomote/perde"
@@ -13,7 +13,7 @@ readme = "README.md"
 
 [dependencies]
 pyo3 = { version = "0.12", features = ["extension-module"] }
-perde-core = { version = "0.0.1", path = "../perde-core" }
+perde-core = { version = "0.0.2", path = "../perde-core" }
 serde = "1.0"
 serde_json = { version = "1.0", features = ["preserve_order"] }
 serde_yaml = "0.8"

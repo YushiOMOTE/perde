@@ -1,6 +1,6 @@
 [package]
 name = "perde-core"
-version = "0.0.1"
+version = "0.0.2"
 authors = ["YushiOMOTE <yushiomote@gmail.com>"]
 edition = "2018"
 description = "Unleash the power of serde serialization to Python world"
