@@ -2,6 +2,7 @@ from dataclasses import dataclass, field
 import perde
 import pytest
 from util import FORMATS
+
 """rust
 #[derive(Serialize, Debug, new)]
 struct DefaultConstruct {
@@ -154,8 +155,7 @@ def test_field_skip_with_default_factory(m):
     @dataclass
     class Skip:
         x: str
-        y: int = field(default_factory=lambda: 400,
-                       metadata={"perde_skip": True})
+        y: int = field(default_factory=lambda: 400, metadata={"perde_skip": True})
         z: float = field(default=1.3)
         a: str = field(default_factory=lambda: "aaxx")
         b: str = field(default_factory=lambda: "bbcc")

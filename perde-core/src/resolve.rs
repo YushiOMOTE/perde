@@ -1,8 +1,13 @@
 use crate::{
-    attr::AttrStr, error::Convert, error::Result, import::import, object::ObjectRef, schema::*,
+    attr::AttrStr,
+    error::Convert,
+    error::Result,
+    import::import,
+    object::{ObjectRef, TupleIter},
+    schema::*,
 };
 use indexmap::IndexMap;
-use std::collections::HashMap;
+use std::{borrow::Cow, collections::HashMap};
 
 fn collect_members(
     mems: &IndexMap<String, FieldSchema>,
@@ -14,17 +19,12 @@ fn collect_members(
         .iter()
         .flat_map(|(key, field)| {
             if field.attr.flatten {
-                match &field.schema {
-                    Schema::Class(cls) => {
-                        has_flatten = true;
-                        return collect_members(&cls.fields).0;
-                    }
-                    _ => {}
+                if let Schema::Class(cls) = &field.schema {
+                    has_flatten = true;
+                    return collect_members(&cls.fields).0;
                 }
-            } else {
-                if field.attr.skip || field.attr.skip_serializing {
-                    skip_field_len += 1;
-                }
+            } else if field.attr.skip || field.attr.skip_serializing {
+                skip_field_len += 1;
             }
             let mut map = IndexMap::new();
             map.insert(key.to_string(), field.clone());
@@ -75,50 +75,52 @@ lazy_static::lazy_static! {
     static ref ATTR_ORIGIN: AttrStr = AttrStr::new("__origin__");
     static ref ATTR_ENUM_METADATA: AttrStr = AttrStr::new("_perde_metadata");
     static ref ATTR_TYPENAME: AttrStr = AttrStr::new("__name__");
+    static ref ATTR_DICT: AttrStr = AttrStr::new("__dict__");
 }
 
 pub fn resolve_schema<'a>(
     p: &'a ObjectRef,
     attr: Option<HashMap<&str, &ObjectRef>>,
-) -> Result<&'a Schema> {
+) -> Result<Cow<'a, Schema>> {
     if p.is_bool() {
-        Ok(&static_schema().boolean)
+        Ok(static_schema().boolean.borrowed())
     } else if p.is_str() {
-        Ok(&static_schema().string)
+        Ok(static_schema().string.borrowed())
     } else if p.is_int() {
-        Ok(&static_schema().int)
+        Ok(static_schema().int.borrowed())
     } else if p.is_float() {
-        Ok(&static_schema().float)
+        Ok(static_schema().float.borrowed())
     } else if p.is_bytes() {
-        Ok(&static_schema().bytes)
+        Ok(static_schema().bytes.borrowed())
     } else if p.is_bytearray() {
-        Ok(&static_schema().bytearray)
+        Ok(static_schema().bytearray.borrowed())
     } else if p.is_dict() {
-        Ok(&static_schema().dict)
+        Ok(static_schema().dict.borrowed())
     } else if p.is_list() {
-        Ok(&static_schema().list)
+        Ok(static_schema().list.borrowed())
     } else if p.is_set() {
-        Ok(&static_schema().set)
+        Ok(static_schema().set.borrowed())
     } else if p.is_frozen_set() {
-        Ok(&static_schema().frozenset)
+        Ok(static_schema().frozenset.borrowed())
     } else if p.is_tuple() {
-        Ok(&static_schema().tuple)
+        Ok(static_schema().tuple.borrowed())
     } else if p.is_none_type() || p.is_any() {
-        Ok(&static_schema().any)
+        Ok(static_schema().any.borrowed())
     } else if p.is_datetime() {
-        Ok(&static_schema().datetime)
+        Ok(static_schema().datetime.borrowed())
     } else if p.is_time() {
-        Ok(&static_schema().time)
+        Ok(static_schema().time.borrowed())
     } else if p.is_date() {
-        Ok(&static_schema().date)
+        Ok(static_schema().date.borrowed())
     } else if p.is_decimal() {
-        Ok(&static_schema().decimal)
+        Ok(static_schema().decimal.borrowed())
     } else if p.is_uuid() {
-        Ok(&static_schema().uuid)
+        Ok(static_schema().uuid.borrowed())
+    } else if p.is_builtin_generic() {
+        to_generic(p).map(|s| s.owned())
     } else {
-        match p.get_capsule(&SCHEMA_CACHE) {
-            Some(p) => return Ok(p),
-            _ => {}
+        if let Some(p) = p.get_capsule::<Schema>(&SCHEMA_CACHE) {
+            return Ok(p.borrowed());
         }
 
         let s = if p.has_attr(&DATACLASS_FIELDS) {
@@ -127,20 +129,19 @@ pub fn resolve_schema<'a>(
             to_generic(p)?
         } else if p.is_enum() {
             to_enum(p, &attr)?
+        } else if !p.is_type() {
+            bail_type_err!("`{:?}` is not a type", p)
         } else {
-            if !p.is_type() {
-                bail_type_err!("`{:?}` is not a type", p)
-            } else {
-                bail_type_err!("unsupported type `{:?}`", p)
-            }
+            bail_type_err!("unsupported type `{:?}`", p)
         };
 
-        p.set_capsule(&SCHEMA_CACHE, s)
+        p.set_capsule::<Schema>(&SCHEMA_CACHE, s)
+            .map(|s| s.borrowed())
     }
 }
 
 fn to_schema(p: &ObjectRef) -> Result<Schema> {
-    resolve_schema(p, None).map(|s| s.clone())
+    resolve_schema(p, None).map(|s| s.into_owned())
 }
 
 fn to_dataclass(p: &ObjectRef, attr: &Option<HashMap<&str, &ObjectRef>>) -> Result<Schema> {
@@ -191,13 +192,10 @@ fn to_dataclass(p: &ObjectRef, attr: &Option<HashMap<&str, &ObjectRef>>) -> Resu
 
         // Setup flatten dict which absorbs all the remaining fields.
         if fattr.flatten {
-            match &schema {
-                Schema::Dict(d) => {
-                    if flatten_dict.is_none() {
-                        flatten_dict = Some(d.clone());
-                    }
+            if let Schema::Dict(d) = &schema {
+                if flatten_dict.is_none() {
+                    flatten_dict = Some(d.clone());
                 }
-                _ => {}
             }
         }
 
@@ -301,7 +299,9 @@ fn to_tuple(args: &ObjectRef) -> Result<Schema> {
     let mut args = args.get_tuple_iter()?;
 
     if args.len() == 1 {
-        let p = args.next().ok_or(type_err!("cannot get element type"))?;
+        let p = args
+            .next()
+            .ok_or_else(|| type_err!("cannot get element type"))?;
         if p.is(import()?.empty_tuple.as_ptr()) {
             return Ok(Schema::Tuple(Tuple::new(vec![])));
         }
@@ -321,26 +321,26 @@ fn to_tuple(args: &ObjectRef) -> Result<Schema> {
 
 fn to_dict(args: &ObjectRef) -> Result<Schema> {
     let mut args = args.get_tuple_iter()?;
-    let key = to_schema(args.next().ok_or(type_err!("cannot get key type"))?)?;
-    let value = to_schema(args.next().ok_or(type_err!("cannot get value type"))?)?;
+    let key = arg_to_schema(&mut args).context("invalid key type in `dict`")?;
+    let value = arg_to_schema(&mut args).context("invalid value type in `dict`")?;
     Ok(Schema::Dict(Dict::new(Box::new(key), Box::new(value))))
 }
 
 fn to_list(args: &ObjectRef) -> Result<Schema> {
     let mut args = args.get_tuple_iter()?;
-    let value = to_schema(args.next().ok_or(type_err!("cannot get element type"))?)?;
+    let value = arg_to_schema(&mut args).context("invalid element type in `list`")?;
     Ok(Schema::List(List::new(Box::new(value))))
 }
 
 fn to_set(args: &ObjectRef) -> Result<Schema> {
     let mut args = args.get_tuple_iter()?;
-    let value = to_schema(args.next().ok_or(type_err!("cannot get element type"))?)?;
+    let value = arg_to_schema(&mut args).context("invalid element type in `set`")?;
     Ok(Schema::Set(Set::new(Box::new(value))))
 }
 
 fn to_frozen_set(args: &ObjectRef) -> Result<Schema> {
     let mut args = args.get_tuple_iter()?;
-    let value = to_schema(args.next().ok_or(type_err!("cannot get element type"))?)?;
+    let value = arg_to_schema(&mut args).context("invalid element type in `frozenset`")?;
     Ok(Schema::FrozenSet(FrozenSet::new(Box::new(value))))
 }
 
@@ -365,4 +365,12 @@ fn to_generic(p: &ObjectRef) -> Result<Schema> {
     };
 
     s.context(format!("cannot get generic type information: `{:?}`", p))
+}
+
+fn arg_to_schema(args: &mut TupleIter) -> Result<Schema> {
+    Ok(args
+        .next()
+        .map(|arg| to_schema(arg))
+        .transpose()?
+        .unwrap_or_else(|| static_schema().any.clone()))
 }

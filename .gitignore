@@ -4,7 +4,7 @@
 **/Cargo.lock
 **/target
 
-flame-graph.html
+/coverage
 
 perde-testgen/json
 perde-testgen/yaml

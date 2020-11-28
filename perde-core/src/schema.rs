@@ -5,7 +5,7 @@ use crate::{
 };
 use derive_new::new;
 use indexmap::IndexMap;
-use std::{collections::HashMap, str::FromStr};
+use std::{borrow::Cow, collections::HashMap, str::FromStr};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum StrCase {
@@ -98,6 +98,7 @@ macro_rules! extract_str {
     };
 }
 
+#[allow(clippy::too_many_arguments)]
 #[derive(Clone, Debug, Default, PartialEq, Eq, new)]
 pub struct FieldAttr {
     pub flatten: bool,
@@ -350,17 +351,17 @@ pub enum Schema {
 impl Schema {
     pub fn name(&self) -> &str {
         match self {
-            Self::Bool => "bool".into(),
-            Self::Int => "int".into(),
-            Self::Float => "float".into(),
-            Self::Str => "str".into(),
-            Self::Bytes => "bytes".into(),
-            Self::ByteArray => "bytearray".into(),
-            Self::DateTime => "datetime".into(),
-            Self::Date => "date".into(),
-            Self::Time => "time".into(),
-            Self::Decimal => "Decimal".into(),
-            Self::Uuid => "Uuid".into(),
+            Self::Bool => "bool",
+            Self::Int => "int",
+            Self::Float => "float",
+            Self::Str => "str",
+            Self::Bytes => "bytes",
+            Self::ByteArray => "bytearray",
+            Self::DateTime => "datetime",
+            Self::Date => "date",
+            Self::Time => "time",
+            Self::Decimal => "Decimal",
+            Self::Uuid => "Uuid",
             Self::Dict(d) => d.name(),
             Self::List(l) => l.name(),
             Self::Set(s) => s.name(),
@@ -380,11 +381,19 @@ impl Schema {
             _ => false,
         }
     }
+
+    pub fn borrowed(&self) -> Cow<'_, Self> {
+        Cow::Borrowed(self)
+    }
+
+    pub fn owned(&self) -> Cow<'static, Self> {
+        Cow::Owned(self.clone())
+    }
 }
 
 #[derive(new, Clone, Debug)]
 pub struct WithSchema<'a> {
-    pub schema: &'a Schema,
+    pub schema: Cow<'a, Schema>,
     pub object: &'a ObjectRef,
 }
 

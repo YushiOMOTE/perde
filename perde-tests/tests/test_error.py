@@ -14,8 +14,8 @@ def test_error_perde():
             pass
 
     assert e.value.args[0] == (
-        "unsupported type "
-        "`<class 'test_error.test_error_perde.<locals>.X'>`")
+        "unsupported type " "`<class 'test_error.test_error_perde.<locals>.X'>`"
+    )
 
     with pytest.raises(TypeError) as e:
 
@@ -24,81 +24,74 @@ def test_error_perde():
             pass
 
     assert e.value.args[0] == (
-        "unsupported type "
-        "`<class 'test_error.test_error_perde.<locals>.Y'>`")
+        "unsupported type " "`<class 'test_error.test_error_perde.<locals>.Y'>`"
+    )
 
 
 @pytest.mark.parametrize("m", FORMATS)
 def test_error_no_args(m):
     with pytest.raises(TypeError) as e:
         m.dumps()
-    assert e.value.args[
-        0] == "dumps() requires 1 positional argument but got 0"
+    assert e.value.args[0] == "dumps() requires 1 positional argument but got 0"
 
     with pytest.raises(TypeError) as e:
         m.loads()
-    assert e.value.args[
-        0] == "loads() requires 1 positional argument but got 0"
+    assert e.value.args[0] == "loads() requires 1 positional argument but got 0"
 
     with pytest.raises(TypeError) as e:
         m.loads_as()
-    assert e.value.args[
-        0] == "loads_as() requires 2 positional arguments but got 0"
+    assert e.value.args[0] == "loads_as() requires 2 positional arguments but got 0"
 
 
 @pytest.mark.parametrize("m", FORMATS)
 def test_error_keyword_args(m):
     with pytest.raises(TypeError) as e:
-        m.dumps(kw='a')
+        m.dumps(kw="a")
     assert e.value.args[0] == "dumps() takes no keyword arguments"
 
     with pytest.raises(TypeError) as e:
-        m.loads(kw='a')
+        m.loads(kw="a")
     assert e.value.args[0] == "loads() takes no keyword arguments"
 
     with pytest.raises(TypeError) as e:
-        m.loads_as(kw='a')
+        m.loads_as(kw="a")
     assert e.value.args[0] == "loads_as() takes no keyword arguments"
 
 
 @pytest.mark.parametrize("m", FORMATS)
 def test_error_dumps_wrong_number_of_args(m):
     with pytest.raises(TypeError) as e:
-        m.dumps('a', 'b')
-    assert e.value.args[
-        0] == "dumps() requires 1 positional argument but got 2"
+        m.dumps("a", "b")
+    assert e.value.args[0] == "dumps() requires 1 positional argument but got 2"
 
     with pytest.raises(TypeError) as e:
-        m.loads('a', 'b')
-    assert e.value.args[
-        0] == "loads() requires 1 positional argument but got 2"
+        m.loads("a", "b")
+    assert e.value.args[0] == "loads() requires 1 positional argument but got 2"
 
     with pytest.raises(TypeError) as e:
-        m.loads_as('a')
-    assert e.value.args[
-        0] == "loads_as() requires 2 positional arguments but got 1"
+        m.loads_as("a")
+    assert e.value.args[0] == "loads_as() requires 2 positional arguments but got 1"
     with pytest.raises(TypeError) as e:
-        m.loads_as('a', 'b', 'c')
-    assert e.value.args[
-        0] == "loads_as() requires 2 positional arguments but got 3"
+        m.loads_as("a", "b", "c")
+    assert e.value.args[0] == "loads_as() requires 2 positional arguments but got 3"
 
 
 @pytest.mark.parametrize("m", FORMATS_EXCEPT("msgpack"))
 def test_error_loads_invalid_argument_type(m):
     with pytest.raises(TypeError) as e:
         m.loads(b"a")
-    assert e.value.args[
-        0] == "invalid argument: expected `str` got `bytes`: b'a'"
+    assert e.value.args[0] == "invalid argument: expected `str` got `bytes`: b'a'"
     with pytest.raises(TypeError) as e:
         m.loads(any)
-    assert e.value.args[0] == ("invalid argument: expected `str` "
-                               "got `builtin_function_or_method`:"
-                               " <built-in function any>")
+    assert e.value.args[0] == (
+        "invalid argument: expected `str` "
+        "got `builtin_function_or_method`:"
+        " <built-in function any>"
+    )
 
     with pytest.raises(TypeError) as e:
         m.loads_as(str, b"a")
-    assert e.value.args[
-        0] == "invalid argument: expected `str` got `bytes`: b'a'"
+    assert e.value.args[0] == "invalid argument: expected `str` got `bytes`: b'a'"
 
     with pytest.raises(TypeError) as e:
         m.loads_as("b", "a")
@@ -106,8 +99,9 @@ def test_error_loads_invalid_argument_type(m):
 
     with pytest.raises(TypeError) as e:
         m.loads_as(any, "a")
-    assert e.value.args[
-        0] == "invalid argument: `<built-in function any>` is not a type"
+    assert (
+        e.value.args[0] == "invalid argument: `<built-in function any>` is not a type"
+    )
 
 
 @pytest.mark.parametrize("m", FORMATS_ONLY("msgpack"))
@@ -119,9 +113,14 @@ def test_error_loads_invalid_argument_type_msgpack(m):
 
 @pytest.mark.parametrize("m", FORMATS)
 def test_error_invalid_class_attribute(m):
-    for attr, ty in [("rename_all", "str"), ("rename_all_serialize", "str"),
-                     ("rename_all_deserialize", "str"), ("rename", "str"),
-                     ("deny_unknown_fields", "bool"), ("default", "bool")]:
+    for attr, ty in [
+        ("rename_all", "str"),
+        ("rename_all_serialize", "str"),
+        ("rename_all_deserialize", "str"),
+        ("rename", "str"),
+        ("deny_unknown_fields", "bool"),
+        ("default", "bool"),
+    ]:
         with pytest.raises(TypeError) as e:
 
             @perde.attr(**{attr: 3})
@@ -129,12 +128,12 @@ def test_error_invalid_class_attribute(m):
             class A:
                 pass
 
-        assert e.value.args[
-            0] == f"invalid attribute `{attr}`: expected `{ty}` got `int`: 3"
+        assert (
+            e.value.args[0]
+            == f"invalid attribute `{attr}`: expected `{ty}` got `int`: 3"
+        )
 
-    for attr in [
-            "rename_all", "rename_all_serialize", "rename_all_deserialize"
-    ]:
+    for attr in ["rename_all", "rename_all_serialize", "rename_all_deserialize"]:
         with pytest.raises(ValueError) as e:
 
             @perde.attr(**{attr: "hage"})
@@ -142,44 +141,55 @@ def test_error_invalid_class_attribute(m):
             class B:
                 pass
 
-        assert e.value.args[
-            0] == f"invalid attribute `{attr}`: invalid string case: `hage`"
+        assert (
+            e.value.args[0]
+            == f"invalid attribute `{attr}`: invalid string case: `hage`"
+        )
 
 
 @pytest.mark.parametrize("m", FORMATS)
 def test_error_invalid_enum_attribute(m):
-    for attr, ty in [("rename_all", "str"), ("rename_all_serialize", "str"),
-                     ("rename_all_deserialize", "str"), ("rename", "str"),
-                     ("as_value", "bool")]:
+    for attr, ty in [
+        ("rename_all", "str"),
+        ("rename_all_serialize", "str"),
+        ("rename_all_deserialize", "str"),
+        ("rename", "str"),
+        ("as_value", "bool"),
+    ]:
         with pytest.raises(TypeError) as e:
 
             @perde.attr(**{attr: 3})
             class A(enum.Enum):
                 X = 10
 
-        assert e.value.args[
-            0] == f"invalid attribute `{attr}`: expected `{ty}` got `int`: 3"
+        assert (
+            e.value.args[0]
+            == f"invalid attribute `{attr}`: expected `{ty}` got `int`: 3"
+        )
 
-    for attr in [
-            "rename_all", "rename_all_serialize", "rename_all_deserialize"
-    ]:
+    for attr in ["rename_all", "rename_all_serialize", "rename_all_deserialize"]:
         with pytest.raises(ValueError) as e:
 
             @perde.attr(**{attr: "hage"})
             class B(enum.Enum):
                 X = 10
 
-        assert e.value.args[
-            0] == f"invalid attribute `{attr}`: invalid string case: `hage`"
+        assert (
+            e.value.args[0]
+            == f"invalid attribute `{attr}`: invalid string case: `hage`"
+        )
 
 
 @pytest.mark.parametrize("m", FORMATS)
 def test_error_invalid_class_field_attribute(m):
-    for attr, ty in [("perde_flatten", "bool"), ("perde_rename", "str"),
-                     ("perde_skip", "bool"),
-                     ("perde_skip_serializing", "bool"),
-                     ("perde_skip_deserializing", "bool"),
-                     ("perde_default", "bool")]:
+    for attr, ty in [
+        ("perde_flatten", "bool"),
+        ("perde_rename", "str"),
+        ("perde_skip", "bool"),
+        ("perde_skip_serializing", "bool"),
+        ("perde_skip_deserializing", "bool"),
+        ("perde_default", "bool"),
+    ]:
         with pytest.raises(TypeError) as e:
 
             @perde.attr()
@@ -187,24 +197,31 @@ def test_error_invalid_class_field_attribute(m):
             class A:
                 foo: int = field(metadata={attr: 3})
 
-        assert e.value.args[
-            0] == f"invalid attribute `{attr}`: expected `{ty}` got `int`: 3"
+        assert (
+            e.value.args[0]
+            == f"invalid attribute `{attr}`: expected `{ty}` got `int`: 3"
+        )
 
 
 @pytest.mark.parametrize("m", FORMATS)
 def test_error_invalid_enum_field_attribute(m):
-    for attr, ty in [("perde_rename", "str"), ("perde_skip", "bool"),
-                     ("perde_skip_serializing", "bool"),
-                     ("perde_skip_deserializing", "bool"),
-                     ("perde_other", "bool")]:
+    for attr, ty in [
+        ("perde_rename", "str"),
+        ("perde_skip", "bool"),
+        ("perde_skip_serializing", "bool"),
+        ("perde_skip_deserializing", "bool"),
+        ("perde_other", "bool"),
+    ]:
         with pytest.raises(TypeError) as e:
 
             @perde.attr()
             class A(perde.Enum):
                 X = 100, {attr: 3}
 
-        assert e.value.args[
-            0] == f"invalid attribute `{attr}`: expected `{ty}` got `int`: 3"
+        assert (
+            e.value.args[0]
+            == f"invalid attribute `{attr}`: expected `{ty}` got `int`: 3"
+        )
 
 
 @pytest.mark.parametrize("m", FORMATS)
@@ -216,7 +233,8 @@ def test_error_unsupported_type(m):
         m.dumps(Abc())
     assert e.value.args[0] == (
         "invalid argument: unsupported type "
-        "`<class 'test_error.test_error_unsupported_type.<locals>.Abc'>`")
+        "`<class 'test_error.test_error_unsupported_type.<locals>.Abc'>`"
+    )
 
 
 """rust
@@ -320,8 +338,7 @@ def test_error_encode_skipped_enum(m):
     with pytest.raises(m.errtype) as e:
         m.dumps(SkipEnumError(3, E.B))
 
-    assert e.value.args[
-        0] == 'variant `B` is marked as `skip` and cannot be serialized'
+    assert e.value.args[0] == "variant `B` is marked as `skip` and cannot be serialized"
 
     class E2(perde.Enum):
         A = 1
@@ -338,8 +355,7 @@ def test_error_encode_skipped_enum(m):
     with pytest.raises(m.errtype) as e:
         m.dumps(SkipEnumError(3, E2.B))
 
-    assert e.value.args[
-        0] == 'variant `B` is marked as `skip` and cannot be serialized'
+    assert e.value.args[0] == "variant `B` is marked as `skip` and cannot be serialized"
 
 
 """rust
@@ -367,11 +383,7 @@ def test_error_dict_flatten_msgpack(m):
         y: int
         z: typing.Dict[str, str] = field(metadata={"perde_flatten": True})
 
-    d = DictFlattenMsgpack("hey", -103223, {
-        "pp": "q1",
-        "ppp": "q2",
-        "pppp": "q3"
-    })
+    d = DictFlattenMsgpack("hey", -103223, {"pp": "q1", "ppp": "q2", "pppp": "q3"})
 
     if m.fmtname == "msgpack":
         with pytest.raises(m.errtype) as e:

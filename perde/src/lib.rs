@@ -57,5 +57,5 @@ module!(
     submodule!(yaml),
     submodule!(msgpack),
     exception!(Error),
-    method_fastcall!(resolve, "")
+    method_fastcall!(resolve, "resolve", "")
 );

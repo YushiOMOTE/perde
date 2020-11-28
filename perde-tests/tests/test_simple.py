@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+import sys
 import enum
 import typing
 import pytest
@@ -49,14 +50,14 @@ def test_bool(m):
 
 @pytest.mark.parametrize("m", FORMATS_EXCEPT("toml"))
 def test_bytes(m):
-    repack_as(m, bytes, b'1234')
-    repack_as(m, bytes, b'')
+    repack_as(m, bytes, b"1234")
+    repack_as(m, bytes, b"")
 
 
 @pytest.mark.parametrize("m", FORMATS_EXCEPT("toml"))
 def test_bytearray(m):
-    repack_as(m, bytearray, bytearray(b'1234'))
-    repack_as(m, bytearray, bytearray(b''))
+    repack_as(m, bytearray, bytearray(b"1234"))
+    repack_as(m, bytearray, bytearray(b""))
 
 
 @pytest.mark.parametrize("m", FORMATS)
@@ -72,6 +73,16 @@ def test_dict(m):
     repack_as(m, typing.Dict[str, int], {})
     repack_as(m, typing.Dict[str, typing.Dict[str, int]], {"a": {"b": 10}})
     repack_as(m, typing.Dict[str, typing.Any], {"xxx": 3.3})
+
+
+@pytest.mark.skipif(sys.version_info < (3, 9), reason="requires 3.9")
+@pytest.mark.parametrize("m", FORMATS)
+def test_dict39(m):
+    repack_as(m, dict[str, int], {"a": 10})
+    repack_as(m, dict[str, int], {})
+    repack_as(m, dict[str, dict[str, int]], {"a": {"b": 10}})
+    repack_as(m, dict[str, typing.Any], {"xxx": 3.3})
+    repack_as(m, dict[str], {"xxx": 3.3})
 
 
 @pytest.mark.parametrize("m", FORMATS_EXCEPT("toml"))
@@ -92,6 +103,18 @@ def test_list(m):
     repack_as(m, typing.List[typing.Any], [])
 
 
+@pytest.mark.skipif(sys.version_info < (3, 9), reason="requires 3.9")
+@pytest.mark.parametrize("m", FORMATS_EXCEPT("toml"))
+def test_list39(m):
+    repack_as(m, list[int], [1, 2, 3])
+    repack_as(m, list[int], [1])
+    repack_as(m, list[int], [])
+    repack_as(m, list[typing.Any], ["a", "b", "c"])
+    repack_as(m, list[typing.Any], ["a", "b"])
+    repack_as(m, list[typing.Any], ["a"])
+    repack_as(m, list[typing.Any], [])
+
+
 @pytest.mark.parametrize("m", FORMATS_EXCEPT("toml"))
 def test_set(m):
     repack_as(m, set, {1, 2, 3})
@@ -103,6 +126,16 @@ def test_set(m):
     repack_as(m, typing.Set[str], set())
     repack_as(m, typing.Set[typing.Any], {"a", "b", "c"})
     repack_as(m, typing.Set[typing.Any], set())
+
+
+@pytest.mark.skipif(sys.version_info < (3, 9), reason="requires 3.9")
+@pytest.mark.parametrize("m", FORMATS_EXCEPT("toml"))
+def test_set39(m):
+    repack_as(m, set[int], {1, 2, 3})
+    repack_as(m, set[str], {"a", "b", "c"})
+    repack_as(m, set[str], set())
+    repack_as(m, set[typing.Any], {"a", "b", "c"})
+    repack_as(m, set[typing.Any], set())
 
 
 @pytest.mark.parametrize("m", FORMATS_EXCEPT("toml"))
@@ -119,20 +152,43 @@ def test_frozen_set(m):
     repack_as(m, typing.FrozenSet[typing.Any], frozenset())
 
 
+@pytest.mark.skipif(sys.version_info < (3, 9), reason="requires 3.9")
+@pytest.mark.parametrize("m", FORMATS_EXCEPT("toml"))
+def test_frozenset39(m):
+    repack_as(m, frozenset[int], {1, 2, 3})
+    repack_as(m, frozenset[str], {"a", "b", "c"})
+    repack_as(m, frozenset[str], frozenset())
+    repack_as(m, frozenset[typing.Any], {"a", "b"})
+    repack_as(m, frozenset[typing.Any], {"a"})
+    repack_as(m, frozenset[typing.Any], frozenset())
+
+
 @pytest.mark.parametrize("m", FORMATS_EXCEPT("toml"))
 def test_tuple(m):
     repack_as(m, tuple, ("hage", -100, 3.14))
     repack_as(m, tuple, (33, {"a": 10}))
-    repack_as(m, tuple, ("hage", ))
+    repack_as(m, tuple, ("hage",))
     repack_as(m, tuple, ())
     repack_as(m, typing.Tuple, (3, "abc", "def"))
     repack_as(m, typing.Tuple[int, str, bytes], (3, "abc", b"def"))
     repack_as(m, typing.Tuple[str, dict], ("hage", {"a": -10}))
-    repack_as(m, typing.Tuple[str], ("foo", ))
+    repack_as(m, typing.Tuple[str], ("foo",))
     repack_as(m, typing.Tuple[int], ())
     repack_as(m, typing.Tuple[int, str, typing.Any], (3, "abc", "def"))
     repack_as(m, typing.Tuple[int, typing.Any, bytes], (3, "abc", b"def"))
     repack_as(m, typing.Tuple[typing.Any, str, bytes], (3, "abc", b"def"))
+
+
+@pytest.mark.skipif(sys.version_info < (3, 9), reason="requires 3.9")
+@pytest.mark.parametrize("m", FORMATS_EXCEPT("toml"))
+def test_tuple39(m):
+    repack_as(m, tuple[int, str, bytes], (3, "abc", b"def"))
+    repack_as(m, tuple[str, dict], ("hage", {"a": -10}))
+    repack_as(m, tuple[str], ("foo",))
+    repack_as(m, tuple[int], ())
+    repack_as(m, tuple[int, str, typing.Any], (3, "abc", "def"))
+    repack_as(m, tuple[int, typing.Any, bytes], (3, "abc", b"def"))
+    repack_as(m, tuple[typing.Any, str, bytes], (3, "abc", b"def"))
 
 
 @pytest.mark.parametrize("m", FORMATS_EXCEPT("toml"))
@@ -310,7 +366,7 @@ def test_datetime(m):
 
 @pytest.mark.parametrize("m", FORMATS_EXCEPT("toml"))
 def test_decimal(m):
-    repack_as(m, decimal.Decimal, decimal.Decimal('3.1314134'))
+    repack_as(m, decimal.Decimal, decimal.Decimal("3.1314134"))
 
 
 @pytest.mark.parametrize("m", FORMATS_EXCEPT("toml"))

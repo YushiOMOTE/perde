@@ -21,7 +21,7 @@ impl<'a> Serialize for WithSchema<'a> {
     where
         S: Serializer,
     {
-        match self.schema {
+        match self.schema.as_ref() {
             Schema::Bool => s.serialize_bool(self.object.as_bool().ser()?),
             Schema::Int => s.serialize_i64(self.object.as_i64().ser()?),
             Schema::Str => s.serialize_str(self.object.as_str().ser()?),
@@ -127,9 +127,9 @@ impl<'a> Serialize for WithSchema<'a> {
                     return s.serialize_none();
                 }
                 let vs = self.object.get_type().ser()?.resolve(None).ser()?;
-                let vs = match u.variants.iter().find(|v| v == &vs) {
+                let vs = match u.variants.iter().find(|v| v == &vs.as_ref()) {
                     Some(vs) => vs,
-                    None => return Err(S::Error::custom(format!("no such variant"))),
+                    None => return Err(S::Error::custom("no such variant".to_string())),
                 };
                 let v = self.object.with_schema(vs);
                 v.serialize(s)
@@ -168,7 +168,11 @@ where
                         map.serialize_entry(&k, &v)?;
                     }
                 }
-                _ => return Err(E::custom(format!("found flatten flag for non-class type"))),
+                _ => {
+                    return Err(E::custom(
+                        "found flatten flag for non-class type".to_string(),
+                    ))
+                }
             }
         } else {
             let f = obj.with_schema(&field.schema);

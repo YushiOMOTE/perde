@@ -2,6 +2,7 @@ import enum
 import perde
 import pytest
 from util import FORMATS_EXCEPT
+
 """rust
 add_value("EnumX", "X");
 add_value("EnumY", "Y");
@@ -160,7 +161,7 @@ def test_enum_skip(m):
         m.dumps(E.Y)
     with pytest.raises(Exception) as e:
         m.loads_as(E, m.data("EnumY"))
-    print(f'{e}')
+    print(f"{e}")
 
 
 @pytest.mark.parametrize("m", FORMATS_EXCEPT("toml"))
@@ -189,7 +190,7 @@ def test_enum_skip_deserializing(m):
     assert m.data("EnumY") == m.dumps(E.Y)
     with pytest.raises(Exception) as e:
         m.loads_as(E, m.data("EnumY"))
-    print(f'{e}')
+    print(f"{e}")
 
 
 """rust

@@ -30,19 +30,19 @@ class Format:
         return self.package.loads_as(*args, **kwargs)
 
     def repack(self, v):
-        print(f'repacking {v}...')
+        print(f"repacking {v}...")
         s = self.package.dumps(v)
-        print(f'packed: {s}')
+        print(f"packed: {s}")
         r = self.package.loads(s)
-        print(f'unpacked: {r}')
+        print(f"unpacked: {r}")
         assert r == v
 
     def repack_as(self, t, v):
-        print(f'repacking {v} as {t}...')
+        print(f"repacking {v} as {t}...")
         s = self.package.dumps(v)
-        print(f'packed: {s}')
+        print(f"packed: {s}")
         r = self.package.loads_as(t, s)
-        print(f'unpacked: {r}')
+        print(f"unpacked: {r}")
         assert r == v
 
     def data(self, name: str):
@@ -52,36 +52,36 @@ class Format:
             with open(p) as f:
                 return f.read()
         elif self.argtype is bytes:
-            with open(p, 'rb') as f:
+            with open(p, "rb") as f:
                 return f.read()
 
     def data_path(self, name: str):
         d = os.path.dirname(__file__)
-        base = os.path.join(d, '../data/')
-        return f'{base}/{self.fmtname}/{name}'
+        base = os.path.join(d, "../data/")
+        return f"{base}/{self.fmtname}/{name}"
 
     def unpack_data(self, name: str, astype=None):
         d = self.data(name)
-        print(f'unpacking {d}')
+        print(f"unpacking {d}")
         if astype is None:
             s = self.loads(d)
         else:
             s = self.loads_as(astype, d)
-        print(f'unpacked {s}')
+        print(f"unpacked {s}")
         return s
 
     def repack_data(self, name: str, astype=None, expect=None):
         d = self.data(name)
-        print(f'repacking {d} in `{self.name}`...')
+        print(f"repacking {d} in `{self.name}`...")
         if astype is not None:
             v = self.loads_as(astype, d)
         else:
             v = self.loads(d)
-        print(f'unpacked {v}')
+        print(f"unpacked {v}")
         if expect is not None:
             assert v == expect
         v = self.dumps(v)
-        print(f'packed {v}')
+        print(f"packed {v}")
         assert v == d
 
     def unpack_type(self, ty):
@@ -98,20 +98,20 @@ class Format:
 
 
 def repack(m, v):
-    print(f'repacking {v}...')
+    print(f"repacking {v}...")
     s = m.package.dumps(v)
-    print(f'packed: {s}')
+    print(f"packed: {s}")
     r = m.package.loads(s)
-    print(f'unpacked: {r}')
+    print(f"unpacked: {r}")
     assert r == v
 
 
 def repack_as(m, t, v):
-    print(f'repacking {v} as {t}...')
+    print(f"repacking {v} as {t}...")
     s = m.package.dumps(v)
-    print(f'packed: {s}')
+    print(f"packed: {s}")
     r = m.package.loads_as(t, s)
-    print(f'unpacked: {r}')
+    print(f"unpacked: {r}")
     assert r == v
 
 
@@ -216,18 +216,14 @@ def idfn(m):
 
 
 def mark(params):
-    return [
-        pytest.param(c, marks=[getattr(pytest.mark, c.fmtname)])
-        for c in params
-    ]
+    return [pytest.param(c, marks=[getattr(pytest.mark, c.fmtname)]) for c in params]
 
 
 _FORMATS = [
     Format("json", "json", perde_json, str, perde_json.JsonError),
     Format("yaml", "yaml", perde_yaml, str, perde_yaml.YamlError),
-    Format("msgpack", "msgpack", perde_msgpack, bytes,
-           perde_msgpack.MsgpackError),
-    Format("toml", "toml", perde_toml, str, perde_toml.TomlError)
+    Format("msgpack", "msgpack", perde_msgpack, bytes, perde_msgpack.MsgpackError),
+    Format("toml", "toml", perde_toml, str, perde_toml.TomlError),
 ]
 
 FORMATS = mark(_FORMATS)

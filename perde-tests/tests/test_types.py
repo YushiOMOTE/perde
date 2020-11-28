@@ -9,6 +9,7 @@ class Entry:
     """
     The type `ty` and its possible values `valus`
     """
+
     ty: TypeVar
     values: List[object]
 
@@ -25,9 +26,8 @@ PRIMITIVES = [
     Entry(int, [-100, 0, 100]),
     Entry(float, [-3.1415, 0.0, 1.4142]),
     Entry(str, ["wazzaaa", ""]),
-    Entry(bytes, [b'abc\x03', b'']),
-    Entry(bytearray,
-          [bytearray(b'abc\x03'), bytearray(b'')])
+    Entry(bytes, [b"abc\x03", b""]),
+    Entry(bytearray, [bytearray(b"abc\x03"), bytearray(b"")]),
 ]
 
 FEW_PRIMITIVES = [
@@ -40,9 +40,8 @@ LISTS = [
     Entry(List[int], [[-18, 0, 5], []]),
     Entry(List[float], [[-3.1415, 0.0, 1.4142], []]),
     Entry(List[str], [["wazzaaa", ""], []]),
-    Entry(List[bytes], [[b'abc\x03', b''], []]),
-    Entry(List[bytearray],
-          [[bytearray(b'abc\x03'), bytearray(b'')], []])
+    Entry(List[bytes], [[b"abc\x03", b""], []]),
+    Entry(List[bytearray], [[bytearray(b"abc\x03"), bytearray(b"")], []]),
 ]
 
 FEW_LISTS = [
@@ -51,41 +50,16 @@ FEW_LISTS = [
 ]
 
 DICTS_SK = [
-    Entry(Dict[str, bool], [{
-        "k": True
-    }, {}]),
-    Entry(Dict[str, int], [{
-        "a": 3
-    }, {}]),
-    Entry(Dict[str, float], [{
-        "v": -1.4,
-        "p": 0.0,
-        "n": 2.2
-    }, {}]),
-    Entry(Dict[str, str], [{
-        "v": "avc",
-        "p": ""
-    }, {
-        "n": "x"
-    }, {}]),
-    Entry(Dict[str, bytes], [{
-        "v": b"aaaa",
-        "z": b""
-    }, {
-        "p": b"v"
-    }, {}]),
+    Entry(Dict[str, bool], [{"k": True}, {}]),
+    Entry(Dict[str, int], [{"a": 3}, {}]),
+    Entry(Dict[str, float], [{"v": -1.4, "p": 0.0, "n": 2.2}, {}]),
+    Entry(Dict[str, str], [{"v": "avc", "p": ""}, {"n": "x"}, {}]),
+    Entry(Dict[str, bytes], [{"v": b"aaaa", "z": b""}, {"p": b"v"}, {}]),
 ]
 
 FEW_DICTS_SK = [
-    Entry(Dict[str, int], [{
-        "a": 3
-    }, {}]),
-    Entry(Dict[str, str], [{
-        "v": "avc",
-        "p": ""
-    }, {
-        "n": "x"
-    }, {}]),
+    Entry(Dict[str, int], [{"a": 3}, {}]),
+    Entry(Dict[str, str], [{"v": "avc", "p": ""}, {"n": "x"}, {}]),
 ]
 
 
@@ -109,10 +83,8 @@ def test_simple_classes(m, t1, t2, v1, v2):
 
 @pytest.mark.parametrize("m", FORMATS_EXCEPT("toml"))
 @pytest.mark.parametrize("t1,v1", expand(FEW_PRIMITIVES))
-@pytest.mark.parametrize("t2,v2",
-                         expand(FEW_PRIMITIVES + FEW_LISTS + FEW_DICTS_SK))
-@pytest.mark.parametrize("t3,v3",
-                         expand(FEW_PRIMITIVES + FEW_LISTS + FEW_DICTS_SK))
+@pytest.mark.parametrize("t2,v2", expand(FEW_PRIMITIVES + FEW_LISTS + FEW_DICTS_SK))
+@pytest.mark.parametrize("t3,v3", expand(FEW_PRIMITIVES + FEW_LISTS + FEW_DICTS_SK))
 def test_nested_classes(m, t1, t2, t3, v1, v2, v3):
     @dataclass
     class Child:
@@ -156,8 +128,7 @@ def test_simple_classes_tables_after(m, t1, t2, v1, v2):
 
 @pytest.mark.parametrize("m", FORMATS_ONLY("toml"))
 @pytest.mark.parametrize("t1,v1", expand(FEW_PRIMITIVES))
-@pytest.mark.parametrize("t2,v2",
-                         expand(FEW_PRIMITIVES + FEW_LISTS + FEW_DICTS_SK))
+@pytest.mark.parametrize("t2,v2", expand(FEW_PRIMITIVES + FEW_LISTS + FEW_DICTS_SK))
 @pytest.mark.parametrize("t3,v3", expand(FEW_PRIMITIVES))
 def test_nested_classes_tables_after(m, t1, t2, t3, v1, v2, v3):
     @dataclass

@@ -9,11 +9,13 @@
 
 ## Dictionary
 
-The dictonary type like `dict`, `typing.Dict` corresponds to a map pattern in the serialized format (e.g. JSON map). `perde` supports the following form of dictionary types:
+The dictionary types like `dict`, `typing.Dict` correspond to a map pattern in serialized format (e.g. JSON map). `perde` supports the following form of dictionary types:
 
-* Built-in `dict`
-* `typing.Dict` without subscription
-* `typing.Dict` with subscription
+* `dict`
+* `typing.Dict`
+* `typing.Dict[X, Y]`
+* `dict[X]` (since Python 3.9)
+* `dict[X, Y]` (since Python 3.9)
 
 Using built-in `dict`,
 
@@ -28,7 +30,7 @@ A(a='x', b={'x': 3, 'y': 'hey', 'z': True})
 
 ```
 
-Using `typing.Dict` without subscription,
+Using bare `typing.Dict`,
 
 ```python
 >>> @dataclass
@@ -41,7 +43,7 @@ A(a='x', b={'x': 3, 'y': 'hey', 'z': True})
 
 ```
 
-Using `typing.Dict` with subscription,
+Using `typing.Dict[X, Y]`,
 
 ```python
 >>> @dataclass
@@ -54,13 +56,27 @@ A(a='x', b={'x': 3.0, 'y': 1.4, 'z': 1.5})
 
 ```
 
+Using `dict[X, Y]`,
+
+```python
+>>> @dataclass
+... class A:
+...     a: str
+...     b: dict[str, float] # doctest: +PY39
+
+>>> perde.json.loads_as(A, '{"a": "x", "b": {"x": 3.0, "y": 1.4, "z": 1.5}}') # doctest: +PY39
+A(a='x', b={'x': 3.0, 'y': 1.4, 'z': 1.5})
+
+```
+
 ## List
 
-The list type like `list`, `typing.List` corresponds to a list or array pattern in the serialized format (e.g. JSON array). `perde` supports the following form of list types:
+The list types like `list`, `typing.List` correspond to a list or array pattern in serialized format (e.g. JSON array). `perde` supports the following form of list types:
 
-* Built-in `list`
-* `typing.List` without subscription
-* `typing.List` with subscription
+* `list`
+* `typing.List`
+* `typing.List[X]`
+* `list[X]` (since Python 3.9)
 
 Using built-in `list`,
 
@@ -70,12 +86,12 @@ Using built-in `list`,
 ...     a: str
 ...     b: list
 
->>> perde.json.loads_as(A, '{"a": "x", "b": [1, 2, 3]}')
-A(a='x', b=[1, 2, 3])
+>>> perde.json.loads_as(A, '{"a": "x", "b": [1, "a", 3.3]}')
+A(a='x', b=[1, 'a', 3.3])
 
 ```
 
-Using `typing.List` without subscription,
+Using bare `typing.List`,
 
 ```python
 >>> @dataclass
@@ -88,7 +104,7 @@ A(a='x', b=[1, 2, 3])
 
 ```
 
-Using `typing.List` with subscription,
+Using `typing.List[X]`,
 
 ```python
 >>> @dataclass
@@ -101,14 +117,27 @@ A(a='x', b=[1, 2, 3])
 
 ```
 
+Using `list[X]`,
+
+```python
+>>> @dataclass
+... class A:
+...     a: str
+...     b: list[int] # doctest: +PY39
+
+>>> perde.json.loads_as(A, '{"a": "x", "b": [1, 2, 3]}') # doctest: +PY39
+A(a='x', b=[1, 2, 3])
+
+```
+
 ## Set
 
-The set type like `set`, `typing.Set` corresponds to a list or array pattern in the serialized format (e.g. JSON array). `perde` supports the following form of set types:
+The set types like `set`, `typing.Set` correspond to a list or array pattern in serialized format (e.g. JSON array). `perde` supports the following form of set types:
 
-* Built-in `set`
-* Built-in `frozenset`
-* `typing.Set` with/without subscription
-* `typing.FrozenSet` with/without subscription
+* `set` / `frozenset`
+* `typing.Set` / `typing.FrozenSet`
+* `typing.Set[X]` / `typing.FrozenSet[X]`
+* `set[X]` / `frozenset[X]` (since Python 3.9)
 
 Using built-in `set`,
 
@@ -118,12 +147,12 @@ Using built-in `set`,
 ...     a: str
 ...     b: set
 
->>> perde.json.loads_as(A, '{"a": "x", "b": [1, 2, 3]}')
-A(a='x', b={1, 2, 3})
+>>> perde.json.loads_as(A, '{"a": "x", "b": [true, 2, 3]}')
+A(a='x', b={True, 2, 3})
 
 ```
 
-Using `typing.Set` without subscription,
+Using bare `typing.Set`,
 
 ```python
 >>> @dataclass
@@ -131,12 +160,12 @@ Using `typing.Set` without subscription,
 ...     a: str
 ...     b: typing.Set
 
->>> perde.json.loads_as(A, '{"a": "x", "b": [1, 2, 3]}')
-A(a='x', b={1, 2, 3})
+>>> perde.json.loads_as(A, '{"a": "x", "b": [true, 2, 3]}')
+A(a='x', b={True, 2, 3})
 
 ```
 
-Using `typing.Set` with subscription,
+Using `typing.Set[X]`,
 
 ```python
 >>> @dataclass
@@ -149,14 +178,29 @@ A(a='x', b={1, 2, 3})
 
 ```
 
+Using `set[X]`,
+
+```python
+>>> @dataclass
+... class A:
+...     a: str
+...     b: set[int] # doctest: +PY39
+
+>>> perde.json.loads_as(A, '{"a": "x", "b": [1, 2, 3]}') # doctest: +PY39
+A(a='x', b={1, 2, 3})
+
+```
+
 `frozenset` and `typing.FrozenSet` work the same as `set` and `typing.Set`.
 
 ## Tuple
 
-The tuple type like `tuple`, `typing.Tuple` corresponds to a list or array pattern in the serialized format (e.g. JSON array). `perde` supports the following form of set types:
+The tuple types like `tuple`, `typing.Tuple` correspond to a list or array pattern in serialized format (e.g. JSON array). `perde` supports the following form of set types:
 
-* Built-in `tuple`
-* `typing.Tuple` with/without subscription
+* `tuple`
+* `typing.Tuple`
+* `typing.Tuple[X, Y, ...]`
+* `tuple[X, Y, ...]` (since Python 3.9)
 
 Using built-in `tuple`,
 
@@ -171,7 +215,7 @@ A(a='x', b=(1, True, 'hello'))
 
 ```
 
-Using `typing.Tuple` without subscription,
+Using bare `typing.Tuple`,
 
 ```python
 >>> @dataclass
@@ -184,7 +228,7 @@ A(a='x', b=(1, True, 'hello'))
 
 ```
 
-Using `typing.Tuple` with subscription,
+Using `typing.Tuple[X, Y, ...]`,
 
 ```python
 >>> @dataclass
@@ -193,6 +237,19 @@ Using `typing.Tuple` with subscription,
 ...     b: typing.Tuple[int, bool, str]
 
 >>> perde.json.loads_as(A, '{"a": "x", "b": [1, true, "hello"]}')
+A(a='x', b=(1, True, 'hello'))
+
+```
+
+Using `tuple[X, Y, ...]`,
+
+```python
+>>> @dataclass
+... class A:
+...     a: str
+...     b: tuple[int, bool, str] # doctest: +PY39
+
+>>> perde.json.loads_as(A, '{"a": "x", "b": [1, true, "hello"]}') # doctest: +PY39
 A(a='x', b=(1, True, 'hello'))
 
 ```
@@ -211,6 +268,8 @@ Use `typing.Tuple[()]` to explicitly specify the empty tuple.
 A(a='x', b=())
 
 ```
+
+`tuple[()]` is also available since Python 3.9.
 
 ## Optional
 
@@ -274,7 +333,7 @@ A(a='x', b='three')
 
 ```
 
-As the other generic types, `typing.Union` without subscription is allowed but it accepts anything including `None` value, also making the field optional.
+Bare `typing.Union` accepts anything including `None` value, also making the field optional.
 
 ```python
 >>> @dataclass
@@ -303,7 +362,7 @@ A(a='x', b=None)
 
 ```
 
-`typing.Union` cannot be used in schema-less formats which itself don't have type information.
+`typing.Union` cannot be used in schema-less formats which don't have type information themselves.
 
 ## Any
 
@@ -336,5 +395,5 @@ A(a='x', b=None)
 
 ```
 
-`typing.Optional` and `typing.Any` without subscription behave exactly same as `typing.Any`.
-`typing.Any` cannot be used in schema-less formats which itself don't have type information.
+Bare `typing.Optional` and `typing.Any` behave exactly same as `typing.Any`.
+`typing.Any` cannot be used in schema-less formats which don't have type information themselves.

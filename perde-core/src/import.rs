@@ -11,6 +11,7 @@ pub struct Import {
     pub base_generic_alias: Option<SyncObject>,
     pub union_generic_alias: Option<SyncObject>,
     pub special_generic_alias: Option<SyncObject>,
+    pub types_generic_alias: Option<SyncObject>,
     pub type_var: SyncObject,
     pub any: SyncObject,
     pub union: SyncObject,
@@ -66,10 +67,12 @@ lazy_static::lazy_static! {
         let datetime_ = import!("datetime")?;
         let decimal_ = import!("decimal")?;
         let uuid_ = import!("uuid")?;
+        let types_ = import!("types")?;
 
         let fields = getattr!(dataclasses, "fields")?;
         let missing = getattr!(dataclasses, "MISSING")?;
         let generic_alias = getattr!(typing, "_GenericAlias")?;
+        let types_generic_alias = getattr!(types_, "GenericAlias").ok();
         let union_generic_alias = getattr!(typing, "_UnionGenericAlias").ok();
         let base_generic_alias = getattr!(typing, "_BaseGenericAlias").ok();
         let special_generic_alias = getattr!(typing, "_SpecialGenericAlias").ok();
@@ -96,6 +99,7 @@ lazy_static::lazy_static! {
             fields,
             missing,
             generic_alias,
+            types_generic_alias,
             union_generic_alias,
             base_generic_alias,
             special_generic_alias,

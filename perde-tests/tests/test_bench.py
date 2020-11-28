@@ -1,6 +1,7 @@
 import pytest
 from typing import Dict, List
 from util import BENCH_FORMATS, BENCH_FORMATS_EXCEPT, idfn
+
 """rust
 add_value("BenchNumber", 1311);
 add_value("BenchString", "aiueo");
