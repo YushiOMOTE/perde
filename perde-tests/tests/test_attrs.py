@@ -3,6 +3,7 @@ from typing import Dict
 import perde
 import pytest
 from util import FORMATS, FORMATS_EXCEPT
+
 """rust
 #[derive(Serialize, Debug, new)]
 struct Plain {
@@ -149,7 +150,7 @@ def test_deny_unknown_fields(m):
     assert e == NoDenyUnknownFields("aaaaa", 1, -2)
     with pytest.raises(Exception) as e:
         m.unpack_data("DenyUnknownFields", astype=DenyUnknownFields)
-    print(f'{e}')
+    print(f"{e}")
 
 
 """rust

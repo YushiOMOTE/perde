@@ -50,14 +50,14 @@ def test_bool(m):
 
 @pytest.mark.parametrize("m", FORMATS_EXCEPT("toml"))
 def test_bytes(m):
-    repack_as(m, bytes, b'1234')
-    repack_as(m, bytes, b'')
+    repack_as(m, bytes, b"1234")
+    repack_as(m, bytes, b"")
 
 
 @pytest.mark.parametrize("m", FORMATS_EXCEPT("toml"))
 def test_bytearray(m):
-    repack_as(m, bytearray, bytearray(b'1234'))
-    repack_as(m, bytearray, bytearray(b''))
+    repack_as(m, bytearray, bytearray(b"1234"))
+    repack_as(m, bytearray, bytearray(b""))
 
 
 @pytest.mark.parametrize("m", FORMATS)
@@ -167,12 +167,12 @@ def test_frozenset39(m):
 def test_tuple(m):
     repack_as(m, tuple, ("hage", -100, 3.14))
     repack_as(m, tuple, (33, {"a": 10}))
-    repack_as(m, tuple, ("hage", ))
+    repack_as(m, tuple, ("hage",))
     repack_as(m, tuple, ())
     repack_as(m, typing.Tuple, (3, "abc", "def"))
     repack_as(m, typing.Tuple[int, str, bytes], (3, "abc", b"def"))
     repack_as(m, typing.Tuple[str, dict], ("hage", {"a": -10}))
-    repack_as(m, typing.Tuple[str], ("foo", ))
+    repack_as(m, typing.Tuple[str], ("foo",))
     repack_as(m, typing.Tuple[int], ())
     repack_as(m, typing.Tuple[int, str, typing.Any], (3, "abc", "def"))
     repack_as(m, typing.Tuple[int, typing.Any, bytes], (3, "abc", b"def"))
@@ -184,7 +184,7 @@ def test_tuple(m):
 def test_tuple39(m):
     repack_as(m, tuple[int, str, bytes], (3, "abc", b"def"))
     repack_as(m, tuple[str, dict], ("hage", {"a": -10}))
-    repack_as(m, tuple[str], ("foo", ))
+    repack_as(m, tuple[str], ("foo",))
     repack_as(m, tuple[int], ())
     repack_as(m, tuple[int, str, typing.Any], (3, "abc", "def"))
     repack_as(m, tuple[int, typing.Any, bytes], (3, "abc", b"def"))
@@ -366,7 +366,7 @@ def test_datetime(m):
 
 @pytest.mark.parametrize("m", FORMATS_EXCEPT("toml"))
 def test_decimal(m):
-    repack_as(m, decimal.Decimal, decimal.Decimal('3.1314134'))
+    repack_as(m, decimal.Decimal, decimal.Decimal("3.1314134"))
 
 
 @pytest.mark.parametrize("m", FORMATS_EXCEPT("toml"))

@@ -13,7 +13,7 @@ build-version-opt ?= $(if $(python-version),-i python$(python-version),)
 
 
 .PHONY: setup install-deps install-perde
-.PHONY: lint pep8 mypy clippy test test-codegen test-datagen fmt doctest bench develop build coverage publish test-publish clean
+.PHONY: lint pep8 mypy clippy test test-codegen test-datagen fmt fmt-rs fmt-py doctest bench develop build coverage publish test-publish clean
 
 
 default: setup lint test
@@ -78,8 +78,15 @@ clippy:
 	cargo clippy -- -D warnings
 
 
-fmt:
+fmt: fmt-rs fmt-py
+
+
+fmt-rs:
 	cargo fmt --all -- --check
+
+
+fmt-py:
+	$(pipenv) black --check .
 
 
 doctest:
