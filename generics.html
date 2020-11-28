@@ -213,9 +213,9 @@ A(a='x', b={'x': 3.0, 'y': 1.4, 'z': 1.5})
 <pre><code class="language-python">&gt;&gt;&gt; @dataclass
 ... class A:
 ...     a: str
-...     b: dict[str, float]
+...     b: dict[str, float] # doctest: +PY39
 
-&gt;&gt;&gt; perde.json.loads_as(A, '{&quot;a&quot;: &quot;x&quot;, &quot;b&quot;: {&quot;x&quot;: 3.0, &quot;y&quot;: 1.4, &quot;z&quot;: 1.5}}')
+&gt;&gt;&gt; perde.json.loads_as(A, '{&quot;a&quot;: &quot;x&quot;, &quot;b&quot;: {&quot;x&quot;: 3.0, &quot;y&quot;: 1.4, &quot;z&quot;: 1.5}}') # doctest: +PY39
 A(a='x', b={'x': 3.0, 'y': 1.4, 'z': 1.5})
 
 </code></pre>
@@ -261,9 +261,9 @@ A(a='x', b=[1, 2, 3])
 <pre><code class="language-python">&gt;&gt;&gt; @dataclass
 ... class A:
 ...     a: str
-...     b: list[int]
+...     b: list[int] # doctest: +PY39
 
-&gt;&gt;&gt; perde.json.loads_as(A, '{&quot;a&quot;: &quot;x&quot;, &quot;b&quot;: [1, 2, 3]}')
+&gt;&gt;&gt; perde.json.loads_as(A, '{&quot;a&quot;: &quot;x&quot;, &quot;b&quot;: [1, 2, 3]}') # doctest: +PY39
 A(a='x', b=[1, 2, 3])
 
 </code></pre>
@@ -309,9 +309,9 @@ A(a='x', b={1, 2, 3})
 <pre><code class="language-python">&gt;&gt;&gt; @dataclass
 ... class A:
 ...     a: str
-...     b: set[int]
+...     b: set[int] # doctest: +PY39
 
-&gt;&gt;&gt; perde.json.loads_as(A, '{&quot;a&quot;: &quot;x&quot;, &quot;b&quot;: [1, 2, 3]}')
+&gt;&gt;&gt; perde.json.loads_as(A, '{&quot;a&quot;: &quot;x&quot;, &quot;b&quot;: [1, 2, 3]}') # doctest: +PY39
 A(a='x', b={1, 2, 3})
 
 </code></pre>
@@ -358,9 +358,9 @@ A(a='x', b=(1, True, 'hello'))
 <pre><code class="language-python">&gt;&gt;&gt; @dataclass
 ... class A:
 ...     a: str
-...     b: tuple[int, bool, str]
+...     b: tuple[int, bool, str] # doctest: +PY39
 
-&gt;&gt;&gt; perde.json.loads_as(A, '{&quot;a&quot;: &quot;x&quot;, &quot;b&quot;: [1, true, &quot;hello&quot;]}')
+&gt;&gt;&gt; perde.json.loads_as(A, '{&quot;a&quot;: &quot;x&quot;, &quot;b&quot;: [1, true, &quot;hello&quot;]}') # doctest: +PY39
 A(a='x', b=(1, True, 'hello'))
 
 </code></pre>
