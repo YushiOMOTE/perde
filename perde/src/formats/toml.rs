@@ -1,11 +1,10 @@
 use perde_core::prelude::*;
 use serde::de::DeserializeSeed;
-use std::borrow::Cow;
 
-fn loads_as_<'a>(schema: Cow<'a, Schema>, object: &ObjectRef) -> Result<Object> {
+fn loads_as_(schema: &Schema, object: &ObjectRef) -> Result<Object> {
     let buf = object.as_str().context("invalid argument")?;
     let mut deserializer = toml::de::Deserializer::new(&buf);
-    Ok(schema.as_ref().deserialize(&mut deserializer)?)
+    Ok(schema.deserialize(&mut deserializer)?)
 }
 
 fn loads_(object: &ObjectRef) -> Result<Object> {

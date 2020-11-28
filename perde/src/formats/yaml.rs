@@ -1,9 +1,8 @@
 use perde_core::prelude::*;
-use std::borrow::Cow;
 
-fn loads_as_<'a>(schema: Cow<'a, Schema>, object: &ObjectRef) -> Result<Object> {
+fn loads_as_(schema: &Schema, object: &ObjectRef) -> Result<Object> {
     let s = object.as_str().context("invalid argument")?;
-    Ok(serde_yaml::seed::from_str_seed(s, schema.as_ref())?)
+    Ok(serde_yaml::seed::from_str_seed(s, schema)?)
 }
 
 fn loads_(object: &ObjectRef) -> Result<Object> {

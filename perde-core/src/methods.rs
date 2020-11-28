@@ -121,10 +121,9 @@ macro_rules! impl_default_methods {
                     ));
                 }
 
-                $loads_as(
-                    args.arg(0)?.resolve(None).context("invalid argument")?,
-                    args.arg(1)?,
-                )
+                let schema = args.arg(0)?.resolve(None).context("invalid argument")?;
+
+                $loads_as(schema.as_ref(), args.arg(1)?)
             };
 
             match inner() {
