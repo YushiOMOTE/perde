@@ -4,6 +4,7 @@ on:
   push:
     tags: ['v*']
 
+
 jobs:
   build-windows:
     name: Release for windows
@@ -19,9 +20,16 @@ jobs:
       - name: Build
         run: |
           cargo install maturin
-          maturin build --release -m perde/Cargo.toml -i python
+          maturin build --release --no-sdist -m perde/Cargo.toml -i python
+      - uses: actions/upload-artifact@v2
+        with:
+          name: windows-wheels-${{ matrix.python }}
+          path: target/wheels/*
+      - name: Upload to PyPI
+        run: |
           pip install twine
-          twine upload -u ${{ secrets.PYPI_USER }} -p ${{ secrets.PYPI_PASSWORD }} target/wheels/*
+          twine upload -u ${{ secrets.PYPI_USER }} -p ${{ secrets.PYPI_PASSWORD }} --skip-existing target/wheels/*
+
 
   build-macos:
     name: Release for macos
@@ -40,17 +48,33 @@ jobs:
       - name: Build
         run: |
           cargo install maturin
-          maturin build --release -m perde/Cargo.toml -i python3.7 python3.8 python3.9
+          maturin build --release --no-sdist -m perde/Cargo.toml -i python3.7 python3.8 python3.9
+      - uses: actions/upload-artifact@v2
+        with:
+          name: macos-wheels
+          path: target/wheels/*
+      - name: Upload to PyPI
+        run: |
           pip install twine
-          twine upload -u ${{ secrets.PYPI_USER }} -p ${{ secrets.PYPI_PASSWORD }} target/wheels/*
+          twine upload -u ${{ secrets.PYPI_USER }} -p ${{ secrets.PYPI_PASSWORD }} --skip-existing target/wheels/*
+
 
   build-linux:
     name: Release for manylinux
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.7
       - name: Build
         run: |
           docker run --rm -v ${{ github.workspace }}:/io konstin2/maturin build --release -m /io/perde/Cargo.toml -i python3.7 python3.8 python3.9
+      - uses: actions/upload-artifact@v2
+        with:
+          name: linux-wheels
+          path: target/wheels/*
+      - name: Upload to PyPI
+        run: |
           pip install twine
-          twine upload -u ${{ secrets.PYPI_USER }} -p ${{ secrets.PYPI_PASSWORD }} target/wheels/*
+          twine upload -u ${{ secrets.PYPI_USER }} -p ${{ secrets.PYPI_PASSWORD }} --skip-existing target/wheels/*
