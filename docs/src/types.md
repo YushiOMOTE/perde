@@ -9,24 +9,19 @@
 
 `perde` supports the following types.
 
-* Built-in types
+* Primitive types
     * `int`
     * `str`
     * `float`
     * `bool`
     * `bytes`
     * `bytearray`
-    * `dict`
-    * `list`
-    * `set`
-    * `frozenset`
-    * `tuple`
 * Generic types
-    * `typing.Dict`
-    * `typing.List`
-    * `typing.Set`
-    * `typing.FrozenSet`
-    * `typing.Tuple`
+    * `dict` / `typing.Dict`
+    * `list` / `typing.List`
+    * `set` / `typing.Set`
+    * `frozenset` / `typing.FrozenSet`
+    * `tuple` / `typing.Tuple`
     * `typing.Optional`
     * `typing.Union`
     * `typing.Any`
