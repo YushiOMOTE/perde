@@ -17,10 +17,10 @@ macro_rules! exception {
 
 #[macro_export]
 macro_rules! method_fastcall {
-    ($method:ident, $doc:expr) => {
+    ($method:ident, $name:literal, $doc:expr) => {
         |_: pyo3::Python<'_>, name: &str, m: &pyo3::types::PyModule| -> pyo3::PyResult<()> {
             let def = pyo3::ffi::PyMethodDef {
-                ml_name: concat!(stringify!($method), "\0").as_ptr() as *const std::os::raw::c_char,
+                ml_name: concat!($name, "\0").as_ptr() as *const std::os::raw::c_char,
                 ml_meth: Some(unsafe {
                     std::mem::transmute::<
                         $crate::methods::_PyCFunctionFastWithKeywords,
@@ -33,7 +33,7 @@ macro_rules! method_fastcall {
             unsafe {
                 pyo3::ffi::PyModule_AddObject(
                     pyo3::conversion::AsPyPointer::as_ptr(m),
-                    concat!(stringify!($method), "\0").as_ptr() as *const std::os::raw::c_char,
+                    concat!($name, "\0").as_ptr() as *const std::os::raw::c_char,
                     pyo3::ffi::PyCFunction_NewEx(
                         Box::into_raw(Box::new(def)),
                         std::ptr::null_mut(),
@@ -50,10 +50,10 @@ macro_rules! method_fastcall {
 
 #[macro_export]
 macro_rules! method_varargs {
-    ($method:ident, $doc:expr) => {
+    ($method:ident, $name:literal, $doc:expr) => {
         |_: pyo3::Python<'_>, name: &str, m: &pyo3::types::PyModule| -> pyo3::PyResult<()> {
             let def = pyo3::ffi::PyMethodDef {
-                ml_name: concat!(stringify!($method), "\0").as_ptr() as *const std::os::raw::c_char,
+                ml_name: concat!($name, "\0").as_ptr() as *const std::os::raw::c_char,
                 ml_meth: Some($method),
                 ml_flags: pyo3::ffi::METH_VARARGS,
                 ml_doc: $doc.as_ptr() as *const std::os::raw::c_char,
@@ -61,7 +61,7 @@ macro_rules! method_varargs {
             unsafe {
                 pyo3::ffi::PyModule_AddObject(
                     pyo3::conversion::AsPyPointer::as_ptr(m),
-                    concat!(stringify!($method), "\0").as_ptr() as *const std::os::raw::c_char,
+                    concat!($name, "\0").as_ptr() as *const std::os::raw::c_char,
                     pyo3::ffi::PyCFunction_NewEx(
                         Box::into_raw(Box::new(def)),
                         std::ptr::null_mut(),
@@ -105,7 +105,7 @@ macro_rules! impl_default_methods {
     ($module_name:tt, $exception_type:tt, $loads_as:ident, $loads:ident, $dumps:ident) => {
         pyo3::create_exception!($module_name, $exception_type, pyo3::exceptions::PyException);
 
-        pub extern "C" fn loads_as(
+        pub extern "C" fn _loads_as(
             _self: *mut pyo3::ffi::PyObject,
             args: *mut pyo3::ffi::PyObject,
         ) -> *mut pyo3::ffi::PyObject {
@@ -135,7 +135,7 @@ macro_rules! impl_default_methods {
             }
         }
 
-        pub extern "C" fn dumps(
+        pub extern "C" fn _dumps(
             _self: *mut pyo3::ffi::PyObject,
             args: *mut pyo3::ffi::PyObject,
         ) -> *mut pyo3::ffi::PyObject {
@@ -164,7 +164,7 @@ macro_rules! impl_default_methods {
             }
         }
 
-        pub extern "C" fn loads(
+        pub extern "C" fn _loads(
             _self: *mut pyo3::ffi::PyObject,
             args: *mut pyo3::ffi::PyObject,
         ) -> *mut pyo3::ffi::PyObject {
@@ -194,9 +194,9 @@ macro_rules! impl_default_methods {
         module!(
             $module_name,
             exception!($exception_type),
-            method_varargs!(loads, ""),
-            method_varargs!(dumps, ""),
-            method_varargs!(loads_as, "")
+            method_varargs!(_loads, "loads", ""),
+            method_varargs!(_dumps, "dumps", ""),
+            method_varargs!(_loads_as, "loads_as", "")
         );
     };
 }
