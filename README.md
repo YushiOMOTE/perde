@@ -8,7 +8,7 @@
 [![Supported python versions](https://img.shields.io/pypi/pyversions/perde.svg)](https://pypi.org/project/perde/)
 [![Actions Status](https://github.com/YushiOMOTE/perde/workflows/tests/badge.svg)](https://github.com/YushiOMOTE/perde/actions)
 [![codecov](https://codecov.io/gh/yushiomote/perde/branch/master/graph/badge.svg)](https://codecov.io/gh/yushiomote/perde)
-
+[![Coding style](https://badgen.net/badge/code%20style/black/000)](https://github.com/ambv/black)
 
 ![](https://github.com/YushiOMOTE/perde/blob/master/assets/logo.png?raw=true)
 
