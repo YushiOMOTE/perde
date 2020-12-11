@@ -77,10 +77,25 @@ macro_rules! method_varargs {
 }
 
 #[macro_export]
+macro_rules! add_submodule {
+    ($module:ident) => {
+        |py: pyo3::Python<'_>, _: &str, m: &pyo3::types::PyModule| -> pyo3::PyResult<()> {
+            let submodule = $module(py)?;
+            m.add_submodule(submodule)
+        }
+    };
+}
+
+#[macro_export]
 macro_rules! submodule {
-    ($module:tt) => {
-        |_: pyo3::Python<'_>, _: &str, m: &pyo3::types::PyModule| -> pyo3::PyResult<()> {
-            m.add_wrapped(pyo3::wrap_pymodule!($module))
+    ($module:tt, $($cls:expr),*) => {
+        pub fn $module(py: pyo3::Python<'_>) -> pyo3::PyResult<&pyo3::types::PyModule> {
+            let m = pyo3::types::PyModule::new(py, stringify!($module))?;
+            $({
+                let method = $cls;
+                method(py, concat!(stringify!($name), "\0"), m)?;
+            })*
+            Ok(m)
         }
     };
 }
@@ -191,7 +206,7 @@ macro_rules! impl_default_methods {
             }
         }
 
-        module!(
+        submodule!(
             $module_name,
             exception!($exception_type),
             method_varargs!(_loads, "loads", ""),

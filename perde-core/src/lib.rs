@@ -21,7 +21,7 @@ pub mod prelude {
     pub use crate::object::{Object, ObjectRef};
     pub use crate::schema::{Schema, WithSchema};
     pub use crate::{
-        bail, bail_type_err, bail_value_err, err, exception, impl_default_methods, method_fastcall,
-        method_varargs, module, submodule, type_err, value_err,
+        add_submodule, bail, bail_type_err, bail_value_err, err, exception, impl_default_methods,
+        method_fastcall, method_varargs, module, submodule, type_err, value_err,
     };
 }
