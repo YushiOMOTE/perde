@@ -1,24 +1,53 @@
-from typing import Any, Callable, Optional
+from typing import Any, Callable, Optional, List
 from dataclasses import dataclass
 from serde.json import to_json, from_json
 from serde.msgpack import to_msgpack, from_msgpack
 import statistics
-import perde
 import timeit
-
-
+import pygal
+import perde
 import attr
 import cattr
 import msgpack
 import json
 
 
+def key(lib: str, fmt: str, data: str, dir: str):
+    return f"{lib}.{fmt}.{data}.{dir}"
+
+
+def cat(fmt: str, data: str, dir: str):
+    return f"{fmt}.{data}.{dir}"
+
+
 @dataclass
 class Report:
-    name: str
-    min: float
-    max: float
-    ave: float
+    library: str
+    format: str
+    data: str
+    dir: str
+    values: List[float]
+    norm: float = None
+
+    @property
+    def name(self) -> str:
+        return key(self.library, self.format, self.data, self.dir)
+
+    @property
+    def min(self) -> float:
+        return min(self.values)
+
+    @property
+    def max(self) -> float:
+        return max(self.values)
+
+    @property
+    def mean(self) -> float:
+        return statistics.mean(self.values)
+
+    @property
+    def cat(self) -> str:
+        return cat(self.format, self.data, self.dir)
 
 
 @dataclass
@@ -31,7 +60,6 @@ class Entry:
 
     def run(self, name, models):
         models = self.setup(models)
-        # print(models)
         exec(models, globals())
         obj = eval(name)
         cls = type(obj)
@@ -42,19 +70,19 @@ class Entry:
             data = enc(obj)
             assert obj == dec(cls, data)
 
-        er = enc and run(
-            f"{self.library}.{self.format}.{name}.encode", lambda: enc(obj)
-        )
-        dr = dec and run(
-            f"{self.library}.{self.format}.{name}.decode", lambda: dec(cls, data)
-        )
+        tags = [self.library, self.format, name]
+
+        er = enc and run(*tags, "encode", lambda: enc(obj))
+        dr = dec and run(*tags, "decode", lambda: dec(cls, data))
 
         return er, dr
 
 
-def run(name, f, *args, **kwargs):
-    r = timeit.repeat(f, *args, number=100000, **kwargs)
-    return Report(name, min(r), max(r), statistics.mean(r))
+def run(library, format, data, dir, f, *args, **kwargs):
+    r = timeit.repeat(f, *args, number=10000, **kwargs)
+    r = Report(library, format, data, dir, r)
+    print(r)
+    return r
 
 
 models = """
@@ -83,7 +111,7 @@ DATA_B = B(a=[A(a=a, b=str(a), c=float(a), d=True) for a in range(10)],
            b={{"a": 100, "b": 200, "c": 300}})
 """
 
-targets = ["DATA_A", "DATA_B"]
+data = ["DATA_A", "DATA_B"]
 
 
 def no_setup(models):
@@ -171,6 +199,59 @@ entries = [
     ),
 ]
 
-for t in targets:
-    for e in entries:
-        print(e.run(t, models))
+# Run tests
+reports = [e.run(d, models) for d in data for e in entries]
+enc_reports = [e for e, _ in reports]
+dec_reports = [d for _, d in reports]
+
+
+def normalize(reports: List):
+    reports = [r for r in reports if r is not None]
+    base = {r.cat: r.mean for r in reports if r.library == "perde"}
+    for r in reports:
+        r.norm = r.mean / base[r.cat]
+    return reports
+
+
+enc_reports = normalize(enc_reports)
+dec_reports = normalize(dec_reports)
+
+
+def make_barchart(filename, title, reports, fmts):
+    print(f"-------- {filename} --------")
+    for r in reports:
+        print(r)
+
+    c = pygal.Bar()
+    c.title = title
+
+    header = [r.library for r in reports]
+    header = list(set(header))
+
+    def sorter(v):
+        if v == "perde":
+            return ""
+        return v
+
+    header.sort(key=sorter)
+
+    def find(reports, h, f):
+        return next(r for r in reports if r.library == h and r.format == f)
+
+    c.x_labels = header
+    for f in fmts:
+        c.add(f, [find(reports, h, f).norm for h in header])
+    c.render_to_file(f"{filename}.svg")
+
+
+data_a_enc = [r for r in enc_reports if r.data == "DATA_A"]
+data_a_dec = [r for r in dec_reports if r.data == "DATA_A"]
+
+data_b_enc = [r for r in enc_reports if r.data == "DATA_B"]
+data_b_dec = [r for r in dec_reports if r.data == "DATA_B"]
+
+make_barchart("serialize_a", "serialization", data_a_enc, ["json", "msgpack"])
+make_barchart("deserialize_a", "deserialization", data_a_dec, ["json", "msgpack"])
+
+make_barchart("serialize_b", "serialization", data_b_enc, ["json", "msgpack"])
+make_barchart("deserialize_b", "deserialization", data_b_dec, ["json", "msgpack"])
