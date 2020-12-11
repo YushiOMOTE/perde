@@ -40,6 +40,10 @@ bench: test-datagen
 	$(pytest) --benchmark-only $(test-opt)
 
 
+compare:
+	$(pipenv) python ./perde-tests/bench/compare.py
+
+
 histogram:
 	$(foreach fmt,\
 		json yaml msgpack toml,\
