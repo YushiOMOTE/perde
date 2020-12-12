@@ -52,10 +52,10 @@ pub extern "C" fn resolve(
 
 module!(
     perde,
-    submodule!(json),
-    submodule!(toml),
-    submodule!(yaml),
-    submodule!(msgpack),
+    add_submodule!(json),
+    add_submodule!(toml),
+    add_submodule!(yaml),
+    add_submodule!(msgpack),
     exception!(Error),
     method_fastcall!(resolve, "resolve", "")
 );
