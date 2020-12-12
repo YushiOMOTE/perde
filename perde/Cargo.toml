@@ -24,14 +24,6 @@ rmp-serde = "0.14"
 name = "perde"
 crate-type = ["cdylib"]
 
-[profile.release]
-codegen-units = 1
-debug = false
-incremental = false
-lto = "thin"
-opt-level = 3
-panic = "abort"
-
 [package.metadata.maturin]
 requires-python = ">=3.7"
 classifier = [

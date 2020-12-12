@@ -1,2 +1,10 @@
 [workspace]
 members = ["perde/", "perde-core/", "perde-tests/gen/codegen", "perde-tests/gen/datagen"]
+
+[profile.release]
+codegen-units = 1
+debug = false
+incremental = false
+lto = "thin"
+opt-level = 3
+panic = "abort"

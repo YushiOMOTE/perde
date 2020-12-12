@@ -8,7 +8,7 @@
 [![Supported python versions](https://img.shields.io/pypi/pyversions/perde.svg)](https://pypi.org/project/perde/)
 [![Actions Status](https://github.com/YushiOMOTE/perde/workflows/tests/badge.svg)](https://github.com/YushiOMOTE/perde/actions)
 [![codecov](https://codecov.io/gh/yushiomote/perde/branch/master/graph/badge.svg)](https://codecov.io/gh/yushiomote/perde)
-
+[![Coding style](https://badgen.net/badge/code%20style/black/000)](https://github.com/ambv/black)
 
 ![](https://github.com/YushiOMOTE/perde/blob/master/assets/logo.png?raw=true)
 
@@ -165,18 +165,22 @@ See [the book](https://yushiomote.github.io/perde/attributes.html) for more deta
 
 ### Benchmark
 
-#### JSON
+<img src="https://github.com/YushiOMOTE/perde/blob/master/assets/serialize_json_data_a.svg?raw=true" />
+<img src="https://github.com/YushiOMOTE/perde/blob/master/assets/deserialize_json_data_a.svg?raw=true" />
+<img src="https://github.com/YushiOMOTE/perde/blob/master/assets/serialize_msgpack_data_a.svg?raw=true" />
+<img src="https://github.com/YushiOMOTE/perde/blob/master/assets/deserialize_msgpack_data_a.svg?raw=true" />
 
-<img src="https://github.com/YushiOMOTE/perde/blob/master/assets/json-pack-dict.svg?raw=true" width="480" /> <img src="https://github.com/YushiOMOTE/perde/blob/master/assets/json-unpack-dict.svg?raw=true" width="480" />
+The benchmark repeats (de)serializing the data structure `A` 10000 times:
 
-#### YAML
+```python
+class A:
+    a: int
+    b: str
+    c: float
+    d: bool
+```
 
-<img src="https://github.com/YushiOMOTE/perde/blob/master/assets/yaml-pack-dict.svg?raw=true" width="480" /> <img src="https://github.com/YushiOMOTE/perde/blob/master/assets/yaml-unpack-dict.svg?raw=true" width="480" />
-
-#### TOML
-
-<img src="https://github.com/YushiOMOTE/perde/blob/master/assets/toml-pack-dict.svg?raw=true" width="480" /> <img src="https://github.com/YushiOMOTE/perde/blob/master/assets/toml-unpack-dict.svg?raw=true" width="480" />
-
-#### MessagePack
-
-<img src="https://github.com/YushiOMOTE/perde/blob/master/assets/msgpack-pack-dict.svg?raw=true" width="480" /> <img src="https://github.com/YushiOMOTE/perde/blob/master/assets/msgpack-unpack-dict.svg?raw=true" width="480" />
+* [pyserde](https://github.com/yukinarit/pyserde)
+* [mashumaro](https://github.com/Fatal1ty/mashumaro)
+* [attrs](https://github.com/python-attrs/attrs)
+* [cattrs](https://github.com/Tinche/cattrs)

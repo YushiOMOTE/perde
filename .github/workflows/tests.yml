@@ -15,7 +15,13 @@ jobs:
       - uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python }}
-      - name: Test
+      - name: Setup
         run: |
           pip install pipenv
-          make python-version=${{ matrix.python }}
+          make setup python-version=${{ matrix.python }}
+      - name: Lint
+        run: |
+          make lint
+      - name: Test
+        run: |
+          make test
