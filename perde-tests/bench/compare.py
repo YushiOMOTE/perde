@@ -10,6 +10,10 @@ import attr
 import cattr
 import msgpack
 import json
+import ujson
+import orjson
+import toml
+import yaml
 
 
 def key(lib: str, fmt: str, data: str, dir: str):
@@ -52,10 +56,11 @@ class Report:
 
 @dataclass
 class Entry:
+    with_cls: bool
     library: str
     format: str
     enc: Optional[Callable[[Any], Any]]
-    dec: Optional[Callable[[Any, Any], Any]]
+    dec: Optional[Callable]
     setup: Callable[[Any, Any], Any] = lambda x, b: x
 
     def run(self, name, models):
@@ -68,14 +73,34 @@ class Entry:
 
         if enc and dec:
             data = enc(obj)
-            assert obj == dec(cls, data)
+            if self.with_cls:
+                obj2 = dec(cls, data)
+            else:
+                obj2 = dec(data)
+            assert obj == obj2
 
         tags = [self.library, self.format, name]
 
-        er = enc and run(*tags, "encode", lambda: enc(obj))
-        dr = dec and run(*tags, "decode", lambda: dec(cls, data))
+        if enc:
+            ef = lambda: enc(obj)
+        if dec:
+            if self.with_cls:
+                df = lambda: dec(cls, data)
+            else:
+                df = lambda: dec(data)
+
+        er = enc and run(*tags, "encode", ef)
+        dr = dec and run(*tags, "decode", df)
 
         return er, dr
+
+
+def sentry(*args):
+    return Entry(True, *args)
+
+
+def dentry(*args):
+    return Entry(False, *args)
 
 
 def run(library, format, data, dir, f, *args, **kwargs):
@@ -83,6 +108,46 @@ def run(library, format, data, dir, f, *args, **kwargs):
     r = Report(library, format, data, dir, r)
     print(r)
     return r
+
+
+def normalize(reports: List[Report]):
+    reports = [r for r in reports if r is not None]
+    base = {r.cat: r.mean for r in reports if r.library == "perde"}
+    for r in reports:
+        r.norm = r.mean / base[r.cat]
+    return reports
+
+
+def make_barchart(filename: str, title: str, reports: List[Report], fmt: str):
+    reports = [r for r in reports if r.format == fmt]
+
+    print(f"-------- {filename} --------")
+    for r in reports:
+        print(r)
+
+    c = pygal.Bar(show_legend=False)
+    c.title = title
+
+    header = [r.library for r in reports]
+    header = list(set(header))
+
+    def sorter(v):
+        if v == "perde":
+            return ""
+        return v
+
+    header.sort(key=sorter)
+
+    def find_norm(reports, h, f):
+        for r in reports:
+            if r.library == h and r.format == f:
+                return r.norm
+        return None
+
+    c.x_labels = header
+    c.y_title = 'normalized elapsed time'
+    c.add(fmt, [find_norm(reports, h, fmt) for h in header])
+    c.render_to_file(f"{filename}.svg")
 
 
 models = """
@@ -109,6 +174,7 @@ class B{base}:
 DATA_A = A(a=10, b="Foo", c=3.3, d=True)
 DATA_B = B(a=[A(a=a, b=str(a), c=float(a), d=True) for a in range(10)],
            b={{"a": 100, "b": 200, "c": 300}})
+DATA_C = {{"a": 10, "b": "Foo", "c": 3.3, "d": True}}
 """
 
 data = ["DATA_A", "DATA_B"]
@@ -174,23 +240,26 @@ def mashumaro_msgpack_loads(cls, data):
     return cls.from_msgpack(data)
 
 
-entries = [
-    Entry("pyserde", "json", to_json, from_json, pyserde_setup),
-    Entry("pyserde", "msgpack", to_msgpack, from_msgpack, pyserde_setup),
-    Entry("perde", "json", perde.json.dumps, perde.json.loads_as, no_setup),
-    Entry("perde", "msgpack", perde.msgpack.dumps, perde.msgpack.loads_as, no_setup),
-    Entry("attrs", "json", attr_json_dumps, None, attr_setup),
-    Entry("attrs", "msgpack", attr_msgpack_dumps, None, attr_setup),
-    Entry("cattrs", "json", cattr_json_dumps, cattr_json_loads, attr_setup),
-    Entry("cattrs", "msgpack", cattr_msgpack_dumps, cattr_msgpack_loads, attr_setup),
-    Entry(
+# Benchmark entries for struct (de)serialization
+struct_entries = [
+    sentry("perde", "json", perde.json.dumps, perde.json.loads_as, no_setup),
+    sentry("perde", "msgpack", perde.msgpack.dumps, perde.msgpack.loads_as,
+           no_setup),
+    sentry("pyserde", "json", to_json, from_json, pyserde_setup),
+    sentry("pyserde", "msgpack", to_msgpack, from_msgpack, pyserde_setup),
+    sentry("attrs", "json", attr_json_dumps, None, attr_setup),
+    sentry("attrs", "msgpack", attr_msgpack_dumps, None, attr_setup),
+    sentry("cattrs", "json", cattr_json_dumps, cattr_json_loads, attr_setup),
+    sentry("cattrs", "msgpack", cattr_msgpack_dumps, cattr_msgpack_loads,
+           attr_setup),
+    sentry(
         "mashumaro",
         "json",
         mashumaro_json_dumps,
         mashumaro_json_loads,
         mashumaro_json_setup,
     ),
-    Entry(
+    sentry(
         "mashumaro",
         "msgpack",
         mashumaro_msgpack_dumps,
@@ -199,59 +268,40 @@ entries = [
     ),
 ]
 
+# Benchmark entries for dict (de)serialization
+dict_entries = [
+    dentry("perde", "json", perde.json.dumps, perde.json.loads, no_setup),
+    dentry("perde", "msgpack", perde.msgpack.dumps, perde.msgpack.loads,
+           no_setup),
+    dentry("perde", "toml", perde.toml.dumps, perde.toml.loads, no_setup),
+    dentry("perde", "yaml", perde.yaml.dumps, perde.yaml.loads, no_setup),
+    dentry("json", "json", json.dumps, json.loads, no_setup),
+    dentry("orjson", "json", orjson.dumps, orjson.loads, no_setup),
+    dentry("ujson", "json", ujson.dumps, ujson.loads, no_setup),
+    dentry("toml", "toml", toml.dumps, toml.loads, no_setup),
+    dentry("yaml", "yaml", yaml.dump, yaml.safe_load, no_setup),
+    dentry("msgpack", "msgpack", msgpack.dumps, msgpack.loads, no_setup),
+]
+
+
 # Run tests
-reports = [e.run(d, models) for d in data for e in entries]
-enc_reports = [e for e, _ in reports]
-dec_reports = [d for _, d in reports]
+def run_benchmark(entries: List[Entry], data: str, fmt: str):
+    reports = [e.run(data, models) for e in entries]
+    enc_reports = [e for e, _ in reports]
+    dec_reports = [d for _, d in reports]
+
+    enc_reports = normalize(enc_reports)
+    dec_reports = normalize(dec_reports)
+
+    make_barchart(f"serialize_{fmt}_{data.lower()}", f"{fmt} serialization",
+                  enc_reports, fmt)
+    make_barchart(f"deserialize_{fmt}_{data.lower()}",
+                  f"{fmt} deserialization", dec_reports, fmt)
 
 
-def normalize(reports: List):
-    reports = [r for r in reports if r is not None]
-    base = {r.cat: r.mean for r in reports if r.library == "perde"}
-    for r in reports:
-        r.norm = r.mean / base[r.cat]
-    return reports
-
-
-enc_reports = normalize(enc_reports)
-dec_reports = normalize(dec_reports)
-
-
-def make_barchart(filename, title, reports, fmts):
-    print(f"-------- {filename} --------")
-    for r in reports:
-        print(r)
-
-    c = pygal.Bar()
-    c.title = title
-
-    header = [r.library for r in reports]
-    header = list(set(header))
-
-    def sorter(v):
-        if v == "perde":
-            return ""
-        return v
-
-    header.sort(key=sorter)
-
-    def find(reports, h, f):
-        return next(r for r in reports if r.library == h and r.format == f)
-
-    c.x_labels = header
-    for f in fmts:
-        c.add(f, [find(reports, h, f).norm for h in header])
-    c.render_to_file(f"{filename}.svg")
-
-
-data_a_enc = [r for r in enc_reports if r.data == "DATA_A"]
-data_a_dec = [r for r in dec_reports if r.data == "DATA_A"]
-
-data_b_enc = [r for r in enc_reports if r.data == "DATA_B"]
-data_b_dec = [r for r in dec_reports if r.data == "DATA_B"]
-
-make_barchart("serialize_a", "serialization", data_a_enc, ["json", "msgpack"])
-make_barchart("deserialize_a", "deserialization", data_a_dec, ["json", "msgpack"])
-
-make_barchart("serialize_b", "serialization", data_b_enc, ["json", "msgpack"])
-make_barchart("deserialize_b", "deserialization", data_b_dec, ["json", "msgpack"])
+run_benchmark(struct_entries, "DATA_A", "json")
+run_benchmark(struct_entries, "DATA_A", "msgpack")
+run_benchmark(dict_entries, "DATA_C", "json")
+run_benchmark(dict_entries, "DATA_C", "toml")
+run_benchmark(dict_entries, "DATA_C", "yaml")
+run_benchmark(dict_entries, "DATA_C", "msgpack")

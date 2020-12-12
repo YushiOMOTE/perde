@@ -165,10 +165,18 @@ See [the book](https://yushiomote.github.io/perde/attributes.html) for more deta
 
 ### Benchmark
 
-#### Struct serialization
-
 <img src="https://github.com/YushiOMOTE/perde/blob/master/assets/serialize_a.svg?raw=true" />
 <img src="https://github.com/YushiOMOTE/perde/blob/master/assets/deserialize_a.svg?raw=true" />
+
+The benchmark repeats (de)serializing the data structure `A` 10000 times:
+
+```python
+class A:
+    a: int
+    b: str
+    c: float
+    d: bool
+```
 
 * [pyserde](https://github.com/yukinarit/pyserde)
 * [mashumaro](https://github.com/Fatal1ty/mashumaro)
