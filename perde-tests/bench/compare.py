@@ -82,12 +82,20 @@ class Entry:
         tags = [self.library, self.format, name]
 
         if enc:
-            ef = lambda: enc(obj)
+
+            def ef():
+                enc(obj)
+
         if dec:
             if self.with_cls:
-                df = lambda: dec(cls, data)
+
+                def df():
+                    dec(cls, data)
+
             else:
-                df = lambda: dec(data)
+
+                def df():
+                    dec(data)
 
         er = enc and run(*tags, "encode", ef)
         dr = dec and run(*tags, "decode", df)
@@ -145,7 +153,7 @@ def make_barchart(filename: str, title: str, reports: List[Report], fmt: str):
         return None
 
     c.x_labels = header
-    c.y_title = 'normalized elapsed time'
+    c.y_title = "normalized elapsed time"
     c.add(fmt, [find_norm(reports, h, fmt) for h in header])
     c.render_to_file(f"{filename}.svg")
 
@@ -243,15 +251,13 @@ def mashumaro_msgpack_loads(cls, data):
 # Benchmark entries for struct (de)serialization
 struct_entries = [
     sentry("perde", "json", perde.json.dumps, perde.json.loads_as, no_setup),
-    sentry("perde", "msgpack", perde.msgpack.dumps, perde.msgpack.loads_as,
-           no_setup),
+    sentry("perde", "msgpack", perde.msgpack.dumps, perde.msgpack.loads_as, no_setup),
     sentry("pyserde", "json", to_json, from_json, pyserde_setup),
     sentry("pyserde", "msgpack", to_msgpack, from_msgpack, pyserde_setup),
     sentry("attrs", "json", attr_json_dumps, None, attr_setup),
     sentry("attrs", "msgpack", attr_msgpack_dumps, None, attr_setup),
     sentry("cattrs", "json", cattr_json_dumps, cattr_json_loads, attr_setup),
-    sentry("cattrs", "msgpack", cattr_msgpack_dumps, cattr_msgpack_loads,
-           attr_setup),
+    sentry("cattrs", "msgpack", cattr_msgpack_dumps, cattr_msgpack_loads, attr_setup),
     sentry(
         "mashumaro",
         "json",
@@ -271,8 +277,7 @@ struct_entries = [
 # Benchmark entries for dict (de)serialization
 dict_entries = [
     dentry("perde", "json", perde.json.dumps, perde.json.loads, no_setup),
-    dentry("perde", "msgpack", perde.msgpack.dumps, perde.msgpack.loads,
-           no_setup),
+    dentry("perde", "msgpack", perde.msgpack.dumps, perde.msgpack.loads, no_setup),
     dentry("perde", "toml", perde.toml.dumps, perde.toml.loads, no_setup),
     dentry("perde", "yaml", perde.yaml.dumps, perde.yaml.loads, no_setup),
     dentry("json", "json", json.dumps, json.loads, no_setup),
@@ -293,10 +298,12 @@ def run_benchmark(entries: List[Entry], data: str, fmt: str):
     enc_reports = normalize(enc_reports)
     dec_reports = normalize(dec_reports)
 
-    make_barchart(f"serialize_{fmt}_{data.lower()}", f"{fmt} serialization",
-                  enc_reports, fmt)
-    make_barchart(f"deserialize_{fmt}_{data.lower()}",
-                  f"{fmt} deserialization", dec_reports, fmt)
+    make_barchart(
+        f"serialize_{fmt}_{data.lower()}", f"{fmt} serialization", enc_reports, fmt
+    )
+    make_barchart(
+        f"deserialize_{fmt}_{data.lower()}", f"{fmt} deserialization", dec_reports, fmt
+    )
 
 
 run_benchmark(struct_entries, "DATA_A", "json")
