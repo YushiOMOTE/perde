@@ -165,8 +165,10 @@ See [the book](https://yushiomote.github.io/perde/attributes.html) for more deta
 
 ### Benchmark
 
-<img src="https://github.com/YushiOMOTE/perde/blob/master/assets/serialize_a.svg?raw=true" />
-<img src="https://github.com/YushiOMOTE/perde/blob/master/assets/deserialize_a.svg?raw=true" />
+<img src="https://github.com/YushiOMOTE/perde/blob/master/assets/serialize_json_data_a.svg?raw=true" />
+<img src="https://github.com/YushiOMOTE/perde/blob/master/assets/deserialize_json_data_a.svg?raw=true" />
+<img src="https://github.com/YushiOMOTE/perde/blob/master/assets/serialize_msgpack_data_a.svg?raw=true" />
+<img src="https://github.com/YushiOMOTE/perde/blob/master/assets/deserialize_msgpack_data_a.svg?raw=true" />
 
 The benchmark repeats (de)serializing the data structure `A` 10000 times:
 
