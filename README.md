@@ -28,18 +28,7 @@ Python wrapper around [the powerful Rust serialization framework](https://github
 -->
 
 
-### Install
-
-```sh
-pip install perde
-```
-
 ### Usage
-
-```python
->>> import perde
-
-```
 
 Assume you have a dataclass,
 
@@ -51,26 +40,26 @@ Assume you have a dataclass,
 
 ```
 
-To serialize class `A` to JSON,
+To serialize/deserialize the object of `A` to/from JSON,
 
 ```python
->>> perde.json.dumps(A(a=10, b='x'))
+>>> from perde import json
+
+>>> json.dumps(A(a=10, b='x'))
 '{"a":10,"b":"x"}'
 
-```
-
-To deserialize JSON to class `A`,
-
-```python
->>> perde.json.loads_as(A, '{"a":10,"b":"x"}')
+>>> json.loads_as(A, '{"a":10,"b":"x"}')
 A(a=10, b='x')
 
 ```
 
-To deserialize JSON to a dictionary,
+Also supports (de)serialization of non-dataclass objects.
 
 ```python
->>> perde.json.loads('{"a":10,"b":"x"}')
+>>> json.dumps({'a': 10, 'b': 'x'})
+'{"a":10,"b":"x"}'
+
+>>> json.loads('{"a":10,"b":"x"}')
 {'a': 10, 'b': 'x'}
 
 ```
@@ -78,14 +67,30 @@ To deserialize JSON to a dictionary,
 More formats are supported.
 
 ```python
->>> perde.yaml.dumps(A(10, "x"))
+>>> from perde import yaml
+
+>>> yaml.dumps(A(10, "x"))
 '---\na: 10\nb: x'
->>> perde.yaml.loads_as(A, '---\na: 10\nb: x')
+
+>>> yaml.loads_as(A, '---\na: 10\nb: x')
 A(a=10, b='x')
->>> perde.msgpack.dumps(A(10, "x"))
+
+>>> yaml.loads('---\na: 10\nb: x')
+{'a': 10, 'b': 'x'}
+
+```
+
+```python
+>>> from perde import msgpack
+
+>>> msgpack.dumps(A(10, "x"))
 b'\x82\xa1a\n\xa1b\xa1x'
->>> perde.msgpack.loads_as(A, b'\x82\xa1a\n\xa1b\xa1x')
+
+>>> msgpack.loads_as(A, b'\x82\xa1a\n\xa1b\xa1x')
 A(a=10, b='x')
+
+>>> msgpack.loads(b'\x82\xa1a\n\xa1b\xa1x')
+{'a': 10, 'b': 'x'}
 
 ```
 
@@ -141,13 +146,13 @@ A(a=10, b='x')
     * `decimal.Decimal`
     * `uuid.UUID`
 
-### Attributes
+### Case conversion and more
 
-Attributes allow to modify the way of serialization/deserialization.
-
-For example, to serialize/deserialize the field names as `camelCase`,
+To serialize/deserialize the field names in `camelCase`,
 
 ```python
+>>> import perde
+
 >>> @perde.attr(rename_all="camelCase")
 ... @dataclass
 ... class A:
@@ -156,19 +161,27 @@ For example, to serialize/deserialize the field names as `camelCase`,
 
 >>> perde.json.dumps(A(foo_bar=1, bar_bar=2))
 '{"fooBar":1,"barBar":2}'
+
 >>> perde.json.loads_as(A, '{"fooBar":1,"barBar":2}')
 A(foo_bar=1, bar_bar=2)
 
 ```
 
+Supports more such features to configure the way of (de)serialization:
+
+* Skips serializing/deserializing fields.
+* Sets default values on deserialization.
+* Flatten the content of structures.
+
 See [the book](https://yushiomote.github.io/perde/attributes.html) for more details.
 
 ### Benchmark
 
-<img src="https://github.com/YushiOMOTE/perde/blob/master/assets/serialize_json_data_a.svg?raw=true" />
-<img src="https://github.com/YushiOMOTE/perde/blob/master/assets/deserialize_json_data_a.svg?raw=true" />
-<img src="https://github.com/YushiOMOTE/perde/blob/master/assets/serialize_msgpack_data_a.svg?raw=true" />
-<img src="https://github.com/YushiOMOTE/perde/blob/master/assets/deserialize_msgpack_data_a.svg?raw=true" />
+<img src="https://github.com/YushiOMOTE/perde/blob/master/assets/serialize_json_data_a.svg?raw=true" width="320px" />
+<img src="https://github.com/YushiOMOTE/perde/blob/master/assets/deserialize_json_data_a.svg?raw=true" width="320px" />
+
+<img src="https://github.com/YushiOMOTE/perde/blob/master/assets/serialize_msgpack_data_a.svg?raw=true" width="320px" />
+<img src="https://github.com/YushiOMOTE/perde/blob/master/assets/deserialize_msgpack_data_a.svg?raw=true" width="320px" />
 
 The benchmark repeats (de)serializing the data structure `A` 10000 times:
 
@@ -180,7 +193,10 @@ class A:
     d: bool
 ```
 
-* [pyserde](https://github.com/yukinarit/pyserde)
-* [mashumaro](https://github.com/Fatal1ty/mashumaro)
-* [attrs](https://github.com/python-attrs/attrs)
-* [cattrs](https://github.com/Tinche/cattrs)
+The libraries in the benchmark:
+
+* `perde`: This library.
+* [pyserde](https://github.com/yukinarit/pyserde): Yet another serialization library on top of dataclasses.
+* [mashumaro](https://github.com/Fatal1ty/mashumaro): A fast and well tested serialization framework on top of dataclasses.
+* [attrs](https://github.com/python-attrs/attrs): Python Classes Without Boilerplate.
+* [cattrs](https://github.com/Tinche/cattrs): Complex custom class converters for attrs.
